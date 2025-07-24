@@ -1,0 +1,3 @@
+[33mdce2c68[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mclean[m[33m)[m feat: add clickable Casino Blog template and article selection to site creation form (PBN pipeline integration)
+[33m4deb7b9[m feat: universal Astro data generator and API route for site rebuild with article selection
+[33mecfb89b[m UI: remove debug category output from article list in site creation form

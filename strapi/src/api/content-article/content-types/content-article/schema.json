@@ -1,0 +1,57 @@
+{
+  "kind": "collectionType",
+  "collectionName": "content_articles",
+  "info": {
+    "singularName": "content-article",
+    "pluralName": "content-articles",
+    "displayName": "Content Article"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "title": {
+      "type": "string",
+      "required": true
+    },
+    "slug": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "content": {
+      "type": "richtext"
+    },
+    "excerpt": {
+      "type": "text"
+    },
+    "featured_image": {
+      "type": "string"
+    },
+    "meta_title": {
+      "type": "string"
+    },
+    "meta_description": {
+      "type": "string"
+    },
+    "statusarticles": {
+      "type": "enumeration",
+      "default": "draft",
+      "enum": [
+        "draft",
+        "published",
+        "archived"
+      ]
+    },
+    "published": {
+      "type": "datetime"
+    },
+    "content_categories": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::content-category.content-category",
+      "mappedBy": "content_article"
+    }
+  }
+}

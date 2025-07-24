@@ -1,0 +1,73 @@
+{
+  "kind": "collectionType",
+  "collectionName": "content_categories",
+  "info": {
+    "singularName": "content-category",
+    "pluralName": "content-categories",
+    "displayName": "Content Category"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "slug": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "color": {
+      "type": "string",
+      "default": "#3B82F6"
+    },
+    "description": {
+      "type": "text"
+    },
+    "icon": {
+      "type": "string"
+    },
+    "sort_order": {
+      "type": "integer",
+      "default": 0
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "content_categories": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::content-category.content-category",
+      "mappedBy": "content_category"
+    },
+    "content_category": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::content-category.content-category",
+      "inversedBy": "content_categories"
+    },
+    "content_author": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::content-author.content-author",
+      "inversedBy": "content_categories"
+    },
+    "pbn_site": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::pbn-site.pbn-site",
+      "inversedBy": "content_categories"
+    },
+    "content_article": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::content-article.content-article",
+      "inversedBy": "content_categories"
+    }
+  }
+}

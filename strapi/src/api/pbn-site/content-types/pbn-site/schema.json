@@ -1,0 +1,106 @@
+{
+  "kind": "collectionType",
+  "collectionName": "pbn_sites",
+  "info": {
+    "singularName": "pbn-site",
+    "pluralName": "pbn-sites",
+    "displayName": "PBN Site"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "slug": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "template": {
+      "type": "enumeration",
+      "enum": [
+        "blog",
+        "news",
+        "review",
+        "casino-premium",
+        "casino-standard"
+      ]
+    },
+    "statuspbn": {
+      "type": "enumeration",
+      "enum": [
+        "draft",
+        "building",
+        "deployed",
+        "error",
+        "maintenance"
+      ]
+    },
+    "config": {
+      "type": "json"
+    },
+    "description": {
+      "type": "text"
+    },
+    "language": {
+      "type": "string",
+      "default": "ru"
+    },
+    "timezone": {
+      "type": "string",
+      "default": "UTC"
+    },
+    "analytics_id": {
+      "type": "string"
+    },
+    "ssl_enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "cdn_enabled": {
+      "type": "boolean",
+      "default": false
+    },
+    "backup_enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "deployed_at": {
+      "type": "datetime"
+    },
+    "last_build_at": {
+      "type": "datetime"
+    },
+    "content_authors": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::content-author.content-author",
+      "mappedBy": "pbn_sites"
+    },
+    "content_categories": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::content-category.content-category",
+      "mappedBy": "pbn_site"
+    },
+    "domain": {
+      "type": "string"
+    },
+    "pbn_sites": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::pbn-site.pbn-site",
+      "mappedBy": "pbn_site"
+    },
+    "pbn_site": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::pbn-site.pbn-site",
+      "inversedBy": "pbn_sites"
+    }
+  }
+}
