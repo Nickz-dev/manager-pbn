@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { PageHeader } from '@/components/ui/PageHeader'
 
 export default function NewSitePage() {
@@ -21,6 +21,48 @@ export default function NewSitePage() {
   })
 
   const [isLoading, setIsLoading] = useState(false)
+
+  // Восстановленные состояния для статей и категорий
+  const [selectedArticles, setSelectedArticles] = useState<string[]>([])
+  const [articles, setArticles] = useState<any[]>([])
+  const [selectedCategory, setSelectedCategory] = useState<string>('')
+  const [categories, setCategories] = useState<any[]>([])
+
+  // Загрузка статей и категорий
+  useEffect(() => {
+    if (siteType === 'pbn') {
+      fetch('/api/content/articles')
+        .then(res => res.json())
+        .then(data => {
+          if (data && Array.isArray(data.articles)) {
+            setArticles(data.articles)
+          }
+        })
+        .catch(() => setArticles([]))
+      fetch('/api/content/categories')
+        .then(res => res.json())
+        .then(data => {
+          if (data && Array.isArray(data.categories)) {
+            setCategories(data.categories)
+          }
+        })
+        .catch(() => setCategories([]))
+    } else {
+      setArticles([])
+      setCategories([])
+    }
+  }, [siteType])
+
+  // Фильтрация статей по категории и по тому, что статья не привязана к другому сайту
+  const filteredArticles = articles.filter(article => {
+    // Только статьи без привязки к сайту
+    if (!Array.isArray(article.pbn_sites) || article.pbn_sites.length > 0) return false;
+    // Если категория не выбрана, показываем все такие статьи
+    if (!selectedCategory || selectedCategory === '') return true;
+    // Если выбрана категория, фильтруем по совпадению documentId
+    return Array.isArray(article.content_categories) &&
+      article.content_categories.some((cat: any) => String(cat.documentId) === String(selectedCategory));
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -330,6 +372,54 @@ export default function NewSitePage() {
             </div>
           </div>
 
+          {/* Блок выбора статей и фильтра по категориям (только для PBN) */}
+          {siteType === 'pbn' && (
+            <div className="card">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">Выбор статей для сайта</h3>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Фильтр по категории</label>
+                <select
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={selectedCategory}
+                  onChange={e => setSelectedCategory(e.target.value)}
+                >
+                  <option value="">Все категории</option>
+                  {categories.map((cat: any) => (
+                    <option key={cat.documentId || cat.id} value={cat.documentId || cat.id}>{cat.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="max-h-64 overflow-y-auto border rounded-lg p-2 bg-white">
+                {filteredArticles.length === 0 ? (
+                  <div className="text-gray-500 text-sm">Нет доступных статей для выбора</div>
+                ) : (
+                  <ul className="grid grid-cols-1 md:grid-cols-2 gap-2 divide-y-0">
+                    {filteredArticles.map(article => (
+                      <li key={article.id} className="flex items-center py-2 border-b border-gray-100 last:border-b-0">
+                        <input
+                          type="checkbox"
+                          className="mr-3"
+                          checked={selectedArticles.includes(article.id)}
+                          onChange={e => {
+                            if (e.target.checked) {
+                              setSelectedArticles(prev => [...prev, article.id])
+                            } else {
+                              setSelectedArticles(prev => prev.filter(id => id !== article.id))
+                            }
+                          }}
+                        />
+                        <div>
+                          <div className="font-medium text-gray-900">{article.title}</div>
+                          <div className="text-xs text-gray-500">{Array.isArray(article.content_categories) && article.content_categories.map((cat: any) => cat.name).join(', ')}</div>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* SEO Settings */}
           <div className="card">
             <h3 className="text-lg font-semibold text-gray-900 mb-6">SEO настройки</h3>
@@ -433,7 +523,7 @@ export default function NewSitePage() {
             </div>
           )}
 
-          {/* Submit Buttons */}
+           {/* Submit Buttons */}
           <div className="flex space-x-4">
             <button
               type="submit"
