@@ -394,133 +394,137 @@ export default function NewSitePage() {
               {siteType === 'pbn' ? 'Шаблон Astro' : 'Тема Next.js'}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {siteType === 'pbn' ? (
-                <>
-                  <div 
-                    className={`border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 ${
-                      selectedTemplate === 'casino-blog' 
-                        ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' 
-                        : 'border-gray-200 hover:border-blue-500'
-                    }`}
-                    onClick={() => {
-                      setSelectedTemplate('casino-blog')
-                      updateFormData('template', 'casino-blog')
-                    }}
-                  >
-                    <div className="aspect-video bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg mb-3 flex items-center justify-center">
-                      <span className="text-blue-600 font-medium">Casino Blog</span>
-                    </div>
-                    <h4 className="font-medium text-gray-900">Casino Blog Template</h4>
-                    <p className="text-sm text-gray-500">Шаблон для казино блога</p>
-                    {selectedTemplate === 'casino-blog' && (
-                      <div className="mt-2 text-xs text-blue-600 font-medium">✓ Выбран</div>
-                    )}
-                  </div>
-                  <div 
-                    className={`border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 ${
-                      selectedTemplate === 'slots-review' 
-                        ? 'border-emerald-500 bg-emerald-50 ring-2 ring-emerald-200' 
-                        : 'border-gray-200 hover:border-emerald-500'
-                    }`}
-                    onClick={() => {
-                      setSelectedTemplate('slots-review')
-                      updateFormData('template', 'slots-review')
-                    }}
-                  >
-                    <div className="aspect-video bg-gradient-to-br from-emerald-50 to-green-100 rounded-lg mb-3 flex items-center justify-center">
-                      <span className="text-emerald-600 font-medium">Slots Review</span>
-                    </div>
-                    <h4 className="font-medium text-gray-900">Slots Review Template</h4>
-                    <p className="text-sm text-gray-500">Обзоры игровых автоматов</p>
-                    {selectedTemplate === 'slots-review' && (
-                      <div className="mt-2 text-xs text-emerald-600 font-medium">✓ Выбран</div>
-                    )}
-                  </div>
-                  <div 
-                    className={`border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 ${
-                      selectedTemplate === 'gaming-news' 
-                        ? 'border-purple-500 bg-purple-50 ring-2 ring-purple-200' 
-                        : 'border-gray-200 hover:border-purple-500'
-                    }`}
-                    onClick={() => {
-                      setSelectedTemplate('gaming-news')
-                      updateFormData('template', 'gaming-news')
-                    }}
-                  >
-                    <div className="aspect-video bg-gradient-to-br from-purple-50 to-pink-100 rounded-lg mb-3 flex items-center justify-center">
-                      <span className="text-purple-600 font-medium">Gaming News</span>
-                    </div>
-                    <h4 className="font-medium text-gray-900">Gaming News Template</h4>
-                    <p className="text-sm text-gray-500">Новости азартных игр</p>
-                    {selectedTemplate === 'gaming-news' && (
-                      <div className="mt-2 text-xs text-purple-600 font-medium">✓ Выбран</div>
-                    )}
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div 
-                    className={`border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 ${
-                      selectedTemplate === 'premium-casino' 
-                        ? 'border-emerald-500 bg-emerald-50 ring-2 ring-emerald-200' 
-                        : 'border-gray-200 hover:border-emerald-500'
-                    }`}
-                    onClick={() => {
-                      setSelectedTemplate('premium-casino')
-                      updateFormData('template', 'premium-casino')
-                    }}
-                  >
-                    <div className="aspect-video bg-gradient-to-br from-emerald-50 to-teal-100 rounded-lg mb-3 flex items-center justify-center">
-                      <span className="text-emerald-600 font-medium">Premium Casino</span>
-                    </div>
-                    <h4 className="font-medium text-gray-900">Premium Casino Theme</h4>
-                    <p className="text-sm text-gray-500">Премиум тема для казино</p>
-                    {selectedTemplate === 'premium-casino' && (
-                      <div className="mt-2 text-xs text-emerald-600 font-medium">✓ Выбран</div>
-                    )}
-                  </div>
-                  <div 
-                    className={`border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 ${
-                      selectedTemplate === 'sports-betting' 
-                        ? 'border-orange-500 bg-orange-50 ring-2 ring-orange-200' 
-                        : 'border-gray-200 hover:border-orange-500'
-                    }`}
-                    onClick={() => {
-                      setSelectedTemplate('sports-betting')
-                      updateFormData('template', 'sports-betting')
-                    }}
-                  >
-                    <div className="aspect-video bg-gradient-to-br from-orange-50 to-red-100 rounded-lg mb-3 flex items-center justify-center">
-                      <span className="text-orange-600 font-medium">Sports Betting</span>
-                    </div>
-                    <h4 className="font-medium text-gray-900">Sports Betting Theme</h4>
-                    <p className="text-sm text-gray-500">Тема для ставок на спорт</p>
-                    {selectedTemplate === 'sports-betting' && (
-                      <div className="mt-2 text-xs text-orange-600 font-medium">✓ Выбран</div>
-                    )}
-                  </div>
-                  <div 
-                    className={`border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 ${
-                      selectedTemplate === 'poker-platform' 
-                        ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' 
-                        : 'border-gray-200 hover:border-blue-500'
-                    }`}
-                    onClick={() => {
-                      setSelectedTemplate('poker-platform')
-                      updateFormData('template', 'poker-platform')
-                    }}
-                  >
-                    <div className="aspect-video bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg mb-3 flex items-center justify-center">
-                      <span className="text-blue-600 font-medium">Poker Platform</span>
-                    </div>
-                    <h4 className="font-medium text-gray-900">Poker Platform Theme</h4>
-                    <p className="text-sm text-gray-500">Платформа для покера</p>
-                    {selectedTemplate === 'poker-platform' && (
-                      <div className="mt-2 text-xs text-blue-600 font-medium">✓ Выбран</div>
-                    )}
-                  </div>
-                </>
-              )}
+              {/* Casino Blog Template */}
+              <div 
+                className={`border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 ${
+                  selectedTemplate === 'casino-blog' 
+                    ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' 
+                    : 'border-gray-200 hover:border-blue-500'
+                }`}
+                onClick={() => {
+                  setSelectedTemplate('casino-blog')
+                  updateFormData('template', 'casino-blog')
+                }}
+              >
+                <div className="aspect-video bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg mb-3 flex items-center justify-center">
+                  <span className="text-blue-600 font-medium text-lg">🎰 Casino Blog</span>
+                </div>
+                <h4 className="font-medium text-gray-900">Casino Blog Template</h4>
+                <p className="text-sm text-gray-500">Классический блог для казино</p>
+                {selectedTemplate === 'casino-blog' && (
+                  <div className="mt-2 text-xs text-blue-600 font-medium">✓ Выбран</div>
+                )}
+              </div>
+
+              {/* Slots Review Template */}
+              <div 
+                className={`border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 ${
+                  selectedTemplate === 'slots-review' 
+                    ? 'border-emerald-500 bg-emerald-50 ring-2 ring-emerald-200' 
+                    : 'border-gray-200 hover:border-emerald-500'
+                }`}
+                onClick={() => {
+                  setSelectedTemplate('slots-review')
+                  updateFormData('template', 'slots-review')
+                }}
+              >
+                <div className="aspect-video bg-gradient-to-br from-emerald-50 to-green-100 rounded-lg mb-3 flex items-center justify-center">
+                  <span className="text-emerald-600 font-medium text-lg">🎰 Slots Review</span>
+                </div>
+                <h4 className="font-medium text-gray-900">Slots Review Template</h4>
+                <p className="text-sm text-gray-500">Обзоры игровых автоматов</p>
+                {selectedTemplate === 'slots-review' && (
+                  <div className="mt-2 text-xs text-emerald-600 font-medium">✓ Выбран</div>
+                )}
+              </div>
+
+              {/* Gaming News Template */}
+              <div 
+                className={`border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 ${
+                  selectedTemplate === 'gaming-news' 
+                    ? 'border-purple-500 bg-purple-50 ring-2 ring-purple-200' 
+                    : 'border-gray-200 hover:border-purple-500'
+                }`}
+                onClick={() => {
+                  setSelectedTemplate('gaming-news')
+                  updateFormData('template', 'gaming-news')
+                }}
+              >
+                <div className="aspect-video bg-gradient-to-br from-purple-50 to-pink-100 rounded-lg mb-3 flex items-center justify-center">
+                  <span className="text-purple-600 font-medium text-lg">🎮 Gaming News</span>
+                </div>
+                <h4 className="font-medium text-gray-900">Gaming News Template</h4>
+                <p className="text-sm text-gray-500">Новости азартных игр</p>
+                {selectedTemplate === 'gaming-news' && (
+                  <div className="mt-2 text-xs text-purple-600 font-medium">✓ Выбран</div>
+                )}
+              </div>
+
+              {/* Sports Betting Template */}
+              <div 
+                className={`border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 ${
+                  selectedTemplate === 'sports-betting' 
+                    ? 'border-orange-500 bg-orange-50 ring-2 ring-orange-200' 
+                    : 'border-gray-200 hover:border-orange-500'
+                }`}
+                onClick={() => {
+                  setSelectedTemplate('sports-betting')
+                  updateFormData('template', 'sports-betting')
+                }}
+              >
+                <div className="aspect-video bg-gradient-to-br from-orange-50 to-red-100 rounded-lg mb-3 flex items-center justify-center">
+                  <span className="text-orange-600 font-medium text-lg">⚽ Sports Betting</span>
+                </div>
+                <h4 className="font-medium text-gray-900">Sports Betting Template</h4>
+                <p className="text-sm text-gray-500">Ставки на спорт</p>
+                {selectedTemplate === 'sports-betting' && (
+                  <div className="mt-2 text-xs text-orange-600 font-medium">✓ Выбран</div>
+                )}
+              </div>
+
+              {/* Poker Platform Template */}
+              <div 
+                className={`border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 ${
+                  selectedTemplate === 'poker-platform' 
+                    ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' 
+                    : 'border-gray-200 hover:border-blue-500'
+                }`}
+                onClick={() => {
+                  setSelectedTemplate('poker-platform')
+                  updateFormData('template', 'poker-platform')
+                }}
+              >
+                <div className="aspect-video bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg mb-3 flex items-center justify-center">
+                  <span className="text-blue-600 font-medium text-lg">♠️ Poker Platform</span>
+                </div>
+                <h4 className="font-medium text-gray-900">Poker Platform Template</h4>
+                <p className="text-sm text-gray-500">Платформа для покера</p>
+                {selectedTemplate === 'poker-platform' && (
+                  <div className="mt-2 text-xs text-blue-600 font-medium">✓ Выбран</div>
+                )}
+              </div>
+
+              {/* Premium Casino Template */}
+              <div 
+                className={`border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 ${
+                  selectedTemplate === 'premium-casino' 
+                    ? 'border-emerald-500 bg-emerald-50 ring-2 ring-emerald-200' 
+                    : 'border-gray-200 hover:border-emerald-500'
+                }`}
+                onClick={() => {
+                  setSelectedTemplate('premium-casino')
+                  updateFormData('template', 'premium-casino')
+                }}
+              >
+                <div className="aspect-video bg-gradient-to-br from-emerald-50 to-teal-100 rounded-lg mb-3 flex items-center justify-center">
+                  <span className="text-emerald-600 font-medium text-lg">💎 Premium Casino</span>
+                </div>
+                <h4 className="font-medium text-gray-900">Premium Casino Template</h4>
+                <p className="text-sm text-gray-500">Премиум тема для казино</p>
+                {selectedTemplate === 'premium-casino' && (
+                  <div className="mt-2 text-xs text-emerald-600 font-medium">✓ Выбран</div>
+                )}
+              </div>
             </div>
           </div>
 
