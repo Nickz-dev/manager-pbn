@@ -3,29 +3,27 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { PageHeader } from '@/components/ui/PageHeader'
-import { Modal } from '@/components/ui/Modal'
 import axios from 'axios'
 
 interface Category {
   id: string
   name: string
+  slug: string
   color: string
-  description: string
-  is_active: boolean
 }
 
 interface Author {
   id: string
-  documentId: string
   name: string
   email: string
   specialization: string
-  experience_years: number
-  is_active: boolean
-  bio?: string
-  avatar?: string
-  website?: string
+}
+
+interface PbnSite {
+  id: string
+  name: string
+  url: string
+  status: string
 }
 
 interface Article {
@@ -42,367 +40,516 @@ interface Article {
   published: string | null
   createdAt: string
   updatedAt: string
-  publishedAt: string
+  publishedAt: string | null
   content_categories: Category[]
-  author?: Author | null
+  content_author: Author | null
+  pbn_site: PbnSite | null
 }
 
-export default function ArticlePage() {
+export default function ArticleDetailPage() {
   const params = useParams()
   const router = useRouter()
+  const slug = params.slug as string
+
   const [article, setArticle] = useState<Article | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
   const [authors, setAuthors] = useState<Author[]>([])
+  const [pbnSites, setPbnSites] = useState<PbnSite[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
-  const [showDeleteModal, setShowDeleteModal] = useState(false)
+
+  // Форма редактирования
+  const [formData, setFormData] = useState({
+    title: '',
+    slug: '',
+    content: '',
+    excerpt: '',
+    featured_image: '',
+    meta_title: '',
+    meta_description: '',
+    statusarticles: 'draft',
+    content_categories: [] as string[],
+    content_author: '',
+    pbn_site: ''
+  })
 
   useEffect(() => {
-    if (params.slug) {
-      fetchArticle()
-      fetchCategories()
-      fetchAuthors()
-    }
-  }, [params.slug])
+    fetchData()
+  }, [slug])
 
-  async function fetchArticle() {
+  async function fetchData() {
     try {
-      const response = await axios.get(`/api/content/articles/${params.slug}`)
-      setArticle(response.data.article)
-    } catch (e) {
-      setError('Статья не найдена')
+      setLoading(true)
+      
+      // Получаем статью
+      const articleRes = await axios.get(`/api/content/articles/${slug}`)
+      const articleData = articleRes.data.article
+      setArticle(articleData)
+
+      // Заполняем форму данными статьи
+      setFormData({
+        title: articleData.title || '',
+        slug: articleData.slug || '',
+        content: articleData.content || '',
+        excerpt: articleData.excerpt || '',
+        featured_image: articleData.featured_image || '',
+        meta_title: articleData.meta_title || '',
+        meta_description: articleData.meta_description || '',
+        statusarticles: articleData.statusarticles || 'draft',
+        content_categories: articleData.content_categories?.map((cat: Category) => cat.id) || [],
+        content_author: articleData.content_author?.id || '',
+        pbn_site: articleData.pbn_site?.id || ''
+      })
+
+      // Получаем справочные данные
+      const [categoriesRes, authorsRes, sitesRes] = await Promise.all([
+        axios.get('/api/content/categories'),
+        axios.get('/api/content/authors'),
+        axios.get('/api/sites')
+      ])
+
+      setCategories(categoriesRes.data.categories)
+      setAuthors(authorsRes.data.authors)
+      setPbnSites(sitesRes.data.sites)
+
+    } catch (error: any) {
+      console.error('Error fetching article:', error)
+      if (error.response?.status === 404) {
+        router.push('/content')
+      }
     } finally {
       setLoading(false)
     }
   }
 
-  async function fetchCategories() {
-    try {
-      const response = await axios.get('/api/content/categories')
-      setCategories(response.data.categories || [])
-    } catch (e) {
-      console.error('Ошибка загрузки категорий')
-    }
-  }
-
-  async function fetchAuthors() {
-    try {
-      const response = await axios.get('/api/content/authors')
-      setAuthors(response.data.authors || [])
-    } catch (e) {
-      console.error('Ошибка загрузки авторов')
-    }
-  }
-
-  async function handleUpdateArticle() {
+  async function handleSave() {
     if (!article) return
+
     try {
-      const response = await axios.put(`/api/content/articles/${article.documentId}`, { data: article })
+      setSaving(true)
+
+      // Подготавливаем данные для Strapi
+      const strapiData = {
+        ...formData,
+        content_categories: formData.content_categories.length > 0 ? 
+          formData.content_categories.map(id => ({ id })) : 
+          null,
+        content_author: formData.content_author ? 
+          { id: formData.content_author } : 
+          null,
+        pbn_site: formData.pbn_site ? 
+          { id: formData.pbn_site } : 
+          null
+      }
+
+      await axios.put(`/api/content/articles/${article.documentId}`, { data: strapiData })
+      
+      // Обновляем данные
+      await fetchData()
       setIsEditing(false)
       
-      // Если slug изменился, перенаправляем на новый URL
-      const updatedArticle = response.data.article
-      if (updatedArticle.slug !== params.slug) {
-        router.push(`/content/articles/${updatedArticle.slug}`)
-      } else {
-        // Если slug не изменился, просто обновляем данные
-        setArticle(updatedArticle)
-      }
-    } catch (e: any) {
-      alert('Ошибка обновления статьи')
+    } catch (error: any) {
+      alert('Ошибка сохранения: ' + (error.response?.data?.error || error.message))
+    } finally {
+      setSaving(false)
     }
   }
 
-  async function handleDeleteArticle() {
-    if (!article) return
+  async function handleDelete() {
+    if (!article || !confirm('Удалить статью?')) return
+
     try {
       await axios.delete(`/api/content/articles/${article.documentId}`)
       router.push('/content')
-    } catch (e) {
-      alert('Ошибка удаления статьи')
+    } catch (error: any) {
+      alert('Ошибка удаления: ' + (error.response?.data?.error || error.message))
     }
   }
 
-  function slugify(str: string) {
-    return str
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/gi, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-+|-+$/g, '')
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/2 mb-8"></div>
+            <div className="space-y-4">
+              <div className="h-4 bg-gray-200 rounded"></div>
+              <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+              <div className="h-4 bg-gray-200 rounded w-4/6"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
-  if (loading) return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-        <p className="text-gray-600">Загрузка статьи...</p>
+  if (!article) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-8">
+        <div className="max-w-4xl mx-auto text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Статья не найдена</h1>
+          <Link href="/content" className="btn-primary">← Вернуться к списку</Link>
+        </div>
       </div>
-    </div>
-  )
-
-  if (error || !article) return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
-      <div className="text-center">
-        <div className="text-red-600 text-xl mb-4">❌ {error || 'Статья не найдена'}</div>
-        <Link href="/content" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Вернуться к списку</Link>
-      </div>
-    </div>
-  )
+    )
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Header */}
-      <header className="bg-white/90 backdrop-blur-md shadow-sm border-b border-white/20 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">Контент</h1>
-            </div>
-            <nav className="flex space-x-1">
-              <Link href="/sites" className="nav-link">Сайты</Link>
-              <Link href="/infrastructure" className="nav-link">Инфраструктура</Link>
-              <Link href="/content" className="nav-link-active">Контент</Link>
-              <Link href="/monitoring" className="nav-link">Мониторинг</Link>
-            </nav>
+    <div className="min-h-screen bg-gray-50 p-8">
+      <div className="max-w-4xl mx-auto">
+        {/* Заголовок */}
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <Link href="/content" className="text-blue-600 hover:underline mb-2 inline-block">
+              ← Назад к списку статей
+            </Link>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {isEditing ? 'Редактирование статьи' : article.title}
+            </h1>
+          </div>
+          <div className="flex space-x-3">
+            {!isEditing ? (
+              <>
+                <button 
+                  onClick={() => setIsEditing(true)}
+                  className="btn-secondary"
+                >
+                  ✏️ Редактировать
+                </button>
+                <button 
+                  onClick={handleDelete}
+                  className="btn-danger"
+                >
+                  🗑️ Удалить
+                </button>
+              </>
+            ) : (
+              <>
+                <button 
+                  onClick={handleSave}
+                  disabled={saving}
+                  className={`btn-primary ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  {saving ? '⏳ Сохранение...' : '💾 Сохранить'}
+                </button>
+                <button 
+                  onClick={() => {
+                    setIsEditing(false)
+                    fetchData() // Восстанавливаем исходные данные
+                  }}
+                  className="btn-secondary"
+                >
+                  ❌ Отмена
+                </button>
+              </>
+            )}
           </div>
         </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <PageHeader
-          title={isEditing ? "Редактирование статьи" : article.title}
-          description={isEditing ? "Измените содержимое статьи" : article.excerpt || "Просмотр статьи"}
-          breadcrumbs={[
-            { label: 'Главная', href: '/' },
-            { label: 'Контент', href: '/content' },
-            { label: isEditing ? 'Редактирование' : article.title }
-          ]}
-          actions={
-            <div className="flex space-x-3">
-              {!isEditing ? (
-                <>
-                  <button className="btn-primary" onClick={() => setIsEditing(true)}>✏️ Редактировать</button>
-                  <button className="btn-secondary" onClick={() => setShowDeleteModal(true)}>🗑️ Удалить</button>
-                </>
-              ) : (
-                <>
-                  <button className="btn-primary" onClick={handleUpdateArticle}>💾 Сохранить</button>
-                  <button className="btn-secondary" onClick={() => setIsEditing(false)}>❌ Отмена</button>
-                </>
-              )}
-              <Link href="/content" className="btn-secondary">← Назад</Link>
-            </div>
-          }
-        />
-
-        {/* Статья */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Основной контент */}
-          <div className="lg:col-span-2">
-            <div className="card">
-              {isEditing ? (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Заголовок</label>
-                    <input
-                      className="input-field w-full"
-                      value={article.title}
-                      onChange={e => setArticle({ ...article, title: e.target.value, slug: slugify(e.target.value) })}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Краткое описание</label>
-                    <textarea
-                      className="input-field w-full"
-                      rows={3}
-                      value={article.excerpt || ''}
-                      onChange={e => setArticle({ ...article, excerpt: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Содержание</label>
-                    <textarea
-                      className="input-field w-full"
-                      rows={15}
-                      value={article.content || ''}
-                      onChange={e => setArticle({ ...article, content: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Изображение</label>
-                    <input
-                      className="input-field w-full"
-                      placeholder="URL изображения"
-                      value={article.featured_image || ''}
-                      onChange={e => setArticle({ ...article, featured_image: e.target.value })}
-                    />
-                  </div>
+        {/* Основной контент */}
+        <div className="bg-white rounded-lg shadow-sm border p-6">
+          {isEditing ? (
+            /* Форма редактирования */
+            <div className="space-y-6">
+              {/* Основные поля */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Заголовок *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.title}
+                    onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Введите заголовок статьи"
+                  />
                 </div>
-              ) : (
-                <div className="space-y-6">
-                  {article.featured_image && (
-                    <img 
-                      src={article.featured_image} 
-                      alt={article.title}
-                      className="w-full h-64 object-cover rounded-lg"
-                    />
-                  )}
-                  <div>
-                    <h1 className="text-3xl font-bold text-gray-900 mb-4">{article.title}</h1>
-                    {article.excerpt && (
-                      <p className="text-lg text-gray-600 mb-6">{article.excerpt}</p>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Slug
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.slug}
+                    onChange={e => setFormData(prev => ({ ...prev, slug: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="url-friendly-slug"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Краткое описание
+                </label>
+                <textarea
+                  value={formData.excerpt}
+                  onChange={e => setFormData(prev => ({ ...prev, excerpt: e.target.value }))}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Краткое описание статьи"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Содержание
+                </label>
+                <textarea
+                  value={formData.content}
+                  onChange={e => setFormData(prev => ({ ...prev, content: e.target.value }))}
+                  rows={10}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Содержание статьи"
+                />
+              </div>
+
+              {/* Мета-поля */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Meta Title
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.meta_title}
+                    onChange={e => setFormData(prev => ({ ...prev, meta_title: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Meta title для SEO"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Featured Image URL
+                  </label>
+                  <input
+                    type="url"
+                    value={formData.featured_image}
+                    onChange={e => setFormData(prev => ({ ...prev, featured_image: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="https://example.com/image.jpg"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Meta Description
+                </label>
+                <textarea
+                  value={formData.meta_description}
+                  onChange={e => setFormData(prev => ({ ...prev, meta_description: e.target.value }))}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Meta description для SEO"
+                />
+              </div>
+
+              {/* Настройки */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Статус
+                  </label>
+                  <select
+                    value={formData.statusarticles}
+                    onChange={e => setFormData(prev => ({ ...prev, statusarticles: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="draft">Черновик</option>
+                    <option value="published">Опубликовано</option>
+                    <option value="archived">Архив</option>
+                    <option value="ai">AI генерация</option>
+                    <option value="processing">В обработке</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Категории
+                  </label>
+                  <select
+                    multiple
+                    value={formData.content_categories}
+                    onChange={e => {
+                      const selected = Array.from(e.target.selectedOptions, option => option.value)
+                      setFormData(prev => ({ ...prev, content_categories: selected }))
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {categories.map(category => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Автор
+                  </label>
+                  <select
+                    value={formData.content_author}
+                    onChange={e => setFormData(prev => ({ ...prev, content_author: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Без автора</option>
+                    {authors.map(author => (
+                      <option key={author.id} value={author.id}>
+                        {author.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    PBN сайт
+                  </label>
+                  <select
+                    value={formData.pbn_site}
+                    onChange={e => setFormData(prev => ({ ...prev, pbn_site: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Без привязки</option>
+                    {pbnSites.map(site => (
+                      <option key={site.id} value={site.id}>
+                        {site.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Просмотр статьи */
+            <div className="space-y-6">
+              {/* Заголовок и статус */}
+              <div className="flex justify-between items-start">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">{article.title}</h2>
+                  <p className="text-gray-600">{article.excerpt}</p>
+                </div>
+                <span 
+                  className="inline-flex px-3 py-1 text-sm font-semibold rounded-full"
+                  style={{
+                    backgroundColor: 
+                      article.statusarticles === 'published' ? '#DEF7EC' :
+                      article.statusarticles === 'draft' ? '#FEF3C7' :
+                      article.statusarticles === 'archived' ? '#F3F4F6' :
+                      article.statusarticles === 'ai' ? '#F3E8FF' :
+                      article.statusarticles === 'processing' ? '#FED7AA' :
+                      '#F3F4F6',
+                    color:
+                      article.statusarticles === 'published' ? '#03543F' :
+                      article.statusarticles === 'draft' ? '#92400E' :
+                      article.statusarticles === 'archived' ? '#374151' :
+                      article.statusarticles === 'ai' ? '#581C87' :
+                      article.statusarticles === 'processing' ? '#C2410C' :
+                      '#374151'
+                  }}
+                >
+                  {article.statusarticles}
+                </span>
+              </div>
+
+              {/* Мета-информация */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
+                <div>
+                  <span className="text-sm font-medium text-gray-500">Категории:</span>
+                  <div className="mt-1">
+                    {article.content_categories?.length > 0 ? (
+                      article.content_categories.map(cat => (
+                        <span key={cat.id} className="inline-block px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded mr-1 mb-1">
+                          {cat.name}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-gray-400">Не указаны</span>
                     )}
-                    <div className="prose max-w-none">
-                      {article.content ? (
-                        <div dangerouslySetInnerHTML={{ __html: article.content }} />
-                      ) : (
-                        <p className="text-gray-500 italic">Содержание статьи отсутствует</p>
-                      )}
-                    </div>
                   </div>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-gray-500">Автор:</span>
+                  <div className="mt-1 text-sm">
+                    {article.content_author ? article.content_author.name : 'Не указан'}
+                  </div>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-gray-500">PBN сайт:</span>
+                  <div className="mt-1 text-sm">
+                    {article.pbn_site ? article.pbn_site.name : 'Не привязан'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Изображение */}
+              {article.featured_image && (
+                <div>
+                  <img 
+                    src={article.featured_image} 
+                    alt={article.title}
+                    className="w-full h-64 object-cover rounded-lg"
+                  />
                 </div>
               )}
-            </div>
-          </div>
 
-          {/* Боковая панель */}
-          <div className="space-y-6">
-            {/* Мета-информация */}
-            <div className="card">
-              <h3 className="text-lg font-semibold mb-4">Мета-информация</h3>
-              {isEditing ? (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Meta Title</label>
-                    <input
-                      className="input-field w-full"
-                      value={article.meta_title || ''}
-                      onChange={e => setArticle({ ...article, meta_title: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Meta Description</label>
-                    <textarea
-                      className="input-field w-full"
-                      rows={3}
-                      value={article.meta_description || ''}
-                      onChange={e => setArticle({ ...article, meta_description: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Статус</label>
-                    <select
-                      className="input-field w-full"
-                      value={article.statusarticles}
-                      onChange={e => setArticle({ ...article, statusarticles: e.target.value })}
-                    >
-                      <option value="draft">Черновик</option>
-                      <option value="published">Опубликовано</option>
-                    </select>
-                  </div>
-                </div>
-              ) : (
+              {/* Содержание */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Содержание</h3>
+                <div 
+                  className="prose max-w-none"
+                  dangerouslySetInnerHTML={{ __html: article.content }}
+                />
+              </div>
+
+              {/* SEO информация */}
+              <div className="border-t pt-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">SEO информация</h3>
                 <div className="space-y-3">
                   <div>
-                    <span className="text-sm text-gray-500">Статус:</span>
-                    <span className={`ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      article.statusarticles === 'published' ? 'bg-green-100 text-green-800' :
-                      article.statusarticles === 'draft' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {article.statusarticles}
-                    </span>
+                    <span className="text-sm font-medium text-gray-500">Meta Title:</span>
+                    <div className="mt-1 text-sm">{article.meta_title || 'Не указан'}</div>
                   </div>
                   <div>
-                    <span className="text-sm text-gray-500">Создано:</span>
-                    <span className="ml-2 text-sm">{new Date(article.createdAt).toLocaleDateString()}</span>
+                    <span className="text-sm font-medium text-gray-500">Meta Description:</span>
+                    <div className="mt-1 text-sm">{article.meta_description || 'Не указан'}</div>
                   </div>
                   <div>
-                    <span className="text-sm text-gray-500">Обновлено:</span>
-                    <span className="ml-2 text-sm">{new Date(article.updatedAt).toLocaleDateString()}</span>
+                    <span className="text-sm font-medium text-gray-500">Slug:</span>
+                    <div className="mt-1 text-sm font-mono">{article.slug || 'Не указан'}</div>
                   </div>
-                  {article.meta_title && (
-                    <div>
-                      <span className="text-sm text-gray-500">Meta Title:</span>
-                      <p className="text-sm mt-1">{article.meta_title}</p>
-                    </div>
-                  )}
-                  {article.meta_description && (
-                    <div>
-                      <span className="text-sm text-gray-500">Meta Description:</span>
-                      <p className="text-sm mt-1">{article.meta_description}</p>
-                    </div>
-                  )}
                 </div>
-              )}
-            </div>
+              </div>
 
-            {/* Категории */}
-            <div className="card">
-              <h3 className="text-lg font-semibold mb-4">Категории</h3>
-              {isEditing ? (
-                <div className="space-y-2">
-                  {categories.map(cat => (
-                    <label key={cat.id} className="flex items-center">
-                      <input
-                        type="checkbox"
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        checked={article.content_categories.some(c => c.id === cat.id)}
-                        onChange={e => {
-                          if (e.target.checked) {
-                            setArticle({
-                              ...article,
-                              content_categories: [...article.content_categories, cat]
-                            })
-                          } else {
-                            setArticle({
-                              ...article,
-                              content_categories: article.content_categories.filter(c => c.id !== cat.id)
-                            })
-                          }
-                        }}
-                      />
-                      <span className="ml-2 text-sm" style={{ color: cat.color }}>{cat.name}</span>
-                    </label>
-                  ))}
+              {/* Даты */}
+              <div className="border-t pt-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Информация</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-500">Создано:</span>
+                    <div className="mt-1">{new Date(article.createdAt).toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Обновлено:</span>
+                    <div className="mt-1">{new Date(article.updatedAt).toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Опубликовано:</span>
+                    <div className="mt-1">
+                      {article.publishedAt ? new Date(article.publishedAt).toLocaleString() : 'Не опубликовано'}
+                    </div>
+                  </div>
                 </div>
-              ) : (
-                <div className="space-y-2">
-                  {article.content_categories.length > 0 ? (
-                    article.content_categories.map(cat => (
-                      <span key={cat.id} className="inline-block px-2 py-1 text-xs rounded-full mr-2 mb-2" style={{ backgroundColor: cat.color + '20', color: cat.color }}>
-                        {cat.name}
-                      </span>
-                    ))
-                  ) : (
-                    <p className="text-gray-500 text-sm">Категории не назначены</p>
-                  )}
-                </div>
-              )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
-      </main>
-
-      {/* Модалка удаления */}
-      <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)}>
-        <div className="p-6">
-          <h3 className="text-lg font-semibold mb-4">Удалить статью</h3>
-          <p className="text-gray-600 mb-6">Вы уверены, что хотите удалить статью "{article.title}"? Это действие нельзя отменить.</p>
-          <div className="flex space-x-3">
-            <button className="btn-primary" onClick={handleDeleteArticle}>Удалить</button>
-            <button className="btn-secondary" onClick={() => setShowDeleteModal(false)}>Отмена</button>
-          </div>
-        </div>
-      </Modal>
+      </div>
     </div>
   )
 } 

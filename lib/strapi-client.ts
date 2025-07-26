@@ -77,7 +77,7 @@ export const strapiAPI = {
 
   // Статьи
   async getArticles() {
-    const res = await strapi.get('/content-articles?populate=content_categories&pagination[pageSize]=100')
+    const res = await strapi.get('/content-articles?populate=*&pagination[pageSize]=100')
     return (res.data.data || []).map((item: any) => {
       return {
         id: item.id,
@@ -98,11 +98,23 @@ export const strapiAPI = {
           id: cat.id,
           ...cat
         })),
+        content_author: item.content_author ? {
+          id: item.content_author.id,
+          ...item.content_author
+        } : null,
+        pbn_site: item.pbn_site ? {
+          id: item.pbn_site.id,
+          ...item.pbn_site
+        } : null,
       }
     })
   },
 
-  // Статьи
+  async createArticle(data: any) {
+    const res = await strapi.post('/content-articles', { data })
+    return { id: res.data.data.id, ...res.data.data.attributes }
+  },
+
   async updateArticle(documentId: string, data: any) {
     // Исключаем поля, которые не должны обновляться
     const { id: _, documentId: __, createdAt: ___, updatedAt: ____, publishedAt: _____, ...updateData } = data
@@ -112,5 +124,20 @@ export const strapiAPI = {
   async deleteArticle(documentId: string) {
     const res = await strapi.delete(`/content-articles/${documentId}`)
     return res
+  },
+
+  // PBN сайты для привязки к статьям
+  async getPbnSites() {
+    const res = await strapi.get('/pbn-sites?pagination[pageSize]=100')
+    return (res.data.data || []).map((item: any) => ({
+      id: item.id,
+      documentId: item.documentId,
+      name: item.name,
+      url: item.url,
+      status: item.status,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
+      publishedAt: item.publishedAt,
+    }))
   },
 } 

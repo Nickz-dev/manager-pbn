@@ -43,8 +43,9 @@ export async function PUT(
     const body = await request.json()
     const data = body.data || body
     
-    if (!data.title) {
-      return NextResponse.json({ error: 'Missing required field: title' }, { status: 400 })
+    // Проверяем, что есть хотя бы одно поле для обновления
+    if (Object.keys(data).length === 0) {
+      return NextResponse.json({ error: 'No fields to update' }, { status: 400 })
     }
 
     // Находим статью по documentId, slug, или id

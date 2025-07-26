@@ -27,6 +27,14 @@ interface Author {
   website?: string
 }
 
+interface PbnSite {
+  id: string
+  documentId: string
+  name: string
+  url: string
+  status: string
+}
+
 interface Article {
   id: string
   title: string
@@ -34,12 +42,14 @@ interface Article {
   statusarticles: string
   createdAt: string
   content_categories: Category[]
-  author?: Author | null
+  content_author?: Author | null
+  pbn_site?: PbnSite | null
 }
 
 export default function ContentPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [authors, setAuthors] = useState<Author[]>([])
+  const [pbnSites, setPbnSites] = useState<PbnSite[]>([])
   const [articles, setArticles] = useState<Article[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -57,6 +67,13 @@ export default function ContentPage() {
   // Состояния для фильтров
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [selectedStatus, setSelectedStatus] = useState<string>('all')
+  const [selectedAuthor, setSelectedAuthor] = useState<string>('all')
+  const [selectedPbnSite, setSelectedPbnSite] = useState<string>('all')
+
+  // Состояния для редактирования статей
+  const [editingArticles, setEditingArticles] = useState<{[key: string]: boolean}>({})
+  const [articleUpdates, setArticleUpdates] = useState<{[key: string]: any}>({})
+  const [savingArticles, setSavingArticles] = useState<{[key: string]: boolean}>({})
 
   useEffect(() => {
     fetchData()
@@ -65,15 +82,17 @@ export default function ContentPage() {
   async function fetchData() {
     setLoading(true)
     try {
-      const [catRes, authRes, artRes] = await Promise.all([
+      const [catRes, authRes, artRes, sitesRes] = await Promise.all([
         axios.get('/api/content/categories'),
         axios.get('/api/content/authors'),
-        axios.get('/api/content/articles')
+        axios.get('/api/content/articles'),
+        axios.get('/api/sites')
       ])
       
       setCategories(catRes.data.categories || [])
       setAuthors(authRes.data.authors || [])
       setArticles(artRes.data.articles || [])
+      setPbnSites(sitesRes.data.sites || [])
     } catch (e) {
       setError('Ошибка загрузки данных')
     } finally {
@@ -172,6 +191,66 @@ export default function ContentPage() {
     }
   }
 
+  // Функции для редактирования статей
+  function startEditingArticle(articleId: string) {
+    setEditingArticles(prev => ({ ...prev, [articleId]: true }))
+    setArticleUpdates(prev => ({ ...prev, [articleId]: {} }))
+  }
+
+  function stopEditingArticle(articleId: string) {
+    setEditingArticles(prev => ({ ...prev, [articleId]: false }))
+    setArticleUpdates(prev => {
+      const newUpdates = { ...prev }
+      delete newUpdates[articleId]
+      return newUpdates
+    })
+  }
+
+  function updateArticleField(articleId: string, field: string, value: any) {
+    setArticleUpdates(prev => ({
+      ...prev,
+      [articleId]: {
+        ...prev[articleId],
+        [field]: value
+      }
+    }))
+  }
+
+  async function saveArticleChanges(articleId: string) {
+    const updates = articleUpdates[articleId]
+    if (!updates || Object.keys(updates).length === 0) {
+      stopEditingArticle(articleId)
+      return
+    }
+
+    setSavingArticles(prev => ({ ...prev, [articleId]: true }))
+
+    try {
+      // Подготавливаем данные для Strapi
+      const strapiData: any = {}
+      
+      if (updates.statusarticles) {
+        strapiData.statusarticles = updates.statusarticles
+      }
+      
+      if (updates.content_author !== undefined) {
+        strapiData.content_author = updates.content_author ? { id: updates.content_author } : null
+      }
+      
+      if (updates.pbn_site !== undefined) {
+        strapiData.pbn_site = updates.pbn_site ? { id: updates.pbn_site } : null
+      }
+
+      await axios.put(`/api/content/articles/${articleId}`, { data: strapiData })
+      stopEditingArticle(articleId)
+      fetchData()
+    } catch (e: any) {
+      alert('Ошибка обновления статьи: ' + (e.response?.data?.error || e.message))
+    } finally {
+      setSavingArticles(prev => ({ ...prev, [articleId]: false }))
+    }
+  }
+
   // Фильтрация статей
   const filteredArticles = articles.filter(article => {
     // Фильтр по категории
@@ -179,18 +258,30 @@ export default function ContentPage() {
       (Array.isArray(article.content_categories) && 
        article.content_categories.some(cat => cat.id.toString() === selectedCategory))
     
-    // Фильтр по статусу (используем правильное поле)
+    // Фильтр по статусу
     const statusMatch = selectedStatus === 'all' || 
       article.statusarticles === selectedStatus
     
-    return categoryMatch && statusMatch
+    // Фильтр по автору
+    const authorMatch = selectedAuthor === 'all' || 
+      (article.content_author && article.content_author.id.toString() === selectedAuthor) ||
+      (selectedAuthor === 'none' && !article.content_author)
+    
+    // Фильтр по PBN сайту
+    const pbnSiteMatch = selectedPbnSite === 'all' || 
+      (article.pbn_site && article.pbn_site.id.toString() === selectedPbnSite) ||
+      (selectedPbnSite === 'none' && !article.pbn_site)
+    
+    return categoryMatch && statusMatch && authorMatch && pbnSiteMatch
   })
 
   // Примерные данные для статистики (заменить на реальные при необходимости)
   const totalContent = articles.length
-  const aiGenerations = articles.filter(a => a.statusarticles === 'ai').length // или другое условие
-  const inProgress = articles.filter(a => a.statusarticles === 'processing').length // или другое условие
+  const aiGenerations = articles.filter(a => a.statusarticles === 'ai').length
+  const inProgress = articles.filter(a => a.statusarticles === 'processing').length
   const published = articles.filter(a => a.statusarticles === 'published').length
+  const draft = articles.filter(a => a.statusarticles === 'draft').length
+  const archived = articles.filter(a => a.statusarticles === 'archived').length
 
   if (loading) return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
@@ -359,7 +450,7 @@ export default function ContentPage() {
 
         {/* Фильтры */}
         <div className="card mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Категория</label>
               <select
@@ -383,6 +474,37 @@ export default function ContentPage() {
                 <option value="all">Все статусы</option>
                 <option value="draft">Черновик</option>
                 <option value="published">Опубликовано</option>
+                <option value="archived">Архив</option>
+                <option value="ai">AI генерация</option>
+                <option value="processing">В обработке</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Автор</label>
+              <select
+                value={selectedAuthor}
+                onChange={e => setSelectedAuthor(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">Все авторы</option>
+                <option value="none">Без автора</option>
+                {authors.map(author => (
+                  <option key={author.id} value={author.id}>{author.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">PBN сайт</label>
+              <select
+                value={selectedPbnSite}
+                onChange={e => setSelectedPbnSite(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">Все сайты</option>
+                <option value="none">Без привязки</option>
+                {pbnSites.map(site => (
+                  <option key={site.id} value={site.id}>{site.name}</option>
+                ))}
               </select>
             </div>
             <div className="flex items-end">
@@ -591,7 +713,12 @@ export default function ContentPage() {
         {/* Список статей */}
         <div className="card mt-8">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold">Статьи</h2>
+            <div>
+              <h2 className="text-lg font-semibold">Статьи</h2>
+              <p className="text-sm text-gray-600 mt-1">
+                💡 Кликните на статус, автора или PBN сайт для быстрого редактирования
+              </p>
+            </div>
             <Link href="/content/new" className="btn-secondary">➕ Новая статья</Link>
           </div>
           {filteredArticles.length === 0 ? (
@@ -603,36 +730,135 @@ export default function ContentPage() {
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Заголовок</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Категории</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Автор</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PBN сайт</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Статус</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Дата</th>
                     <th></th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredArticles.map(article => (
-                    <tr key={article.id}>
-                      <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
-                        <Link href={`/content/articles/${article.slug}`} className="text-blue-600 hover:underline">{article.title}</Link>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {Array.isArray(article.content_categories) && article.content_categories.map(cat => cat.name).join(', ')}
-                      </td>
-                                             <td className="px-6 py-4 whitespace-nowrap">
-                         <span className={
-                           article.statusarticles === 'published' ? 'inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800' :
-                           article.statusarticles === 'draft' ? 'inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800' :
-                           'inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800'
-                         }>
-                           {article.statusarticles}
-                         </span>
-                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{article.createdAt ? new Date(article.createdAt).toLocaleDateString() : '-'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button className="text-red-500 hover:underline text-xs mr-2" onClick={() => handleDeleteArticle(article.id)}>Удалить</button>
-                        <Link href={`/content/articles/${article.slug}`} className="text-blue-600 hover:underline text-xs">Подробнее</Link>
-                      </td>
-                    </tr>
-                  ))}
+                  {filteredArticles.map(article => {
+                    const isEditing = editingArticles[article.id]
+                    const updates = articleUpdates[article.id] || {}
+                    
+                    return (
+                      <tr key={article.id} className={isEditing ? 'bg-blue-50' : ''}>
+                        <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
+                          <Link href={`/content/articles/${article.slug}`} className="text-blue-600 hover:underline">{article.title}</Link>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {Array.isArray(article.content_categories) && article.content_categories.map(cat => cat.name).join(', ')}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {isEditing ? (
+                            <select
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              value={updates.content_author !== undefined ? updates.content_author : (article.content_author?.id || '')}
+                              onChange={e => updateArticleField(article.id, 'content_author', e.target.value || null)}
+                            >
+                              <option value="">Без автора</option>
+                              {authors.map(author => (
+                                <option key={author.id} value={author.id}>{author.name}</option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span className="cursor-pointer hover:text-blue-600" onClick={() => startEditingArticle(article.id)}>
+                              {article.content_author ? article.content_author.name : '-'}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {isEditing ? (
+                            <select
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              value={updates.pbn_site !== undefined ? updates.pbn_site : (article.pbn_site?.id || '')}
+                              onChange={e => updateArticleField(article.id, 'pbn_site', e.target.value || null)}
+                            >
+                              <option value="">Без привязки</option>
+                              {pbnSites.map(site => (
+                                <option key={site.id} value={site.id}>{site.name}</option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span className="cursor-pointer hover:text-blue-600" onClick={() => startEditingArticle(article.id)}>
+                              {article.pbn_site ? article.pbn_site.name : '-'}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {isEditing ? (
+                            <select
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              value={updates.statusarticles || article.statusarticles}
+                              onChange={e => updateArticleField(article.id, 'statusarticles', e.target.value)}
+                            >
+                              <option value="draft">Черновик</option>
+                              <option value="published">Опубликовано</option>
+                              <option value="archived">Архив</option>
+                              <option value="ai">AI генерация</option>
+                              <option value="processing">В обработке</option>
+                            </select>
+                          ) : (
+                            <span 
+                              className="cursor-pointer inline-flex px-2 py-1 text-xs font-semibold rounded-full hover:bg-opacity-80"
+                              onClick={() => startEditingArticle(article.id)}
+                              style={{
+                                backgroundColor: 
+                                  article.statusarticles === 'published' ? '#DEF7EC' :
+                                  article.statusarticles === 'draft' ? '#FEF3C7' :
+                                  article.statusarticles === 'archived' ? '#F3F4F6' :
+                                  article.statusarticles === 'ai' ? '#F3E8FF' :
+                                  article.statusarticles === 'processing' ? '#FED7AA' :
+                                  '#F3F4F6',
+                                color:
+                                  article.statusarticles === 'published' ? '#03543F' :
+                                  article.statusarticles === 'draft' ? '#92400E' :
+                                  article.statusarticles === 'archived' ? '#374151' :
+                                  article.statusarticles === 'ai' ? '#581C87' :
+                                  article.statusarticles === 'processing' ? '#C2410C' :
+                                  '#374151'
+                              }}
+                            >
+                              {article.statusarticles}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{article.createdAt ? new Date(article.createdAt).toLocaleDateString() : '-'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          {isEditing ? (
+                            <div className="flex space-x-2">
+                              <button 
+                                className={`text-xs ${savingArticles[article.id] ? 'text-gray-400 cursor-not-allowed' : 'text-green-600 hover:text-green-800'}`}
+                                onClick={() => !savingArticles[article.id] && saveArticleChanges(article.id)}
+                                disabled={savingArticles[article.id]}
+                              >
+                                {savingArticles[article.id] ? '⏳ Сохранение...' : '💾 Сохранить'}
+                              </button>
+                              <button 
+                                className="text-gray-600 hover:text-gray-800 text-xs"
+                                onClick={() => stopEditingArticle(article.id)}
+                                disabled={savingArticles[article.id]}
+                              >
+                                ❌ Отмена
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex space-x-2">
+                              <button 
+                                className="text-blue-600 hover:text-blue-800 text-xs"
+                                onClick={() => startEditingArticle(article.id)}
+                              >
+                                ✏️ Изменить
+                              </button>
+                              <button className="text-red-500 hover:underline text-xs" onClick={() => handleDeleteArticle(article.id)}>Удалить</button>
+                              <Link href={`/content/articles/${article.slug}`} className="text-blue-600 hover:underline text-xs">Подробнее</Link>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
