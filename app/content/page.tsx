@@ -37,8 +37,14 @@ interface PbnSite {
 
 interface Article {
   id: string
+  documentId: string
   title: string
   slug: string
+  content: string
+  excerpt: string
+  featured_image: string
+  meta_title: string
+  meta_description: string
   statusarticles: string
   createdAt: string
   content_categories: Category[]
@@ -69,11 +75,23 @@ export default function ContentPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>('all')
   const [selectedAuthor, setSelectedAuthor] = useState<string>('all')
   const [selectedPbnSite, setSelectedPbnSite] = useState<string>('all')
+  const [searchQuery, setSearchQuery] = useState<string>('')
+  const [sortBy, setSortBy] = useState<string>('createdAt')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
 
   // Состояния для редактирования статей
   const [editingArticles, setEditingArticles] = useState<{[key: string]: boolean}>({})
   const [articleUpdates, setArticleUpdates] = useState<{[key: string]: any}>({})
   const [savingArticles, setSavingArticles] = useState<{[key: string]: boolean}>({})
+
+  // Состояния для массовых операций
+  const [selectedArticles, setSelectedArticles] = useState<Set<string>>(new Set())
+  const [showBulkActions, setShowBulkActions] = useState(false)
+  const [bulkAction, setBulkAction] = useState<string>('')
+  const [bulkLoading, setBulkLoading] = useState(false)
+  const [showBulkModal, setShowBulkModal] = useState(false)
+  const [previewArticle, setPreviewArticle] = useState<Article | null>(null)
+  const [showPreviewModal, setShowPreviewModal] = useState(false)
 
   useEffect(() => {
     fetchData()
@@ -249,6 +267,180 @@ export default function ContentPage() {
     } finally {
       setSavingArticles(prev => ({ ...prev, [articleId]: false }))
     }
+  }
+
+  // Функции для массовых операций
+  function toggleArticleSelection(articleId: string) {
+    const newSelected = new Set(selectedArticles)
+    if (newSelected.has(articleId)) {
+      newSelected.delete(articleId)
+    } else {
+      newSelected.add(articleId)
+    }
+    setSelectedArticles(newSelected)
+    setShowBulkActions(newSelected.size > 0)
+  }
+
+  function selectAllArticles() {
+    const filteredArticles = getFilteredArticles()
+    const allIds = filteredArticles.map(art => art.id)
+    setSelectedArticles(new Set(allIds))
+    setShowBulkActions(true)
+  }
+
+  function clearSelection() {
+    setSelectedArticles(new Set())
+    setShowBulkActions(false)
+  }
+
+  function getFilteredArticles() {
+    let filtered = articles.filter(article => {
+      // Поиск по заголовку
+      const searchMatch = !searchQuery || 
+        article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        article.slug.toLowerCase().includes(searchQuery.toLowerCase())
+      
+      // Фильтр по категории
+      const categoryMatch = selectedCategory === 'all' || 
+        (Array.isArray(article.content_categories) && 
+         article.content_categories.some(cat => cat.id.toString() === selectedCategory))
+      
+      // Фильтр по статусу
+      const statusMatch = selectedStatus === 'all' || 
+        article.statusarticles === selectedStatus
+      
+      // Фильтр по автору
+      const authorMatch = selectedAuthor === 'all' || 
+        (article.content_author && article.content_author.id.toString() === selectedAuthor) ||
+        (selectedAuthor === 'none' && !article.content_author)
+      
+      // Фильтр по PBN сайту
+      const pbnSiteMatch = selectedPbnSite === 'all' || 
+        (article.pbn_site && article.pbn_site.id.toString() === selectedPbnSite) ||
+        (selectedPbnSite === 'none' && !article.pbn_site)
+      
+      return searchMatch && categoryMatch && statusMatch && authorMatch && pbnSiteMatch
+    })
+
+    // Сортировка
+    filtered.sort((a, b) => {
+      let aValue: any, bValue: any
+      
+      switch (sortBy) {
+        case 'title':
+          aValue = a.title.toLowerCase()
+          bValue = b.title.toLowerCase()
+          break
+        case 'status':
+          aValue = a.statusarticles
+          bValue = b.statusarticles
+          break
+        case 'author':
+          aValue = a.content_author?.name || ''
+          bValue = b.content_author?.name || ''
+          break
+        case 'createdAt':
+        default:
+          aValue = new Date(a.createdAt).getTime()
+          bValue = new Date(b.createdAt).getTime()
+          break
+      }
+      
+      if (sortOrder === 'asc') {
+        return aValue > bValue ? 1 : -1
+      } else {
+        return aValue < bValue ? 1 : -1
+      }
+    })
+
+    return filtered
+  }
+
+  async function executeBulkAction() {
+    if (selectedArticles.size === 0 || !bulkAction) return
+
+    setBulkLoading(true)
+    try {
+      const selectedArticlesList = articles.filter(art => selectedArticles.has(art.id))
+      
+      switch (bulkAction) {
+        case 'delete':
+          // Удаляем статьи
+          await Promise.all(
+            selectedArticlesList.map(art => 
+              axios.delete(`/api/content/articles/${art.documentId}`)
+            )
+          )
+          break
+          
+        case 'status':
+          // Изменяем статус
+          const newStatus = prompt('Введите новый статус (draft/published/archived/ai/processing):')
+          if (newStatus && ['draft', 'published', 'archived', 'ai', 'processing'].includes(newStatus)) {
+            await Promise.all(
+              selectedArticlesList.map(art => 
+                axios.put(`/api/content/articles/${art.documentId}`, { 
+                  data: { statusarticles: newStatus } 
+                })
+              )
+            )
+          } else {
+            alert('Неверный статус!')
+            return
+          }
+          break
+          
+        case 'category':
+          // Изменяем категорию
+          const categoryId = prompt('Введите ID категории:')
+          if (categoryId) {
+            await Promise.all(
+              selectedArticlesList.map(art => 
+                axios.put(`/api/content/articles/${art.documentId}`, { 
+                  data: { content_categories: [{ id: categoryId }] } 
+                })
+              )
+            )
+          } else {
+            alert('ID категории не указан!')
+            return
+          }
+          break
+          
+        case 'author':
+          // Изменяем автора
+          const authorId = prompt('Введите ID автора:')
+          if (authorId) {
+            await Promise.all(
+              selectedArticlesList.map(art => 
+                axios.put(`/api/content/articles/${art.documentId}`, { 
+                  data: { content_author: { id: authorId } } 
+                })
+              )
+            )
+          } else {
+            alert('ID автора не указан!')
+            return
+          }
+          break
+      }
+      
+      // Обновляем данные
+      await fetchData()
+      clearSelection()
+      setShowBulkModal(false)
+      setBulkAction('')
+      
+    } catch (error: any) {
+      alert('Ошибка выполнения массовой операции: ' + (error.response?.data?.error || error.message))
+    } finally {
+      setBulkLoading(false)
+    }
+  }
+
+  function openPreview(article: Article) {
+    setPreviewArticle(article)
+    setShowPreviewModal(true)
   }
 
   // Фильтрация статей
@@ -448,9 +640,38 @@ export default function ContentPage() {
           </div>
         </div>
 
-        {/* Фильтры */}
+        {/* Поиск и фильтры */}
         <div className="card mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-6">
+          {/* Поиск */}
+          <div className="mb-6">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="🔍 Поиск по заголовку или slug..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="w-full px-4 py-3 pl-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Фильтры и сортировка */}
+          <div className="grid grid-cols-1 md:grid-cols-8 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Категория</label>
               <select
@@ -505,6 +726,30 @@ export default function ContentPage() {
                 {pbnSites.map(site => (
                   <option key={site.id} value={site.id}>{site.name}</option>
                 ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Сортировка</label>
+              <select
+                value={sortBy}
+                onChange={e => setSortBy(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="createdAt">По дате</option>
+                <option value="title">По заголовку</option>
+                <option value="status">По статусу</option>
+                <option value="author">По автору</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Порядок</label>
+              <select
+                value={sortOrder}
+                onChange={e => setSortOrder(e.target.value as 'asc' | 'desc')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="desc">По убыванию</option>
+                <option value="asc">По возрастанию</option>
               </select>
             </div>
             <div className="flex items-end">
@@ -719,7 +964,40 @@ export default function ContentPage() {
                 💡 Кликните на статус, автора или PBN сайт для быстрого редактирования
               </p>
             </div>
-            <Link href="/content/new" className="btn-secondary">➕ Новая статья</Link>
+            <div className="flex space-x-3">
+              {showBulkActions && (
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-600">
+                    Выбрано: {selectedArticles.size}
+                  </span>
+                  <select
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={bulkAction}
+                    onChange={e => setBulkAction(e.target.value)}
+                  >
+                    <option value="">Выберите действие</option>
+                    <option value="delete">🗑️ Удалить</option>
+                    <option value="status">📝 Изменить статус</option>
+                    <option value="category">📂 Изменить категорию</option>
+                    <option value="author">👤 Изменить автора</option>
+                  </select>
+                  <button
+                    onClick={() => setShowBulkModal(true)}
+                    disabled={!bulkAction}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm"
+                  >
+                    Применить
+                  </button>
+                  <button
+                    onClick={clearSelection}
+                    className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm"
+                  >
+                    Отменить
+                  </button>
+                </div>
+              )}
+              <Link href="/content/new" className="btn-secondary">➕ Новая статья</Link>
+            </div>
           </div>
           {filteredArticles.length === 0 ? (
             <div className="text-gray-400 text-sm py-6 text-center">Нет статей</div>
@@ -728,6 +1006,14 @@ export default function ContentPage() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <input
+                        type="checkbox"
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        checked={selectedArticles.size === filteredArticles.length && filteredArticles.length > 0}
+                        onChange={selectAllArticles}
+                      />
+                    </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Заголовок</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Категории</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Автор</th>
@@ -744,6 +1030,14 @@ export default function ContentPage() {
                     
                     return (
                       <tr key={article.id} className={isEditing ? 'bg-blue-50' : ''}>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <input
+                            type="checkbox"
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            checked={selectedArticles.has(article.id)}
+                            onChange={() => toggleArticleSelection(article.id)}
+                          />
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
                           <Link href={`/content/articles/${article.slug}`} className="text-blue-600 hover:underline">{article.title}</Link>
                         </td>
@@ -851,6 +1145,12 @@ export default function ContentPage() {
                               >
                                 ✏️ Изменить
                               </button>
+                              <button 
+                                className="text-green-600 hover:text-green-800 text-xs"
+                                onClick={() => openPreview(article)}
+                              >
+                                👁️ Просмотр
+                              </button>
                               <button className="text-red-500 hover:underline text-xs" onClick={() => handleDeleteArticle(article.id)}>Удалить</button>
                               <Link href={`/content/articles/${article.slug}`} className="text-blue-600 hover:underline text-xs">Подробнее</Link>
                             </div>
@@ -864,6 +1164,200 @@ export default function ContentPage() {
             </div>
           )}
         </div>
+
+        {/* Модальное окно для массовых операций */}
+        {showBulkModal && (
+          <Modal
+            isOpen={showBulkModal}
+            onClose={() => setShowBulkModal(false)}
+          >
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Подтверждение массовой операции</h3>
+              <div className="space-y-4">
+                <p className="text-gray-600">
+                  Вы уверены, что хотите выполнить действие "{bulkAction}" для {selectedArticles.size} выбранных статей?
+                </p>
+              
+              {bulkAction === 'delete' && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <p className="text-red-800 font-medium">⚠️ Внимание!</p>
+                  <p className="text-red-700 text-sm mt-1">
+                    Это действие нельзя отменить. Все выбранные статьи будут удалены безвозвратно.
+                  </p>
+                </div>
+              )}
+              
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowBulkModal(false)}
+                  className="btn-secondary"
+                >
+                  Отмена
+                </button>
+                <button
+                  onClick={executeBulkAction}
+                  disabled={bulkLoading}
+                  className="btn-primary disabled:opacity-50"
+                >
+                  {bulkLoading ? '⏳ Выполнение...' : 'Подтвердить'}
+                </button>
+              </div>
+            </div>
+          </div>
+          </Modal>
+        )}
+
+        {/* Модальное окно предварительного просмотра */}
+        {showPreviewModal && previewArticle && (
+          <Modal
+            isOpen={showPreviewModal}
+            onClose={() => setShowPreviewModal(false)}
+          >
+            <div className="p-6 max-w-4xl w-full">
+              <div className="flex justify-between items-start mb-6">
+                <h3 className="text-xl font-semibold text-gray-900">Предварительный просмотр</h3>
+                <div className="flex space-x-2">
+                  <Link 
+                    href={`/content/articles/${previewArticle.slug}`}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                  >
+                    ✏️ Редактировать
+                  </Link>
+                  <button
+                    onClick={() => setShowPreviewModal(false)}
+                    className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm"
+                  >
+                    Закрыть
+                  </button>
+                </div>
+              </div>
+
+              <div className="prose max-w-none">
+                <h1 className="text-3xl font-bold text-gray-900 mb-4">{previewArticle.title}</h1>
+                
+                {/* Мета-информация */}
+                <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <span className="font-medium text-gray-700">Статус:</span>
+                      <div className="mt-1">
+                        <span 
+                          className="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
+                          style={{
+                            backgroundColor: 
+                              previewArticle.statusarticles === 'published' ? '#DEF7EC' :
+                              previewArticle.statusarticles === 'draft' ? '#FEF3C7' :
+                              previewArticle.statusarticles === 'archived' ? '#F3F4F6' :
+                              previewArticle.statusarticles === 'ai' ? '#F3E8FF' :
+                              previewArticle.statusarticles === 'processing' ? '#FED7AA' :
+                              '#F3F4F6',
+                            color:
+                              previewArticle.statusarticles === 'published' ? '#03543F' :
+                              previewArticle.statusarticles === 'draft' ? '#92400E' :
+                              previewArticle.statusarticles === 'archived' ? '#374151' :
+                              previewArticle.statusarticles === 'ai' ? '#581C87' :
+                              previewArticle.statusarticles === 'processing' ? '#C2410C' :
+                              '#374151'
+                          }}
+                        >
+                          {previewArticle.statusarticles}
+                        </span>
+                      </div>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">Автор:</span>
+                      <div className="mt-1 text-gray-600">
+                        {previewArticle.content_author ? previewArticle.content_author.name : 'Не указан'}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">PBN сайт:</span>
+                      <div className="mt-1 text-gray-600">
+                        {previewArticle.pbn_site ? previewArticle.pbn_site.name : 'Не привязан'}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">Дата:</span>
+                      <div className="mt-1 text-gray-600">
+                        {new Date(previewArticle.createdAt).toLocaleDateString('ru-RU')}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Категории */}
+                {previewArticle.content_categories && previewArticle.content_categories.length > 0 && (
+                  <div className="mb-6">
+                    <span className="font-medium text-gray-700">Категории:</span>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {previewArticle.content_categories.map(cat => (
+                        <span 
+                          key={cat.id} 
+                          className="px-3 py-1 text-sm rounded-full"
+                          style={{ backgroundColor: cat.color + '20', color: cat.color }}
+                        >
+                          {cat.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Краткое описание */}
+                {previewArticle.excerpt && (
+                  <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+                    <p className="text-gray-700 italic">{previewArticle.excerpt}</p>
+                  </div>
+                )}
+
+                {/* Изображение */}
+                {previewArticle.featured_image && (
+                  <div className="mb-6">
+                    <img 
+                      src={previewArticle.featured_image} 
+                      alt={previewArticle.title}
+                      className="w-full h-64 object-cover rounded-lg"
+                    />
+                  </div>
+                )}
+
+                {/* Содержание */}
+                <div className="border-t pt-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Содержание статьи</h3>
+                  <div 
+                    className="text-gray-800 leading-relaxed prose max-w-none"
+                    dangerouslySetInnerHTML={{ __html: previewArticle.content }}
+                  />
+                </div>
+
+                {/* SEO информация */}
+                <div className="border-t pt-6 mt-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">SEO информация</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <span className="font-medium text-gray-700">Meta Title:</span>
+                      <div className="mt-1 text-sm text-gray-600 font-mono bg-gray-100 p-2 rounded">
+                        {previewArticle.meta_title || 'Не указан'}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">Meta Description:</span>
+                      <div className="mt-1 text-sm text-gray-600 font-mono bg-gray-100 p-2 rounded">
+                        {previewArticle.meta_description || 'Не указан'}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">Slug:</span>
+                      <div className="mt-1 text-sm text-gray-600 font-mono bg-gray-100 p-2 rounded">
+                        {previewArticle.slug || 'Не указан'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Modal>
+        )}
       </main>
     </div>
   )
