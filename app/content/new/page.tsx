@@ -116,14 +116,10 @@ export default function NewArticlePage() {
       const payload = {
         ...formData,
         content_categories: formData.content_categories.length > 0 ? 
-          formData.content_categories.map(id => ({ id })) : 
+          formData.content_categories : 
           null,
-        content_author: formData.content_author ? 
-          { id: formData.content_author } : 
-          null,
-        pbn_site: formData.pbn_site ? 
-          { id: formData.pbn_site } : 
-          null
+        content_author: formData.content_author || null,
+        pbn_site: formData.pbn_site || null
       }
       
       await axios.post('/api/content/articles', { data: payload })
