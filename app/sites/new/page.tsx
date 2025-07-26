@@ -153,22 +153,22 @@ export default function NewSitePage() {
         }
       }
 
-      const response = await fetch('/api/sites/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(siteData)
-      })
+             const response = await fetch('/api/sites', {
+         method: 'POST',
+         headers: {
+           'Content-Type': 'application/json',
+         },
+         body: JSON.stringify(siteData)
+       })
 
       const result = await response.json()
 
-      if (response.ok) {
-        alert(`✅ Сайт "${result.site.siteName}" создан успешно!\n\nДомен: ${result.site.domain}\nТип: ${result.site.type}\nСтатус: ${result.site.status}`)
-        
-        // Redirect to sites management page
-        window.location.href = '/sites/manage'
-      } else {
+             if (response.ok) {
+         alert(`✅ Сайт "${result.site.name}" создан успешно!\n\nДомен: ${result.site.domain}\nТип: ${result.site.type}\nСтатус: ${result.site.status}`)
+         
+         // Redirect to sites management page
+         window.location.href = '/sites'
+       } else {
         throw new Error(result.error || 'Ошибка создания сайта')
       }
     } catch (error) {

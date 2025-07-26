@@ -135,6 +135,11 @@ export const strapiAPI = {
       documentId: item.documentId,
       name: item.name,
       siteName: item.siteName || item.name, // Добавляем siteName для совместимости
+      domain: item.domain,
+      template: item.template,
+      statuspbn: item.statuspbn,
+      description: item.description,
+      config: item.config,
       url: item.url,
       status: item.status,
       createdAt: item.createdAt,

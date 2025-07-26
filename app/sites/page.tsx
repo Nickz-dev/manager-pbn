@@ -1,35 +1,52 @@
+'use client'
+
 import Link from 'next/link'
+import { useState, useEffect } from 'react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { StatsCard } from '@/components/ui/StatsCard'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 
-// Mock data - later will come from database
-const mockSites = [
-  {
-    id: '1',
-    name: 'casino-blog.com',
-    domain: 'casino-blog.com',
-    siteType: 'pbn' as const,
-    status: 'active' as const,
-    vpsId: 'vps1',
-    createdAt: '2024-01-15T10:00:00Z',
-    lastBuild: '2024-01-20T15:30:00Z'
-  },
-  {
-    id: '2', 
-    name: 'best-casino.net',
-    domain: 'best-casino.net',
-    siteType: 'brand' as const,
-    status: 'building' as const,
-    vpsId: 'vps2',
-    createdAt: '2024-01-18T14:00:00Z',
-    lastBuild: null
-  }
-]
+interface Site {
+  id: string
+  documentId: string
+  name: string
+  domain: string
+  template: string
+  statuspbn: string
+  createdAt: string
+  updatedAt: string
+}
 
 export default function SitesPage() {
-  const activeSites = mockSites.filter(site => site.status === 'active').length
-  const buildingSites = mockSites.filter(site => site.status === 'building').length
+  const [sites, setSites] = useState<Site[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetchSites()
+  }, [])
+
+  const fetchSites = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/sites')
+      const data = await response.json()
+      
+      if (data.success) {
+        setSites(data.sites)
+      } else {
+        setError('Failed to fetch sites')
+      }
+    } catch (err) {
+      setError('Error loading sites')
+      console.error('Error fetching sites:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const activeSites = sites.filter(site => site.statuspbn === 'deployed').length
+  const buildingSites = sites.filter(site => site.statuspbn === 'building').length
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
@@ -75,7 +92,7 @@ export default function SitesPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <StatsCard
             title="Всего сайтов"
-            value={mockSites.length}
+            value={sites.length}
             icon={
               <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center">
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -111,7 +128,7 @@ export default function SitesPage() {
           />
           <StatsCard
             title="PBN сайты"
-            value={mockSites.filter(s => s.siteType === 'pbn').length}
+            value={sites.filter(s => s.template.includes('casino') || s.template === 'blog').length}
             icon={
               <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center">
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -141,88 +158,115 @@ export default function SitesPage() {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50/50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Сайт
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Тип
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Статус
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    VPS
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Создан
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Действия
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white/50 divide-y divide-gray-200">
-                {mockSites.map((site) => (
-                  <tr key={site.id} className="hover:bg-blue-50/50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 w-10 h-10">
-                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                            site.siteType === 'pbn' 
-                              ? 'bg-gradient-to-r from-purple-500 to-pink-600' 
-                              : 'bg-gradient-to-r from-emerald-500 to-teal-600'
-                          }`}>
-                            <span className="text-white font-semibold text-sm">
-                              {site.siteType === 'pbn' ? 'P' : 'B'}
-                            </span>
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="mt-2 text-gray-600">Загрузка сайтов...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center py-8">
+              <p className="text-red-600">{error}</p>
+              <button 
+                onClick={fetchSites}
+                className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                Попробовать снова
+              </button>
+            </div>
+          ) : sites.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-600">Сайты не найдены</p>
+              <Link 
+                href="/sites/new"
+                className="mt-2 inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                Создать первый сайт
+              </Link>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50/50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Сайт
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Тип
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Статус
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Домен
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Создан
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Действия
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white/50 divide-y divide-gray-200">
+                  {sites.map((site) => (
+                    <tr key={site.id} className="hover:bg-blue-50/50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 w-10 h-10">
+                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                              site.template.includes('casino') || site.template === 'blog'
+                                ? 'bg-gradient-to-r from-purple-500 to-pink-600' 
+                                : 'bg-gradient-to-r from-emerald-500 to-teal-600'
+                            }`}>
+                              <span className="text-white font-semibold text-sm">
+                                {site.template.includes('casino') || site.template === 'blog' ? 'P' : 'B'}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">{site.name}</div>
+                            <div className="text-sm text-gray-500">ID: {site.documentId}</div>
                           </div>
                         </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{site.name}</div>
-                          <div className="text-sm text-gray-500">{site.domain}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        site.siteType === 'pbn' 
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        site.template.includes('casino') || site.template === 'blog'
                           ? 'bg-purple-100 text-purple-800' 
                           : 'bg-emerald-100 text-emerald-800'
                       }`}>
-                        {site.siteType === 'pbn' ? 'PBN' : 'Brand'}
+                        {site.template.includes('casino') || site.template === 'blog' ? 'PBN' : 'Brand'}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <StatusBadge status={site.status} />
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {site.vpsId}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(site.createdAt).toLocaleDateString('ru-RU')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex justify-end space-x-2">
-                        <button className="text-indigo-600 hover:text-indigo-900">
-                          Редактировать
-                        </button>
-                        <button className="text-green-600 hover:text-green-900">
-                          Пересобрать
-                        </button>
-                        <button className="text-red-600 hover:text-red-900">
-                          Удалить
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <StatusBadge status={site.statuspbn} />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {site.domain}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(site.createdAt).toLocaleDateString('ru-RU')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex justify-end space-x-2">
+                          <button className="text-indigo-600 hover:text-indigo-900">
+                            Редактировать
+                          </button>
+                          <button className="text-green-600 hover:text-green-900">
+                            Пересобрать
+                          </button>
+                          <button className="text-red-600 hover:text-red-900">
+                            Удалить
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </main>
     </div>
