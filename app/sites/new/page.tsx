@@ -28,6 +28,10 @@ export default function NewSitePage() {
   const [articles, setArticles] = useState<any[]>([])
   const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [categories, setCategories] = useState<any[]>([])
+  const [selectedAuthor, setSelectedAuthor] = useState<string>('')
+  const [authors, setAuthors] = useState<any[]>([])
+  const [selectedSite, setSelectedSite] = useState<string>('')
+  const [pbnSites, setPbnSites] = useState<any[]>([])
 
   // Загрузка статей и категорий
   useEffect(() => {
@@ -48,9 +52,27 @@ export default function NewSitePage() {
           }
         })
         .catch(() => setCategories([]))
+      fetch('/api/content/authors')
+        .then(res => res.json())
+        .then(data => {
+          if (data && Array.isArray(data.authors)) {
+            setAuthors(data.authors)
+          }
+        })
+        .catch(() => setAuthors([]))
+      fetch('/api/sites')
+        .then(res => res.json())
+        .then(data => {
+          if (data && Array.isArray(data.sites)) {
+            setPbnSites(data.sites)
+          }
+        })
+        .catch(() => setPbnSites([]))
     } else {
       setArticles([])
       setCategories([])
+      setAuthors([])
+      setPbnSites([])
     }
   }, [siteType])
 
@@ -65,15 +87,32 @@ export default function NewSitePage() {
     }
   }, [siteType])
 
-  // Фильтрация статей по категории и по тому, что статья не привязана к другому сайту
+  // Фильтрация статей по категории, автору, сайту и по тому, что статья не привязана к другому сайту
   const filteredArticles = articles.filter(article => {
     // Только статьи без привязки к сайту
     if (!Array.isArray(article.pbn_sites) || article.pbn_sites.length > 0) return false;
-    // Если категория не выбрана, показываем все такие статьи
-    if (!selectedCategory || selectedCategory === '') return true;
-    // Если выбрана категория, фильтруем по совпадению documentId
-    return Array.isArray(article.content_categories) &&
-      article.content_categories.some((cat: any) => String(cat.documentId) === String(selectedCategory));
+    
+    // Фильтр по категории
+    if (selectedCategory && selectedCategory !== '') {
+      const hasCategory = Array.isArray(article.content_categories) &&
+        article.content_categories.some((cat: any) => String(cat.documentId) === String(selectedCategory));
+      if (!hasCategory) return false;
+    }
+    
+    // Фильтр по автору
+    if (selectedAuthor && selectedAuthor !== '') {
+      const articleAuthorId = article.content_author?.documentId || article.content_author?.id;
+      if (String(articleAuthorId) !== String(selectedAuthor)) return false;
+    }
+    
+    // Фильтр по сайту (статьи, которые уже привязаны к выбранному сайту)
+    if (selectedSite && selectedSite !== '') {
+      const isAttachedToSelectedSite = Array.isArray(article.pbn_sites) &&
+        article.pbn_sites.some((site: any) => String(site.documentId || site.id) === String(selectedSite));
+      if (!isAttachedToSelectedSite) return false;
+    }
+    
+    return true;
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -462,33 +501,77 @@ export default function NewSitePage() {
             </div>
           </div>
 
-          {/* Блок выбора статей и фильтра по категориям (только для PBN) */}
+          {/* Блок выбора статей и фильтров (только для PBN) */}
           {siteType === 'pbn' && (
             <div className="card">
               <h3 className="text-lg font-semibold text-gray-900 mb-6">Выбор статей для сайта</h3>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Фильтр по категории</label>
-                <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={selectedCategory}
-                  onChange={e => setSelectedCategory(e.target.value)}
-                >
-                  <option value="">Все категории</option>
-                  {categories.map((cat: any) => (
-                    <option key={cat.documentId || cat.id} value={cat.documentId || cat.id}>{cat.name}</option>
-                  ))}
-                </select>
+              
+              {/* Фильтры */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Фильтр по категории</label>
+                  <select
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={selectedCategory}
+                    onChange={e => setSelectedCategory(e.target.value)}
+                  >
+                    <option value="">Все категории</option>
+                    {categories.map((cat: any) => (
+                      <option key={cat.documentId || cat.id} value={cat.documentId || cat.id}>{cat.name}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Фильтр по автору</label>
+                  <select
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={selectedAuthor}
+                    onChange={e => setSelectedAuthor(e.target.value)}
+                  >
+                    <option value="">Все авторы</option>
+                    {authors.map((author: any) => (
+                      <option key={author.documentId || author.id} value={author.documentId || author.id}>{author.name}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Фильтр по сайту</label>
+                  <select
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={selectedSite}
+                    onChange={e => setSelectedSite(e.target.value)}
+                  >
+                    <option value="">Все сайты</option>
+                    {pbnSites.map((site: any) => (
+                      <option key={site.documentId || site.id} value={site.documentId || site.id}>{site.siteName || site.name}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
+              
+              {/* Счетчик выбранных статей */}
+              <div className="mb-4 flex justify-between items-center">
+                <span className="text-sm text-gray-600">
+                  Найдено статей: {filteredArticles.length}
+                </span>
+                <span className="text-sm text-blue-600 font-medium">
+                  Выбрано: {selectedArticles.length}
+                </span>
+              </div>
+              
+              {/* Список статей */}
               <div className="max-h-64 overflow-y-auto border rounded-lg p-2 bg-white">
                 {filteredArticles.length === 0 ? (
-                  <div className="text-gray-500 text-sm">Нет доступных статей для выбора</div>
+                  <div className="text-gray-500 text-sm text-center py-4">Нет доступных статей для выбора</div>
                 ) : (
-                  <ul className="grid grid-cols-1 md:grid-cols-2 gap-2 divide-y-0">
+                  <ul className="space-y-2">
                     {filteredArticles.map(article => (
-                      <li key={article.id} className="flex items-center py-2 border-b border-gray-100 last:border-b-0">
+                      <li key={article.id} className="flex items-start py-3 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 rounded-lg px-2">
                         <input
                           type="checkbox"
-                          className="mr-3"
+                          className="mt-1 mr-3"
                           checked={selectedArticles.includes(article.id)}
                           onChange={e => {
                             if (e.target.checked) {
@@ -498,15 +581,62 @@ export default function NewSitePage() {
                             }
                           }}
                         />
-                        <div>
-                          <div className="font-medium text-gray-900">{article.title}</div>
-                          <div className="text-xs text-gray-500">{Array.isArray(article.content_categories) && article.content_categories.map((cat: any) => cat.name).join(', ')}</div>
+                        <div className="flex-1">
+                          <div className="font-medium text-gray-900 text-sm">{article.title}</div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            {Array.isArray(article.content_categories) && article.content_categories.length > 0 && (
+                              <span className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded mr-2">
+                                {article.content_categories.map((cat: any) => cat.name).join(', ')}
+                              </span>
+                            )}
+                            {article.content_author && (
+                              <span className="inline-block bg-green-100 text-green-800 px-2 py-1 rounded mr-2">
+                                {article.content_author.name}
+                              </span>
+                            )}
+                            {article.statusarticles && (
+                              <span className={`inline-block px-2 py-1 rounded ${
+                                article.statusarticles === 'published' ? 'bg-green-100 text-green-800' :
+                                article.statusarticles === 'ai' ? 'bg-purple-100 text-purple-800' :
+                                article.statusarticles === 'draft' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {article.statusarticles === 'published' ? 'Опубликовано' :
+                                 article.statusarticles === 'ai' ? 'AI Генерация' :
+                                 article.statusarticles === 'draft' ? 'Черновик' :
+                                 article.statusarticles}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </li>
                     ))}
                   </ul>
                 )}
               </div>
+              
+              {/* Кнопки управления выбором */}
+              {filteredArticles.length > 0 && (
+                <div className="mt-4 flex space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const allIds = filteredArticles.map(article => article.id)
+                      setSelectedArticles(allIds)
+                    }}
+                    className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                  >
+                    Выбрать все
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedArticles([])}
+                    className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                  >
+                    Снять выбор
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
