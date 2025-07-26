@@ -163,12 +163,35 @@ export default function NewSitePage() {
 
       const result = await response.json()
 
-             if (response.ok) {
-         alert(`✅ Сайт "${result.site.name}" создан успешно!\n\nДомен: ${result.site.domain}\nТип: ${result.site.type}\nСтатус: ${result.site.status}`)
-         
-         // Redirect to sites management page
-         window.location.href = '/sites'
-       } else {
+                   if (response.ok) {
+        const siteId = result.site.id
+        
+        // Запускаем пайплайн сборки
+        try {
+          console.log('🚀 Starting build pipeline...')
+          const buildResponse = await fetch('/api/sites/build', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ siteId })
+          })
+          
+          const buildResult = await buildResponse.json()
+          
+          if (buildResponse.ok) {
+            alert(`✅ Сайт "${result.site.name}" создан и собран успешно!\n\nДомен: ${result.site.domain}\nТип: ${result.site.type}\nСтатус: Развернут\n\n🌐 Предпросмотр: ${buildResult.buildUrl}`)
+          } else {
+            alert(`✅ Сайт "${result.site.name}" создан успешно!\n\n⚠️ Ошибка сборки: ${buildResult.error}\n\nДомен: ${result.site.domain}\nТип: ${result.site.type}\nСтатус: Черновик`)
+          }
+        } catch (buildError) {
+          console.error('Build pipeline error:', buildError)
+          alert(`✅ Сайт "${result.site.name}" создан успешно!\n\n⚠️ Ошибка сборки: ${buildError}\n\nДомен: ${result.site.domain}\nТип: ${result.site.type}\nСтатус: Черновик`)
+        }
+        
+        // Redirect to sites management page
+        window.location.href = '/sites'
+      } else {
         throw new Error(result.error || 'Ошибка создания сайта')
       }
     } catch (error) {

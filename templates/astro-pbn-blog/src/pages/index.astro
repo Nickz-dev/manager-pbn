@@ -1,0 +1,223 @@
+---
+import siteData from '../data/site-data.json';
+
+const { site, articles, categories, authors } = siteData;
+
+// Получаем последние статьи
+const latestArticles = articles
+  .filter(article => article.publishedAt)
+  .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+  .slice(0, 6);
+
+// Получаем популярные категории
+const popularCategories = categories.slice(0, 5);
+---
+
+<!DOCTYPE html>
+<html lang={site.config?.language || 'en'}>
+<head>
+  <meta charset="utf-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="viewport" content="width=device-width">
+  <title>{site.name}</title>
+  <meta name="description" content={site.description}>
+  
+  <!-- Google Analytics -->
+  {site.analytics?.googleAnalytics && (
+    <script async src={`https://www.googletagmanager.com/gtag/js?id=${site.analytics.googleAnalytics}`}></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', '{site.analytics.googleAnalytics}');
+    </script>
+  )}
+  
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: {site.config?.theme === 'dark' ? '#1a1a1a' : '#f9fafb'};
+      color: {site.config?.theme === 'dark' ? '#ffffff' : '#222'};
+      margin: 0;
+      line-height: 1.6;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+    
+    .header {
+      background: {site.config?.theme === 'dark' ? '#2a2a2a' : '#ffffff'};
+      border-bottom: 1px solid {site.config?.theme === 'dark' ? '#444' : '#e5e7eb'};
+      padding: 1rem 0;
+      margin-bottom: 2rem;
+    }
+    
+    .header h1 {
+      margin: 0;
+      font-size: 2rem;
+      color: {site.config?.theme === 'dark' ? '#ffffff' : '#1f2937'};
+    }
+    
+    .header p {
+      margin: 0.5rem 0 0 0;
+      color: {site.config?.theme === 'dark' ? '#d1d5db' : '#6b7280'};
+    }
+    
+    .main {
+      padding: 2rem 0;
+    }
+    
+    .articles-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+      margin-bottom: 3rem;
+    }
+    
+    .article-card {
+      background: {site.config?.theme === 'dark' ? '#2a2a2a' : '#ffffff'};
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px {site.config?.theme === 'dark' ? '#00000040' : '#00000010'};
+      transition: transform 0.2s ease;
+    }
+    
+    .article-card:hover {
+      transform: translateY(-4px);
+    }
+    
+    .article-image {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+    }
+    
+    .article-content {
+      padding: 1.5rem;
+    }
+    
+    .article-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem 0;
+      color: {site.config?.theme === 'dark' ? '#ffffff' : '#1f2937'};
+    }
+    
+    .article-excerpt {
+      color: {site.config?.theme === 'dark' ? '#d1d5db' : '#6b7280'};
+      margin-bottom: 1rem;
+    }
+    
+    .article-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.875rem;
+      color: {site.config?.theme === 'dark' ? '#9ca3af' : '#9ca3af'};
+    }
+    
+    .categories-section {
+      margin-bottom: 3rem;
+    }
+    
+    .categories-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+    
+    .category-card {
+      background: {site.config?.theme === 'dark' ? '#2a2a2a' : '#ffffff'};
+      padding: 1.5rem;
+      border-radius: 8px;
+      text-align: center;
+      box-shadow: 0 2px 4px {site.config?.theme === 'dark' ? '#00000020' : '#00000008'};
+    }
+    
+    .category-name {
+      font-weight: 600;
+      color: {site.config?.theme === 'dark' ? '#ffffff' : '#1f2937'};
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: {site.config?.theme === 'dark' ? '#9ca3af' : '#6b7280'};
+    }
+    
+    .empty-state h2 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="container">
+      <h1>{site.name}</h1>
+      <p>{site.description}</p>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="container">
+      {latestArticles.length > 0 ? (
+        <>
+          <h2 style="font-size: 1.5rem; margin-bottom: 1em;">Latest Articles</h2>
+          <div class="articles-grid">
+            {latestArticles.map(article => (
+              <article class="article-card">
+                <a href={`/articles/${article.slug}`} style="text-decoration: none; color: inherit;">
+                  {article.featured_image && (
+                    <img 
+                      src={article.featured_image} 
+                      alt={article.title}
+                      class="article-image"
+                      loading="lazy"
+                    />
+                  )}
+                  <div class="article-content">
+                    <h3 class="article-title">{article.title}</h3>
+                    {article.excerpt && (
+                      <p class="article-excerpt">{article.excerpt}</p>
+                    )}
+                    <div class="article-meta">
+                      <span>
+                        {article.author?.name || 'Anonymous'}
+                      </span>
+                      <span>
+                        {new Date(article.publishedAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                </a>
+              </article>
+            ))}
+          </div>
+        </>
+      ) : (
+        <div class="empty-state">
+          <h2>No Articles Yet</h2>
+          <p>Articles will appear here once they are published.</p>
+        </div>
+      )}
+
+      {popularCategories.length > 0 && (
+        <div class="categories-section">
+          <h2 style="font-size: 1.5rem; margin-bottom: 1em;">Popular Categories</h2>
+          <div class="categories-grid">
+            {popularCategories.map(category => (
+              <div class="category-card">
+                <div class="category-name">{category.name}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  </main>
+</body>
+</html> 

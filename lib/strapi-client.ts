@@ -152,4 +152,47 @@ export const strapiAPI = {
     const res = await strapi.post('/pbn-sites', { data })
     return { id: res.data.data.id, ...res.data.data.attributes }
   },
+
+  async getPbnSiteById(id: string) {
+    const res = await strapi.get(`/pbn-sites/${id}`)
+    return { id: res.data.data.id, ...res.data.data.attributes }
+  },
+
+  async updatePbnSite(id: string, data: any) {
+    const res = await strapi.put(`/pbn-sites/${id}`, { data })
+    return { id: res.data.data.id, ...res.data.data.attributes }
+  },
+
+  async getArticlesBySite(siteId: string) {
+    const res = await strapi.get(`/content-articles?filters[pbn_site][documentId][$eq]=${siteId}&populate=*`)
+    return (res.data.data || []).map((item: any) => ({
+      id: item.id,
+      documentId: item.documentId,
+      title: item.title,
+      slug: item.slug,
+      content: item.content,
+      excerpt: item.excerpt,
+      featured_image: item.featured_image,
+      meta_title: item.meta_title,
+      meta_description: item.meta_description,
+      statusarticles: item.statusarticles,
+      published: item.published,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
+      publishedAt: item.publishedAt,
+      content_categories: (item.content_categories || []).map((cat: any) => ({
+        id: cat.id,
+        ...cat
+      })),
+      content_author: item.content_author ? {
+        id: item.content_author.id,
+        ...item.content_author
+      } : null,
+      pbn_site: item.pbn_site ? {
+        id: item.pbn_site.id,
+        documentId: item.pbn_site.documentId,
+        ...item.pbn_site
+      } : null,
+    }))
+  },
 } 
