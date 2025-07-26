@@ -96,13 +96,13 @@ export default function ContentPage() {
   useEffect(() => {
     fetchData()
   }, [])
-
+        
   async function fetchData() {
     setLoading(true)
     try {
       const [catRes, authRes, artRes, sitesRes] = await Promise.all([
-        axios.get('/api/content/categories'),
-        axios.get('/api/content/authors'),
+          axios.get('/api/content/categories'),
+          axios.get('/api/content/authors'),
         axios.get('/api/content/articles'),
         axios.get('/api/sites')
       ])
@@ -274,7 +274,7 @@ export default function ContentPage() {
     const newSelected = new Set(selectedArticles)
     if (newSelected.has(articleId)) {
       newSelected.delete(articleId)
-    } else {
+        } else {
       newSelected.add(articleId)
     }
     setSelectedArticles(newSelected)
@@ -433,7 +433,7 @@ export default function ContentPage() {
       
     } catch (error: any) {
       alert('Ошибка выполнения массовой операции: ' + (error.response?.data?.error || error.message))
-    } finally {
+      } finally {
       setBulkLoading(false)
     }
   }
@@ -513,8 +513,8 @@ export default function ContentPage() {
               <Link href="/content" className="nav-link-active">Контент</Link>
               <Link href="/monitoring" className="nav-link">Мониторинг</Link>
             </nav>
+            </div>
           </div>
-        </div>
       </header>
 
       {/* Main Content */}
@@ -543,11 +543,11 @@ export default function ContentPage() {
               <div className="text-3xl font-bold text-gray-900">{totalContent}</div>
             </div>
             <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 01-8 0" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v4m0 0a4 4 0 01-4 4H4m8-4a4 4 0 014 4h4" />
-              </svg>
-            </div>
+                </svg>
+              </div>
           </div>
           <div className="card flex items-center justify-between p-6">
             <div>
@@ -556,10 +556,10 @@ export default function ContentPage() {
               <div className="text-xs text-green-600 mt-1">+5 сегодня</div>
             </div>
             <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-              </svg>
-            </div>
+                </svg>
+              </div>
           </div>
           <div className="card flex items-center justify-between p-6">
             <div>
@@ -567,10 +567,10 @@ export default function ContentPage() {
               <div className="text-3xl font-bold text-gray-900">{inProgress}</div>
             </div>
             <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
+                </svg>
+              </div>
           </div>
           <div className="card flex items-center justify-between p-6">
             <div>
@@ -579,13 +579,13 @@ export default function ContentPage() {
               <div className="text-xs text-green-600 mt-1">+3 за день</div>
             </div>
             <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-          </div>
+                </svg>
+              </div>
         </div>
-
+            </div>
+            
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
           {/* Категории */}
           <div className="card">
@@ -599,10 +599,10 @@ export default function ContentPage() {
               <ul className="divide-y divide-gray-200">
                 {categories.map(cat => (
                   <li key={cat.id} className="flex justify-between items-center py-2">
-                    <div>
+                      <div>
                       <span className="font-medium" style={{ color: cat.color }}>{cat.name}</span>
                       <span className="ml-2 text-xs text-gray-500">{cat.description}</span>
-                    </div>
+                      </div>
                     <div className="flex space-x-2">
                       <button className="text-blue-500 hover:underline text-xs" onClick={() => { setEditCategory(cat); setShowEditModal(true); }}>Изменить</button>
                       <button className="text-red-500 hover:underline text-xs" onClick={() => handleDeleteCategory(cat.id)}>Удалить</button>
@@ -610,14 +610,14 @@ export default function ContentPage() {
                   </li>
                 ))}
               </ul>
-            )}
-          </div>
+                      )}
+                    </div>
           {/* Авторы */}
           <div className="card">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold">Авторы</h2>
               <button className="btn-secondary" onClick={() => setShowAuthorModal(true)}>Добавить</button>
-            </div>
+                  </div>
             {authors.length === 0 ? (
               <div className="text-gray-400 text-sm py-6 text-center">Нет авторов</div>
             ) : (
@@ -628,17 +628,17 @@ export default function ContentPage() {
                       <span className="font-medium">{author.name}</span>
                       <span className="ml-2 text-xs text-gray-500">{author.email}</span>
                       <span className="ml-2 text-xs text-gray-400">{author.specialization}</span>
-                    </div>
+                </div>
                     <div className="flex space-x-2">
                       <button className="text-blue-500 hover:underline text-xs" onClick={() => { setEditAuthor(author); setShowEditAuthorModal(true); }}>Изменить</button>
                       <button className="text-red-500 hover:underline text-xs" onClick={() => handleDeleteAuthor(author.id)}>Удалить</button>
                     </div>
                   </li>
-                ))}
+              ))}
               </ul>
             )}
+            </div>
           </div>
-        </div>
 
         {/* Поиск и фильтры */}
         <div className="card mb-8">
@@ -668,11 +668,11 @@ export default function ContentPage() {
                 </button>
               )}
             </div>
-          </div>
-
+            </div>
+            
           {/* Фильтры и сортировка */}
           <div className="grid grid-cols-1 md:grid-cols-8 gap-4">
-            <div>
+                    <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Категория</label>
               <select
                 value={selectedCategory}
@@ -684,7 +684,7 @@ export default function ContentPage() {
                   <option key={cat.id} value={cat.id}>{cat.name}</option>
                 ))}
               </select>
-            </div>
+                      </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Статус</label>
               <select
@@ -699,7 +699,7 @@ export default function ContentPage() {
                 <option value="ai">AI генерация</option>
                 <option value="processing">В обработке</option>
               </select>
-            </div>
+                    </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Автор</label>
               <select
@@ -713,7 +713,7 @@ export default function ContentPage() {
                   <option key={author.id} value={author.id}>{author.name}</option>
                 ))}
               </select>
-            </div>
+                    </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">PBN сайт</label>
               <select
@@ -727,7 +727,7 @@ export default function ContentPage() {
                   <option key={site.id} value={site.id}>{site.name}</option>
                 ))}
               </select>
-            </div>
+                  </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Сортировка</label>
               <select
@@ -740,7 +740,7 @@ export default function ContentPage() {
                 <option value="status">По статусу</option>
                 <option value="author">По автору</option>
               </select>
-            </div>
+                </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Порядок</label>
               <select
@@ -793,7 +793,7 @@ export default function ContentPage() {
                 />
                 <div className="w-8 h-8 rounded-lg border border-gray-200" style={{ background: newCategory.color }} title="Предпросмотр цвета" />
               </div>
-            </div>
+              </div>
             <input
               className="input-field mb-2"
               placeholder="Описание"
@@ -801,7 +801,7 @@ export default function ContentPage() {
               onChange={e => setNewCategory({ ...newCategory, description: e.target.value })}
             />
             <button className="btn-primary w-full" onClick={handleCreateCategory}>Создать</button>
-          </div>
+            </div>
         </Modal>
 
         {/* Модалка создания автора */}
@@ -852,7 +852,7 @@ export default function ContentPage() {
               onChange={e => setNewAuthor({ ...newAuthor, website: e.target.value })}
             />
             <button className="btn-primary w-full" onClick={handleCreateAuthor}>Создать</button>
-          </div>
+              </div>
         </Modal>
 
         {/* Модалка редактирования категории */}
@@ -886,8 +886,8 @@ export default function ContentPage() {
                       maxLength={7}
                     />
                     <div className="w-8 h-8 rounded-lg border border-gray-200" style={{ background: editCategory.color }} title="Предпросмотр цвета" />
-                  </div>
-                </div>
+              </div>
+            </div>
                 <input
                   className="input-field mb-2"
                   placeholder="Описание"
@@ -952,18 +952,18 @@ export default function ContentPage() {
                 <button className="btn-primary w-full" onClick={handleUpdateAuthor}>Сохранить</button>
               </>
             )}
-          </div>
+              </div>
         </Modal>
 
         {/* Список статей */}
         <div className="card mt-8">
           <div className="flex justify-between items-center mb-4">
-            <div>
+              <div>
               <h2 className="text-lg font-semibold">Статьи</h2>
               <p className="text-sm text-gray-600 mt-1">
                 💡 Кликните на статус, автора или PBN сайт для быстрого редактирования
               </p>
-            </div>
+              </div>
             <div className="flex space-x-3">
               {showBulkActions && (
                 <div className="flex items-center space-x-2">
@@ -994,18 +994,18 @@ export default function ContentPage() {
                   >
                     Отменить
                   </button>
-                </div>
+            </div>
               )}
               <Link href="/content/new" className="btn-secondary">➕ Новая статья</Link>
-            </div>
           </div>
+        </div>
           {filteredArticles.length === 0 ? (
             <div className="text-gray-400 text-sm py-6 text-center">Нет статей</div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       <input
                         type="checkbox"
@@ -1014,23 +1014,23 @@ export default function ContentPage() {
                         onChange={selectAllArticles}
                       />
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Заголовок</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Заголовок</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Категории</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Автор</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PBN сайт</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Статус</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Дата</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Статус</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Дата</th>
                     <th></th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
                   {filteredArticles.map(article => {
                     const isEditing = editingArticles[article.id]
                     const updates = articleUpdates[article.id] || {}
                     
                     return (
                       <tr key={article.id} className={isEditing ? 'bg-blue-50' : ''}>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap">
                           <input
                             type="checkbox"
                             className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
@@ -1059,7 +1059,7 @@ export default function ContentPage() {
                           ) : (
                             <span className="cursor-pointer hover:text-blue-600" onClick={() => startEditingArticle(article.id)}>
                               {article.content_author ? article.content_author.name : '-'}
-                            </span>
+                      </span>
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -1117,9 +1117,9 @@ export default function ContentPage() {
                               {article.statusarticles}
                             </span>
                           )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{article.createdAt ? new Date(article.createdAt).toLocaleDateString() : '-'}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{article.createdAt ? new Date(article.createdAt).toLocaleDateString() : '-'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           {isEditing ? (
                             <div className="flex space-x-2">
                               <button 
@@ -1155,12 +1155,12 @@ export default function ContentPage() {
                               <Link href={`/content/articles/${article.slug}`} className="text-blue-600 hover:underline text-xs">Подробнее</Link>
                             </div>
                           )}
-                        </td>
-                      </tr>
+                    </td>
+                  </tr>
                     )
                   })}
-                </tbody>
-              </table>
+              </tbody>
+            </table>
             </div>
           )}
         </div>
