@@ -15,12 +15,14 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    if (!body.name) {
+    const data = body.data || body
+    if (!data.name) {
       return NextResponse.json({ error: 'Missing required field: name' }, { status: 400 })
     }
-    const category = await strapiAPI.createCategory(body)
+    const category = await strapiAPI.createCategory(data)
     return NextResponse.json({ success: true, category })
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to create category' }, { status: 500 })
+  } catch (error: any) {
+    console.error('POST /api/content/categories error:', error)
+    return NextResponse.json({ error: error?.message || 'Failed to create category', details: error, strapi: error?.response?.data }, { status: 500 })
   }
 } 

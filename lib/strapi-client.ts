@@ -11,11 +11,29 @@ export const strapiAPI = {
   // Категории
   async getCategories() {
     const res = await strapi.get('/content-categories?pagination[pageSize]=100')
-    console.log('STRAPI getCategories:', res.data)
-    return (res.data.data || []).map((item: any) => item)
+    return (res.data.data || []).map((item: any) => ({
+      id: item.id,
+      documentId: item.documentId,
+      name: item.name,
+      slug: item.slug,
+      color: item.color,
+      description: item.description,
+      icon: item.icon,
+      sort_order: item.sort_order,
+      is_active: item.is_active,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
+      publishedAt: item.publishedAt,
+    }))
   },
   async createCategory(data: any) {
     const res = await strapi.post('/content-categories', { data })
+    return { id: res.data.data.id, ...res.data.data.attributes }
+  },
+  async updateCategory(id: string, data: any) {
+    // Исключаем поля, которые не должны обновляться
+    const { id: _, documentId: __, createdAt: ___, updatedAt: ____, publishedAt: _____, ...updateData } = data
+    const res = await strapi.put(`/content-categories/${id}`, { data: updateData })
     return { id: res.data.data.id, ...res.data.data.attributes }
   },
   async deleteCategory(id: string) {
@@ -25,7 +43,6 @@ export const strapiAPI = {
   // Авторы
   async getAuthors() {
     const res = await strapi.get('/content-authors?pagination[pageSize]=100')
-    console.log('STRAPI getAuthors:', res.data)
     return (res.data.data || []).map((item: any) => item)
   },
   async createAuthor(data: any) {
