@@ -63,11 +63,11 @@
       "target": "api::pbn-site.pbn-site",
       "inversedBy": "content_categories"
     },
-    "content_article": {
+    "content_articles": {
       "type": "relation",
-      "relation": "manyToOne",
+      "relation": "manyToMany",
       "target": "api::content-article.content-article",
-      "inversedBy": "content_categories"
+      "mappedBy": "content_categories"
     }
   }
 }

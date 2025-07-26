@@ -423,8 +423,12 @@ export interface ApiContentArticleContentArticle
   };
   attributes: {
     content: Schema.Attribute.RichText;
+    content_author: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::content-author.content-author'
+    >;
     content_categories: Schema.Attribute.Relation<
-      'oneToMany',
+      'manyToMany',
       'api::content-category.content-category'
     >;
     createdAt: Schema.Attribute.DateTime;
@@ -440,13 +444,14 @@ export interface ApiContentArticleContentArticle
       Schema.Attribute.Private;
     meta_description: Schema.Attribute.String;
     meta_title: Schema.Attribute.String;
+    pbn_site: Schema.Attribute.Relation<'manyToOne', 'api::pbn-site.pbn-site'>;
     published: Schema.Attribute.DateTime;
     publishedAt: Schema.Attribute.DateTime;
     slug: Schema.Attribute.String &
       Schema.Attribute.Required &
       Schema.Attribute.Unique;
     statusarticles: Schema.Attribute.Enumeration<
-      ['draft', 'published', 'archived']
+      ['draft', 'published', 'archived', 'ai', 'processing']
     > &
       Schema.Attribute.DefaultTo<'draft'>;
     title: Schema.Attribute.String & Schema.Attribute.Required;
@@ -470,6 +475,10 @@ export interface ApiContentAuthorContentAuthor
   attributes: {
     avatar: Schema.Attribute.String;
     bio: Schema.Attribute.Text;
+    content_articles: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::content-article.content-article'
+    >;
     content_author: Schema.Attribute.Relation<
       'manyToOne',
       'api::content-author.content-author'
@@ -529,8 +538,8 @@ export interface ApiContentCategoryContentCategory
   };
   attributes: {
     color: Schema.Attribute.String & Schema.Attribute.DefaultTo<'#3B82F6'>;
-    content_article: Schema.Attribute.Relation<
-      'manyToOne',
+    content_articles: Schema.Attribute.Relation<
+      'manyToMany',
       'api::content-article.content-article'
     >;
     content_author: Schema.Attribute.Relation<
@@ -587,6 +596,10 @@ export interface ApiPbnSitePbnSite extends Struct.CollectionTypeSchema {
     backup_enabled: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
     cdn_enabled: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     config: Schema.Attribute.JSON;
+    content_articles: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::content-article.content-article'
+    >;
     content_authors: Schema.Attribute.Relation<
       'manyToMany',
       'api::content-author.content-author'

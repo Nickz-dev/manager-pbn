@@ -101,6 +101,12 @@
       "relation": "manyToOne",
       "target": "api::pbn-site.pbn-site",
       "inversedBy": "pbn_sites"
+    },
+    "content_articles": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::content-article.content-article",
+      "mappedBy": "pbn_site"
     }
   }
 }

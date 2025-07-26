@@ -41,7 +41,9 @@
       "enum": [
         "draft",
         "published",
-        "archived"
+        "archived",
+        "ai",
+        "processing"
       ]
     },
     "published": {
@@ -49,9 +51,21 @@
     },
     "content_categories": {
       "type": "relation",
-      "relation": "oneToMany",
+      "relation": "manyToMany",
       "target": "api::content-category.content-category",
-      "mappedBy": "content_article"
+      "inversedBy": "content_articles"
+    },
+    "content_author": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::content-author.content-author",
+      "inversedBy": "content_articles"
+    },
+    "pbn_site": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::pbn-site.pbn-site",
+      "inversedBy": "content_articles"
     }
   }
 }

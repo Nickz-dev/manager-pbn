@@ -78,6 +78,12 @@
       "relation": "manyToOne",
       "target": "api::content-author.content-author",
       "inversedBy": "content_authors"
+    },
+    "content_articles": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::content-article.content-article",
+      "mappedBy": "content_author"
     }
   }
 }
