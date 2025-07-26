@@ -470,9 +470,9 @@ export default function ContentPage() {
   // Примерные данные для статистики (заменить на реальные при необходимости)
   const totalContent = articles.length
   const aiGenerations = articles.filter(a => a.statusarticles === 'ai').length
-  const inProgress = articles.filter(a => a.statusarticles === 'processing').length
+  const inProgress = articles.filter(a => a.statusarticles === 'draft').length
   const published = articles.filter(a => a.statusarticles === 'published').length
-  const draft = articles.filter(a => a.statusarticles === 'draft').length
+  const processing = articles.filter(a => a.statusarticles === 'processing').length
   const archived = articles.filter(a => a.statusarticles === 'archived').length
 
   if (loading) return (
