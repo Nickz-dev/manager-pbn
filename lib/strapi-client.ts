@@ -104,6 +104,7 @@ export const strapiAPI = {
         } : null,
         pbn_site: item.pbn_site ? {
           id: item.pbn_site.id,
+          documentId: item.pbn_site.documentId,
           ...item.pbn_site
         } : null,
       }
@@ -133,11 +134,17 @@ export const strapiAPI = {
       id: item.id,
       documentId: item.documentId,
       name: item.name,
+      siteName: item.siteName || item.name, // Добавляем siteName для совместимости
       url: item.url,
       status: item.status,
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,
       publishedAt: item.publishedAt,
     }))
+  },
+
+  async createPbnSite(data: any) {
+    const res = await strapi.post('/pbn-sites', { data })
+    return { id: res.data.data.id, ...res.data.data.attributes }
   },
 } 

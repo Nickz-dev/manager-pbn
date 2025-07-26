@@ -36,6 +36,7 @@ export default function NewSitePage() {
   // Загрузка статей и категорий
   useEffect(() => {
     if (siteType === 'pbn') {
+      // Всегда загружаем статьи, фильтрация происходит в компоненте
       fetch('/api/content/articles')
         .then(res => res.json())
         .then(data => {
@@ -44,6 +45,7 @@ export default function NewSitePage() {
           }
         })
         .catch(() => setArticles([]))
+      
       fetch('/api/content/categories')
         .then(res => res.json())
         .then(data => {
@@ -87,11 +89,8 @@ export default function NewSitePage() {
     }
   }, [siteType])
 
-  // Фильтрация статей по категории, автору, сайту и по тому, что статья не привязана к другому сайту
+  // Фильтрация статей по категории, автору и сайту
   const filteredArticles = articles.filter(article => {
-    // Только статьи без привязки к сайту
-    if (!Array.isArray(article.pbn_sites) || article.pbn_sites.length > 0) return false;
-    
     // Фильтр по категории
     if (selectedCategory && selectedCategory !== '') {
       const hasCategory = Array.isArray(article.content_categories) &&
@@ -105,12 +104,13 @@ export default function NewSitePage() {
       if (String(articleAuthorId) !== String(selectedAuthor)) return false;
     }
     
-    // Фильтр по сайту (статьи, которые уже привязаны к выбранному сайту)
+    // Фильтр по сайту
     if (selectedSite && selectedSite !== '') {
-      const isAttachedToSelectedSite = Array.isArray(article.pbn_sites) &&
-        article.pbn_sites.some((site: any) => String(site.documentId || site.id) === String(selectedSite));
-      if (!isAttachedToSelectedSite) return false;
+      // Если выбран сайт, показываем статьи, привязанные к этому сайту
+      const articleSiteId = article.pbn_site?.documentId || article.pbn_site?.id;
+      if (String(articleSiteId) !== String(selectedSite)) return false;
     }
+    // Если сайт не выбран, показываем все статьи (и с привязкой, и без)
     
     return true;
   });
@@ -536,19 +536,21 @@ export default function NewSitePage() {
                   </select>
                 </div>
                 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Фильтр по сайту</label>
-                  <select
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={selectedSite}
-                    onChange={e => setSelectedSite(e.target.value)}
-                  >
-                    <option value="">Все сайты</option>
-                    {pbnSites.map((site: any) => (
-                      <option key={site.documentId || site.id} value={site.documentId || site.id}>{site.siteName || site.name}</option>
-                    ))}
-                  </select>
-                </div>
+                                 <div>
+                   <label className="block text-sm font-medium text-gray-700 mb-2">Фильтр по сайту</label>
+                   <select
+                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                     value={selectedSite}
+                     onChange={e => setSelectedSite(e.target.value)}
+                   >
+                     <option value="">Все сайты</option>
+                     {pbnSites.map((site: any) => (
+                       <option key={site.documentId || site.id} value={site.documentId || site.id}>
+                         {site.name}
+                       </option>
+                     ))}
+                   </select>
+                 </div>
               </div>
               
               {/* Счетчик выбранных статей */}
@@ -561,59 +563,64 @@ export default function NewSitePage() {
                 </span>
               </div>
               
-              {/* Список статей */}
-              <div className="max-h-64 overflow-y-auto border rounded-lg p-2 bg-white">
-                {filteredArticles.length === 0 ? (
-                  <div className="text-gray-500 text-sm text-center py-4">Нет доступных статей для выбора</div>
-                ) : (
-                  <ul className="space-y-2">
-                    {filteredArticles.map(article => (
-                      <li key={article.id} className="flex items-start py-3 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 rounded-lg px-2">
-                        <input
-                          type="checkbox"
-                          className="mt-1 mr-3"
-                          checked={selectedArticles.includes(article.id)}
-                          onChange={e => {
-                            if (e.target.checked) {
-                              setSelectedArticles(prev => [...prev, article.id])
-                            } else {
-                              setSelectedArticles(prev => prev.filter(id => id !== article.id))
-                            }
-                          }}
-                        />
-                        <div className="flex-1">
-                          <div className="font-medium text-gray-900 text-sm">{article.title}</div>
-                          <div className="text-xs text-gray-500 mt-1">
-                            {Array.isArray(article.content_categories) && article.content_categories.length > 0 && (
-                              <span className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded mr-2">
-                                {article.content_categories.map((cat: any) => cat.name).join(', ')}
-                              </span>
-                            )}
-                            {article.content_author && (
-                              <span className="inline-block bg-green-100 text-green-800 px-2 py-1 rounded mr-2">
-                                {article.content_author.name}
-                              </span>
-                            )}
-                            {article.statusarticles && (
-                              <span className={`inline-block px-2 py-1 rounded ${
-                                article.statusarticles === 'published' ? 'bg-green-100 text-green-800' :
-                                article.statusarticles === 'ai' ? 'bg-purple-100 text-purple-800' :
-                                article.statusarticles === 'draft' ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-gray-100 text-gray-800'
-                              }`}>
-                                {article.statusarticles === 'published' ? 'Опубликовано' :
-                                 article.statusarticles === 'ai' ? 'AI Генерация' :
-                                 article.statusarticles === 'draft' ? 'Черновик' :
-                                 article.statusarticles}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
+                             {/* Список статей */}
+               <div className="max-h-64 overflow-y-auto border rounded-lg p-2 bg-white">
+                 {filteredArticles.length === 0 ? (
+                   <div className="text-gray-500 text-sm text-center py-4">Нет доступных статей для выбора</div>
+                 ) : (
+                   <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                     {filteredArticles.map(article => (
+                       <li key={article.id} className="flex items-start py-3 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 rounded-lg px-2">
+                         <input
+                           type="checkbox"
+                           className="mt-1 mr-3"
+                           checked={selectedArticles.includes(article.id)}
+                           onChange={e => {
+                             if (e.target.checked) {
+                               setSelectedArticles(prev => [...prev, article.id])
+                             } else {
+                               setSelectedArticles(prev => prev.filter(id => id !== article.id))
+                             }
+                           }}
+                         />
+                         <div className="flex-1">
+                           <div className="font-medium text-gray-900 text-sm">{article.title}</div>
+                           <div className="text-xs text-gray-500 mt-1">
+                             {Array.isArray(article.content_categories) && article.content_categories.length > 0 && (
+                               <span className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded mr-2">
+                                 {article.content_categories.map((cat: any) => cat.name).join(', ')}
+                               </span>
+                             )}
+                             {article.content_author && (
+                               <span className="inline-block bg-green-100 text-green-800 px-2 py-1 rounded mr-2">
+                                 {article.content_author.name}
+                               </span>
+                             )}
+                                                           {article.statusarticles && (
+                                <span className={`inline-block px-2 py-1 rounded ${
+                                  article.statusarticles === 'published' ? 'bg-green-100 text-green-800' :
+                                  article.statusarticles === 'ai' ? 'bg-purple-100 text-purple-800' :
+                                  article.statusarticles === 'draft' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {article.statusarticles === 'published' ? 'Опубликовано' :
+                                   article.statusarticles === 'ai' ? 'AI Генерация' :
+                                   article.statusarticles === 'draft' ? 'Черновик' :
+                                   article.statusarticles}
+                                </span>
+                              )}
+                              {article.pbn_site && (
+                                <span className="inline-block bg-orange-100 text-orange-800 px-2 py-1 rounded mr-2">
+                                  {article.pbn_site.name}
+                                </span>
+                              )}
+                           </div>
+                         </div>
+                       </li>
+                     ))}
+                   </ul>
+                 )}
+               </div>
               
               {/* Кнопки управления выбором */}
               {filteredArticles.length > 0 && (
