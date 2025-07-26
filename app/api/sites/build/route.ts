@@ -4,6 +4,20 @@ import { promises as fs } from 'fs'
 import path from 'path'
 import axios from 'axios'
 
+// Helper function to map template names to directory names
+function getTemplateDirectory(template: string): string {
+  const templateMap: { [key: string]: string } = {
+    'casino-blog': 'astro-pbn-blog',
+    'slots-review': 'astro-slots-review',
+    'gaming-news': 'astro-gaming-news',
+    'premium-casino': 'casino/premium',
+    'sports-betting': 'astro-sports-betting',
+    'poker-platform': 'astro-poker-platform'
+  }
+  
+  return templateMap[template] || 'astro-pbn-blog' // fallback to default
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -34,13 +48,13 @@ export async function POST(request: NextRequest) {
     const astroData = await generateAstroData(site, articles)
     
     // 4. Скачиваем изображения и упаковываем в assets
-    await downloadAndProcessImages(articles, siteId)
+    await downloadAndProcessImages(articles, siteId, site.template)
     
     // 5. Записываем data.json в шаблон
-    await writeAstroData(astroData, siteId)
+    await writeAstroData(astroData, siteId, site.template)
     
     // 6. Запускаем билд Astro
-    await buildAstroTemplate(siteId)
+    await buildAstroTemplate(siteId, site.template)
 
     // 7. Обновляем статус сайта
     await strapiAPI.updatePbnSite(siteId, { statuspbn: 'deployed' })
@@ -105,8 +119,8 @@ async function generateAstroData(site: any, articles: any[]) {
   }
 }
 
-async function downloadAndProcessImages(articles: any[], siteId: string) {
-  const templateDir = path.join(process.cwd(), 'templates', 'astro-pbn-blog')
+async function downloadAndProcessImages(articles: any[], siteId: string, template: string) {
+  const templateDir = path.join(process.cwd(), 'templates', getTemplateDirectory(template))
   const assetsDir = path.join(templateDir, 'src', 'assets', 'images', 'articles')
   
   // Создаем директорию если не существует
@@ -136,8 +150,8 @@ async function downloadAndProcessImages(articles: any[], siteId: string) {
   }
 }
 
-async function writeAstroData(data: any, siteId: string) {
-  const templateDir = path.join(process.cwd(), 'templates', 'astro-pbn-blog')
+async function writeAstroData(data: any, siteId: string, template: string) {
+  const templateDir = path.join(process.cwd(), 'templates', getTemplateDirectory(template))
   const dataPath = path.join(templateDir, 'src', 'data', 'site-data.json')
   
   // Создаем директорию если не существует
@@ -149,8 +163,8 @@ async function writeAstroData(data: any, siteId: string) {
   console.log(`✅ Generated data.json for site ${siteId}`)
 }
 
-async function buildAstroTemplate(siteId: string) {
-  const templateDir = path.join(process.cwd(), 'templates', 'astro-pbn-blog')
+async function buildAstroTemplate(siteId: string, template: string) {
+  const templateDir = path.join(process.cwd(), 'templates', getTemplateDirectory(template))
   
   // Переходим в директорию шаблона
   process.chdir(templateDir)

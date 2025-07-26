@@ -1,0 +1,260 @@
+---
+import siteData from '../data/site-data.json';
+
+const { site, articles, categories, authors } = siteData;
+
+// Получаем последние статьи
+const latestArticles = articles
+  .filter(article => article.publishedAt)
+  .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+  .slice(0, 10);
+
+// Получаем популярные категории
+const popularCategories = categories.slice(0, 8);
+---
+
+<!DOCTYPE html>
+<html lang={site.config?.language || 'ru'}>
+<head>
+  <meta charset="utf-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="viewport" content="width=device-width">
+  <title>{site.name}</title>
+  <meta name="description" content={site.description}>
+  
+  <!-- Google Analytics -->
+  {site.analytics?.googleAnalytics && (
+    <script async src={`https://www.googletagmanager.com/gtag/js?id=${site.analytics.googleAnalytics}`}></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', '{site.analytics.googleAnalytics}');
+    </script>
+  )}
+  
+  <style>
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f8fafc;
+      color: #1e293b;
+      line-height: 1.6;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+    
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #ffffff;
+      padding: 2rem 0;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .header h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      margin: 0;
+      text-align: center;
+    }
+    
+    .header p {
+      text-align: center;
+      color: #e2e8f0;
+      font-size: 1.1rem;
+      margin: 0.5rem 0 0 0;
+    }
+    
+    .main {
+      padding: 3rem 0;
+    }
+    
+    .articles-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 2rem;
+      margin-bottom: 3rem;
+    }
+    
+    .article-card {
+      background: #ffffff;
+      border-radius: 12px;
+      overflow: hidden;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      border: 1px solid #e2e8f0;
+    }
+    
+    .article-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+    }
+    
+    .article-image {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+    }
+    
+    .article-content {
+      padding: 1.5rem;
+    }
+    
+    .article-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin: 0 0 1rem 0;
+      color: #1e293b;
+      line-height: 1.4;
+    }
+    
+    .article-excerpt {
+      color: #64748b;
+      margin: 0 0 1rem 0;
+      line-height: 1.6;
+    }
+    
+    .article-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.875rem;
+      color: #94a3b8;
+      border-top: 1px solid #f1f5f9;
+      padding-top: 1rem;
+    }
+    
+    .categories-section {
+      margin-top: 3rem;
+    }
+    
+    .categories-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 1rem;
+    }
+    
+    .category-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 1rem;
+      border-radius: 8px;
+      text-align: center;
+      transition: transform 0.3s ease;
+      color: #ffffff;
+    }
+    
+    .category-card:hover {
+      transform: scale(1.05);
+    }
+    
+    .category-name {
+      font-weight: 600;
+      font-size: 0.875rem;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: #64748b;
+    }
+    
+    .empty-state h2 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      color: #1e293b;
+    }
+    
+    h2 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 2rem;
+      text-align: center;
+      color: #1e293b;
+    }
+    
+    .breaking-news {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: #ffffff;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 2rem;
+      text-align: center;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="container">
+      <h1>🎮 {site.name}</h1>
+      <p>{site.description}</p>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="container">
+      {latestArticles.length > 0 ? (
+        <>
+          <div class="breaking-news">
+            🚨 Свежие новости игровой индустрии
+          </div>
+          <h2>📰 Последние новости</h2>
+          <div class="articles-grid">
+            {latestArticles.map(article => (
+              <article class="article-card">
+                <a href={`/articles/${article.slug}`} style="text-decoration: none; color: inherit;">
+                  {article.featured_image && (
+                    <img 
+                      src={article.featured_image} 
+                      alt={article.title}
+                      class="article-image"
+                      loading="lazy"
+                    />
+                  )}
+                  <div class="article-content">
+                    <h3 class="article-title">{article.title}</h3>
+                    {article.excerpt && (
+                      <p class="article-excerpt">{article.excerpt}</p>
+                    )}
+                    <div class="article-meta">
+                      <span>
+                        {article.author?.name || 'Anonymous'}
+                      </span>
+                      <span>
+                        {new Date(article.publishedAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                </a>
+              </article>
+            ))}
+          </div>
+        </>
+      ) : (
+        <div class="empty-state">
+          <h2>🎮 Игровые новости</h2>
+          <p>Новости появятся здесь после публикации.</p>
+        </div>
+      )}
+
+      {popularCategories.length > 0 && (
+        <div class="categories-section">
+          <h2>🏷️ Популярные категории</h2>
+          <div class="categories-grid">
+            {popularCategories.map(category => (
+              <div class="category-card">
+                <div class="category-name">{category.name}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  </main>
+</body>
+</html> 
