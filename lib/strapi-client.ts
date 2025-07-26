@@ -30,27 +30,49 @@ export const strapiAPI = {
     const res = await strapi.post('/content-categories', { data })
     return { id: res.data.data.id, ...res.data.data.attributes }
   },
-  async updateCategory(id: string, data: any) {
+  async updateCategory(documentId: string, data: any) {
     // Исключаем поля, которые не должны обновляться
     const { id: _, documentId: __, createdAt: ___, updatedAt: ____, publishedAt: _____, ...updateData } = data
-    const res = await strapi.put(`/content-categories/${id}`, { data: updateData })
+    const res = await strapi.put(`/content-categories/${documentId}`, { data: updateData })
     return { id: res.data.data.id, ...res.data.data.attributes }
   },
-  async deleteCategory(id: string) {
-    await strapi.delete(`/content-categories/${id}`)
+  async deleteCategory(documentId: string) {
+    await strapi.delete(`/content-categories/${documentId}`)
   },
 
   // Авторы
   async getAuthors() {
     const res = await strapi.get('/content-authors?pagination[pageSize]=100')
-    return (res.data.data || []).map((item: any) => item)
+    return (res.data.data || []).map((item: any) => ({
+      id: item.id,
+      documentId: item.documentId,
+      name: item.name,
+      slug: item.slug,
+      email: item.email,
+      bio: item.bio,
+      avatar: item.avatar,
+      website: item.website,
+      social_links: item.social_links,
+      specialization: item.specialization,
+      is_active: item.is_active,
+      experience_years: item.experience_years,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
+      publishedAt: item.publishedAt,
+    }))
   },
   async createAuthor(data: any) {
     const res = await strapi.post('/content-authors', { data })
     return { id: res.data.data.id, ...res.data.data.attributes }
   },
-  async deleteAuthor(id: string) {
-    await strapi.delete(`/content-authors/${id}`)
+  async updateAuthor(documentId: string, data: any) {
+    // Исключаем поля, которые не должны обновляться
+    const { id: _, documentId: __, createdAt: ___, updatedAt: ____, publishedAt: _____, ...updateData } = data
+    const res = await strapi.put(`/content-authors/${documentId}`, { data: updateData })
+    return { id: res.data.data.id, ...res.data.data.attributes }
+  },
+  async deleteAuthor(documentId: string) {
+    await strapi.delete(`/content-authors/${documentId}`)
   },
 
   // Статьи
@@ -80,8 +102,15 @@ export const strapiAPI = {
     })
   },
 
-  // Статьи (только delete, остальное уже реализовано)
-  async deleteArticle(id: string) {
-    await strapi.delete(`/content-articles/${id}`)
+  // Статьи
+  async updateArticle(documentId: string, data: any) {
+    // Исключаем поля, которые не должны обновляться
+    const { id: _, documentId: __, createdAt: ___, updatedAt: ____, publishedAt: _____, ...updateData } = data
+    const res = await strapi.put(`/content-articles/${documentId}`, { data: updateData })
+    return { id: res.data.data.id, ...res.data.data.attributes }
+  },
+  async deleteArticle(documentId: string) {
+    const res = await strapi.delete(`/content-articles/${documentId}`)
+    return res
   },
 } 

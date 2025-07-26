@@ -16,11 +16,15 @@ interface Category {
 
 interface Author {
   id: string
+  documentId: string
   name: string
   email: string
   specialization: string
   experience_years: number
   is_active: boolean
+  bio?: string
+  avatar?: string
+  website?: string
 }
 
 interface Article {
@@ -44,9 +48,11 @@ export default function ContentPage() {
   const [showCategoryModal, setShowCategoryModal] = useState(false)
   const [newCategory, setNewCategory] = useState({ name: '', color: '#3B82F6', description: '' })
   const [showAuthorModal, setShowAuthorModal] = useState(false)
-  const [newAuthor, setNewAuthor] = useState({ name: '', email: '', specialization: 'general', experience_years: 0 })
+  const [newAuthor, setNewAuthor] = useState({ name: '', email: '', specialization: 'general', experience_years: 0, bio: '', website: '' })
   const [editCategory, setEditCategory] = useState<Category | null>(null)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [editAuthor, setEditAuthor] = useState<Author | null>(null)
+  const [showEditAuthorModal, setShowEditAuthorModal] = useState(false)
 
   // Состояния для фильтров
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
@@ -124,14 +130,27 @@ export default function ContentPage() {
   async function handleCreateAuthor() {
     if (!newAuthor.name.trim() || !newAuthor.email.trim()) return
     try {
-      await axios.post('/api/content/authors', newAuthor)
+      await axios.post('/api/content/authors', { data: newAuthor })
       setShowAuthorModal(false)
-      setNewAuthor({ name: '', email: '', specialization: 'general', experience_years: 0 })
+      setNewAuthor({ name: '', email: '', specialization: 'general', experience_years: 0, bio: '', website: '' })
       fetchData()
     } catch (e) {
       alert('Ошибка создания автора')
     }
   }
+  
+  async function handleUpdateAuthor() {
+    if (!editAuthor || !editAuthor.name.trim() || !editAuthor.email.trim()) return
+    try {
+      await axios.put(`/api/content/authors/${editAuthor.id}`, { data: editAuthor })
+      setShowEditAuthorModal(false)
+      setEditAuthor(null)
+      fetchData()
+    } catch (e: any) {
+      alert('Ошибка обновления автора')
+    }
+  }
+  
   async function handleDeleteAuthor(id: string) {
     if (!confirm('Удалить автора?')) return
     try {
@@ -327,7 +346,10 @@ export default function ContentPage() {
                       <span className="ml-2 text-xs text-gray-500">{author.email}</span>
                       <span className="ml-2 text-xs text-gray-400">{author.specialization}</span>
                     </div>
-                    <button className="text-red-500 hover:underline text-xs" onClick={() => handleDeleteAuthor(author.id)}>Удалить</button>
+                    <div className="flex space-x-2">
+                      <button className="text-blue-500 hover:underline text-xs" onClick={() => { setEditAuthor(author); setShowEditAuthorModal(true); }}>Изменить</button>
+                      <button className="text-red-500 hover:underline text-xs" onClick={() => handleDeleteAuthor(author.id)}>Удалить</button>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -431,18 +453,36 @@ export default function ContentPage() {
               value={newAuthor.email}
               onChange={e => setNewAuthor({ ...newAuthor, email: e.target.value })}
             />
-            <input
+            <select
               className="input-field mb-2"
-              placeholder="Специализация"
               value={newAuthor.specialization}
               onChange={e => setNewAuthor({ ...newAuthor, specialization: e.target.value })}
-            />
+            >
+              <option value="general">Общая</option>
+              <option value="casino">Казино</option>
+              <option value="sports">Спорт</option>
+              <option value="crypto">Криптовалюта</option>
+              <option value="finance">Финансы</option>
+            </select>
             <input
               className="input-field mb-2"
               type="number"
               placeholder="Опыт (лет)"
               value={newAuthor.experience_years}
               onChange={e => setNewAuthor({ ...newAuthor, experience_years: Number(e.target.value) })}
+            />
+            <textarea
+              className="input-field mb-2"
+              placeholder="Биография"
+              value={newAuthor.bio}
+              onChange={e => setNewAuthor({ ...newAuthor, bio: e.target.value })}
+              rows={3}
+            />
+            <input
+              className="input-field mb-2"
+              placeholder="Веб-сайт"
+              value={newAuthor.website}
+              onChange={e => setNewAuthor({ ...newAuthor, website: e.target.value })}
             />
             <button className="btn-primary w-full" onClick={handleCreateAuthor}>Создать</button>
           </div>
@@ -488,6 +528,61 @@ export default function ContentPage() {
                   onChange={e => setEditCategory({ ...editCategory, description: e.target.value })}
                 />
                 <button className="btn-primary w-full" onClick={handleUpdateCategory}>Сохранить</button>
+              </>
+            )}
+          </div>
+        </Modal>
+
+        {/* Модалка редактирования автора */}
+        <Modal isOpen={showEditAuthorModal} onClose={() => { setShowEditAuthorModal(false); setEditAuthor(null); }}>
+          <div className="p-6">
+            <h3 className="text-lg font-semibold mb-4">Редактировать автора</h3>
+            {editAuthor && (
+              <>
+                <input
+                  className="input-field mb-2"
+                  placeholder="Имя"
+                  value={editAuthor.name}
+                  onChange={e => setEditAuthor({ ...editAuthor, name: e.target.value })}
+                />
+                <input
+                  className="input-field mb-2"
+                  placeholder="Email"
+                  value={editAuthor.email}
+                  onChange={e => setEditAuthor({ ...editAuthor, email: e.target.value })}
+                />
+                <select
+                  className="input-field mb-2"
+                  value={editAuthor.specialization}
+                  onChange={e => setEditAuthor({ ...editAuthor, specialization: e.target.value })}
+                >
+                  <option value="general">Общая</option>
+                  <option value="casino">Казино</option>
+                  <option value="sports">Спорт</option>
+                  <option value="crypto">Криптовалюта</option>
+                  <option value="finance">Финансы</option>
+                </select>
+                <input
+                  className="input-field mb-2"
+                  type="number"
+                  placeholder="Опыт (лет)"
+                  value={editAuthor.experience_years}
+                  onChange={e => setEditAuthor({ ...editAuthor, experience_years: Number(e.target.value) })}
+                />
+                <textarea
+                  className="input-field mb-2"
+                  placeholder="Биография"
+                  value={editAuthor.bio || ''}
+                  onChange={e => setEditAuthor({ ...editAuthor, bio: e.target.value })}
+                  rows={3}
+                />
+                <input
+                  className="input-field mb-2"
+                  placeholder="Веб-сайт"
+                  value={editAuthor.website || ''}
+                  onChange={e => setEditAuthor({ ...editAuthor, website: e.target.value })}
+                />
+                <button className="btn-primary w-full" onClick={handleUpdateAuthor}>Сохранить</button>
               </>
             )}
           </div>

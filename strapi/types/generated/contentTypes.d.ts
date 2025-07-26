@@ -419,7 +419,7 @@ export interface ApiContentArticleContentArticle
     singularName: 'content-article';
   };
   options: {
-    draftAndPublish: true;
+    draftAndPublish: false;
   };
   attributes: {
     content: Schema.Attribute.RichText;
