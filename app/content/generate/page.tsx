@@ -1,18 +1,87 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { PageHeader } from '@/components/ui/PageHeader'
+
+interface Author {
+  id: number
+  documentId: string
+  name: string
+  email: string
+  bio: string
+}
+
+interface Category {
+  id: number
+  documentId: string
+  name: string
+  slug: string
+  description: string
+}
+
+interface PbnSite {
+  id: number
+  documentId: string
+  name: string
+  url: string
+  status: string
+}
 
 export default function ContentGeneratePage() {
   const [isGenerating, setIsGenerating] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   const [prompt, setPrompt] = useState('')
   const [contentType, setContentType] = useState('article')
   const [language, setLanguage] = useState('ru')
   const [tone, setTone] = useState('professional')
   const [length, setLength] = useState('medium')
   const [selectedSite, setSelectedSite] = useState('')
+  const [selectedAuthor, setSelectedAuthor] = useState('')
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [generatedContent, setGeneratedContent] = useState('')
+  const [generatedTitle, setGeneratedTitle] = useState('')
+  const [generatedExcerpt, setGeneratedExcerpt] = useState('')
+  const [generatedMetaTitle, setGeneratedMetaTitle] = useState('')
+  const [generatedMetaDescription, setGeneratedMetaDescription] = useState('')
+  
+  // Data from Strapi
+  const [authors, setAuthors] = useState<Author[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
+  const [pbnSites, setPbnSites] = useState<PbnSite[]>([])
+  const [recentGenerations, setRecentGenerations] = useState<any[]>([])
+
+  // Load data from Strapi
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [authorsRes, categoriesRes, pbnSitesRes] = await Promise.all([
+          fetch('/api/content/authors'),
+          fetch('/api/content/categories'),
+          fetch('/api/sites')
+        ])
+
+        if (authorsRes.ok) {
+          const authorsData = await authorsRes.json()
+          setAuthors(authorsData.authors || [])
+        }
+
+        if (categoriesRes.ok) {
+          const categoriesData = await categoriesRes.json()
+          setCategories(categoriesData.categories || [])
+        }
+
+        if (pbnSitesRes.ok) {
+          const sitesData = await pbnSitesRes.json()
+          setPbnSites(sitesData.sites || [])
+        }
+      } catch (error) {
+        console.error('Error loading data:', error)
+      }
+    }
+
+    loadData()
+  }, [])
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return
@@ -25,23 +94,111 @@ export default function ContentGeneratePage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          prompt: `Создай ${contentType} на тему: "${prompt}". Тон: ${tone}. Длина: ${length}. Язык: ${language}. Для сайта казино/азартных игр.`
+          prompt: `Создай ${contentType} на тему: "${prompt}". Тон: ${tone}. Длина: ${length}. Язык: ${language}. Для сайта казино/азартных игр. Структурируй ответ в формате JSON с полями: title, excerpt, content, meta_title, meta_description.`
         }),
       })
 
       const data = await response.json()
       if (response.ok) {
-        setGeneratedContent(data.generatedText)
+        try {
+          // Пытаемся распарсить JSON ответ
+          const parsedContent = JSON.parse(data.generatedText)
+          setGeneratedTitle(parsedContent.title || '')
+          setGeneratedExcerpt(parsedContent.excerpt || '')
+          setGeneratedContent(parsedContent.content || data.generatedText)
+          setGeneratedMetaTitle(parsedContent.meta_title || '')
+          setGeneratedMetaDescription(parsedContent.meta_description || '')
+        } catch {
+          // Если не JSON, используем как есть
+          setGeneratedContent(data.generatedText)
+        }
       } else {
         console.error('Generation failed:', data.error)
         setGeneratedContent('Ошибка генерации: ' + data.error)
       }
-         } catch (error: any) {
-       console.error('Network error:', error)
-       setGeneratedContent('Ошибка сети: ' + error.message)
+    } catch (error: any) {
+      console.error('Network error:', error)
+      setGeneratedContent('Ошибка сети: ' + error.message)
     } finally {
       setIsGenerating(false)
     }
+  }
+
+  const handleSaveToStrapi = async () => {
+    if (!generatedContent) return
+    
+    setIsSaving(true)
+    try {
+      const articleData = {
+        title: generatedTitle || 'Без заголовка',
+        content: generatedContent,
+        excerpt: generatedExcerpt || '',
+        meta_title: generatedMetaTitle || generatedTitle || 'Без заголовка',
+        meta_description: generatedMetaDescription || generatedExcerpt || '',
+        statusarticles: 'ai',
+        content_categories: selectedCategories.map(id => {
+          const category = categories.find(c => c.documentId === id)
+          return category ? category.id : id
+        }),
+        content_author: selectedAuthor ? 
+          authors.find(a => a.documentId === selectedAuthor)?.id || selectedAuthor : 
+          undefined,
+        pbn_site: selectedSite ? 
+          pbnSites.find(s => s.documentId === selectedSite)?.id || selectedSite : 
+          undefined
+      }
+
+      const response = await fetch('/api/content/articles', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(articleData),
+      })
+
+      if (response.ok) {
+        const savedArticle = await response.json()
+        alert('Статья успешно сохранена в Strapi!')
+        
+        // Добавляем в список последних генераций
+        setRecentGenerations(prev => [{
+          id: savedArticle.article.id,
+          title: generatedTitle || 'Без заголовка',
+          site: pbnSites.find(s => s.documentId === selectedSite)?.name || selectedSite,
+          type: contentType,
+          createdAt: new Date().toISOString()
+        }, ...prev.slice(0, 4)])
+        
+        // Очищаем форму
+        setGeneratedContent('')
+        setGeneratedTitle('')
+        setGeneratedExcerpt('')
+        setGeneratedMetaTitle('')
+        setGeneratedMetaDescription('')
+      } else {
+        const errorData = await response.json()
+        alert('Ошибка сохранения: ' + errorData.error)
+      }
+    } catch (error: any) {
+      console.error('Save error:', error)
+      alert('Ошибка сохранения: ' + error.message)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleRegenerate = () => {
+    if (prompt.trim()) {
+      handleGenerate()
+    }
+  }
+
+  const handleCategoryChange = (categoryId: string) => {
+    setSelectedCategories(prev => 
+      prev.includes(categoryId) 
+        ? prev.filter(id => id !== categoryId)
+        : [...prev, categoryId]
+    )
   }
 
   return (
@@ -101,7 +258,7 @@ export default function ContentGeneratePage() {
               {/* Site Selection */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Целевой сайт
+                  Целевой PBN сайт
                 </label>
                 <select 
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
@@ -109,10 +266,51 @@ export default function ContentGeneratePage() {
                   onChange={(e) => setSelectedSite(e.target.value)}
                 >
                   <option value="">Выберите сайт</option>
-                  <option value="casino-blog.com">casino-blog.com (PBN)</option>
-                  <option value="best-slots.net">best-slots.net (PBN)</option>
-                  <option value="casino-reviews.org">casino-reviews.org (Brand)</option>
+                  {pbnSites.map(site => (
+                    <option key={site.documentId} value={site.documentId}>
+                      {site.name} ({site.url})
+                    </option>
+                  ))}
                 </select>
+              </div>
+
+              {/* Author Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Автор
+                </label>
+                <select 
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  value={selectedAuthor}
+                  onChange={(e) => setSelectedAuthor(e.target.value)}
+                >
+                  <option value="">Выберите автора</option>
+                  {authors.map(author => (
+                    <option key={author.documentId} value={author.documentId}>
+                      {author.name} ({author.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Categories Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Категории
+                </label>
+                <div className="space-y-2 max-h-32 overflow-y-auto border border-gray-200 rounded-lg p-3">
+                  {categories.map(category => (
+                    <label key={category.documentId} className="flex items-center">
+                      <input 
+                        type="checkbox" 
+                        className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                        checked={selectedCategories.includes(category.documentId)}
+                        onChange={() => handleCategoryChange(category.documentId)}
+                      />
+                      <span className="ml-2 text-sm text-gray-600">{category.name}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
 
               {/* Content Type */}
@@ -133,19 +331,33 @@ export default function ContentGeneratePage() {
                 </select>
               </div>
 
-              {/* Main Topic/Prompt */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Тема контента
-                </label>
-                <textarea
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                  rows={4}
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="Опишите тему для генерации контента (например: 'Лучшие онлайн слоты с высоким RTP в 2024 году')"
-                />
-              </div>
+                             {/* Title */}
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 mb-2">
+                   Заголовок статьи
+                 </label>
+                 <input
+                   type="text"
+                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                   value={generatedTitle}
+                   onChange={(e) => setGeneratedTitle(e.target.value)}
+                   placeholder="Введите заголовок статьи"
+                 />
+               </div>
+
+               {/* Main Topic/Prompt */}
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 mb-2">
+                   Тема контента
+                 </label>
+                 <textarea
+                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                   rows={4}
+                   value={prompt}
+                   onChange={(e) => setPrompt(e.target.value)}
+                   placeholder="Опишите тему для генерации контента (например: 'Лучшие онлайн слоты с высоким RTP в 2024 году')"
+                 />
+               </div>
 
               {/* Settings Row */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -214,25 +426,6 @@ export default function ContentGeneratePage() {
                   '✨ Сгенерировать контент'
                 )}
               </button>
-
-              {/* Additional Options */}
-              <div className="border-t border-gray-200 pt-6">
-                <h4 className="text-sm font-medium text-gray-900 mb-3">Дополнительные опции</h4>
-                <div className="space-y-3">
-                  <label className="flex items-center">
-                    <input type="checkbox" className="rounded border-gray-300 text-purple-600 focus:ring-purple-500" />
-                    <span className="ml-2 text-sm text-gray-600">Включить SEO-оптимизацию</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input type="checkbox" className="rounded border-gray-300 text-purple-600 focus:ring-purple-500" />
-                    <span className="ml-2 text-sm text-gray-600">Добавить внутренние ссылки</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input type="checkbox" className="rounded border-gray-300 text-purple-600 focus:ring-purple-500" />
-                    <span className="ml-2 text-sm text-gray-600">Сгенерировать мета-описание</span>
-                  </label>
-                </div>
-              </div>
             </div>
           </div>
 
@@ -258,26 +451,101 @@ export default function ContentGeneratePage() {
               </div>
             ) : (
               <div>
+                {/* Title */}
+                {generatedTitle && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Заголовок</label>
+                    <input
+                      type="text"
+                      value={generatedTitle}
+                      onChange={(e) => setGeneratedTitle(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                )}
+
+                {/* Excerpt */}
+                {generatedExcerpt && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Краткое описание</label>
+                    <textarea
+                      value={generatedExcerpt}
+                      onChange={(e) => setGeneratedExcerpt(e.target.value)}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                )}
+
+                {/* Meta Title */}
+                {generatedMetaTitle && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Meta Title</label>
+                    <input
+                      type="text"
+                      value={generatedMetaTitle}
+                      onChange={(e) => setGeneratedMetaTitle(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                )}
+
+                {/* Meta Description */}
+                {generatedMetaDescription && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Meta Description</label>
+                    <textarea
+                      value={generatedMetaDescription}
+                      onChange={(e) => setGeneratedMetaDescription(e.target.value)}
+                      rows={2}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                )}
+
+                {/* Content */}
                 <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Содержание</label>
                   <div className="prose max-w-none">
-                    <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
-                      {generatedContent}
-                    </div>
+                    <textarea
+                      value={generatedContent}
+                      onChange={(e) => setGeneratedContent(e.target.value)}
+                      rows={15}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
                   </div>
                 </div>
 
                 {/* Action Buttons */}
                 <div className="flex space-x-3">
-                  <button className="btn-primary">
-                    💾 Сохранить в Strapi
+                  <button 
+                    onClick={handleSaveToStrapi}
+                    disabled={isSaving || !generatedContent}
+                    className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSaving ? '💾 Сохранение...' : '💾 Сохранить в Strapi'}
                   </button>
-                  <button className="btn-secondary">
-                    📝 Редактировать
+                  <button 
+                    onClick={handleRegenerate}
+                    disabled={isGenerating || !prompt.trim()}
+                    className="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isGenerating ? (
+                      <div className="flex items-center justify-center">
+                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Перегенерирую...
+                      </div>
+                    ) : (
+                      '🔄 Перегенерировать'
+                    )}
                   </button>
-                  <button className="btn-secondary">
-                    🔄 Перегенерировать
-                  </button>
-                  <button className="btn-secondary">
+                  <button 
+                    onClick={() => navigator.clipboard.writeText(generatedContent)}
+                    className="btn-secondary"
+                  >
                     📋 Копировать
                   </button>
                 </div>
@@ -290,31 +558,30 @@ export default function ContentGeneratePage() {
         <div className="mt-8 card">
           <h3 className="text-lg font-semibold text-gray-900 mb-6">Последние генерации</h3>
           <div className="space-y-4">
-            <div className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h4 className="font-medium text-gray-900">Лучшие онлайн казино с быстрыми выплатами</h4>
-                  <p className="text-sm text-gray-500 mt-1">casino-blog.com • Статья • 15 мин назад</p>
-                </div>
-                <div className="flex space-x-2">
-                  <button className="text-blue-600 hover:text-blue-800 text-sm">Просмотр</button>
-                  <button className="text-green-600 hover:text-green-800 text-sm">Опубликовать</button>
-                </div>
+            {recentGenerations.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <p>Нет последних генераций</p>
               </div>
-            </div>
-            
-            <div className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h4 className="font-medium text-gray-900">Обзор слотов NetEnt: топ игр 2024</h4>
-                  <p className="text-sm text-gray-500 mt-1">best-slots.net • Обзор • 1 час назад</p>
+            ) : (
+              recentGenerations.map((generation, index) => (
+                <div key={index} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="font-medium text-gray-900">{generation.title}</h4>
+                      <p className="text-sm text-gray-500 mt-1">
+                        {generation.site} • {generation.type} • {new Date(generation.createdAt).toLocaleString('ru-RU')}
+                      </p>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Link href={`/content/articles/${generation.id}`} className="text-blue-600 hover:text-blue-800 text-sm">
+                        Просмотр
+                      </Link>
+                      <button className="text-green-600 hover:text-green-800 text-sm">Опубликовать</button>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex space-x-2">
-                  <button className="text-blue-600 hover:text-blue-800 text-sm">Просмотр</button>
-                  <button className="text-green-600 hover:text-green-800 text-sm">Опубликовать</button>
-                </div>
-              </div>
-            </div>
+              ))
+            )}
           </div>
         </div>
       </main>
