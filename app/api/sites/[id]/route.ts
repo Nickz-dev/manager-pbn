@@ -1,48 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { readFileSync, existsSync } from 'fs'
-import { join } from 'path'
-
-const SITES_DB_PATH = join(process.cwd(), 'data', 'sites.json')
-
-interface GeneratedSite {
-  id: string
-  domain: string
-  siteName: string
-  type: string
-  status: string
-  createdAt: string
-  updatedAt: string
-  data: any
-  files?: {
-    html: string
-    css: string
-    js?: string
-  }
-  deploymentInfo?: any
-}
-
-function readSites(): GeneratedSite[] {
-  try {
-    if (!existsSync(SITES_DB_PATH)) {
-      return []
-    }
-    const data = require(SITES_DB_PATH)
-    return Array.isArray(data) ? data : []
-  } catch (error) {
-    console.error('Error reading sites database:', error)
-    return []
-  }
-}
+import { strapiAPI } from '@/lib/strapi-client'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = params
-    const sites = readSites()
-    const site = sites.find(s => s.id === id)
-
+    const siteId = params.id
+    
+    // Получаем информацию о сайте
+    const site = await strapiAPI.getPbnSiteById(siteId)
+    
     if (!site) {
       return NextResponse.json(
         { error: 'Site not found' },
@@ -50,70 +18,21 @@ export async function GET(
       )
     }
 
-    // Check if requesting file download
-    const { searchParams } = new URL(request.url)
-    const downloadFile = searchParams.get('download')
-
-    if (downloadFile && site.files) {
-      let content = ''
-      let filename = ''
-      let contentType = 'text/plain'
-
-      switch (downloadFile) {
-        case 'html':
-          content = site.files.html
-          filename = `${site.domain}.html`
-          contentType = 'text/html'
-          break
-        case 'css':
-          content = site.files.css
-          filename = `${site.domain}.css`
-          contentType = 'text/css'
-          break
-        case 'js':
-          content = site.files.js || ''
-          filename = `${site.domain}.js`
-          contentType = 'application/javascript'
-          break
-        case 'zip':
-          // Create a simple text-based bundle for now
-          content = `# ${site.siteName} - Generated Site Files
-
-## index.html
-${site.files.html}
-
-## styles.css
-${site.files.css}
-
-${site.files.js ? `## script.js
-${site.files.js}` : ''}`
-          filename = `${site.domain}-site.txt`
-          contentType = 'text/plain'
-          break
-        default:
-          return NextResponse.json(
-            { error: 'Invalid file type' },
-            { status: 400 }
-          )
-      }
-
-      return new NextResponse(content, {
-        headers: {
-          'Content-Type': contentType,
-          'Content-Disposition': `attachment; filename="${filename}"`
-        }
-      })
-    }
+    // Получаем статьи, связанные с сайтом
+    const articles = await strapiAPI.getArticlesBySite(siteId)
 
     return NextResponse.json({
       success: true,
-      site: site
+      site: {
+        ...site,
+        articles
+      }
     })
 
   } catch (error) {
     console.error('Error fetching site:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to fetch site', details: error },
       { status: 500 }
     )
   }

@@ -1,363 +1,379 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import PageHeader from '@/components/ui/PageHeader'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { PageHeader } from '@/components/ui/PageHeader'
 
-interface GenerateSiteForm {
-  type: 'pbn-blog' | 'pbn-news' | 'casino-premium'
+interface SitePreview {
+  id: string
+  name: string
   domain: string
-  siteName: string
+  template: string
+  statuspbn: string
   description: string
-  keywords: string[]
-  theme: string
-  generateArticles: boolean
-  articlesCount: number
-  articleTopics: string[]
-  targetCategories: string[]
-  targetAuthor: string
-  targetPbnSite: string
+  config: any
+  articles: any[]
+  buildUrl?: string
+  buildStatus: 'pending' | 'building' | 'success' | 'error'
+  buildProgress: number
+  buildLogs: string[]
+}
+
+interface BuildStep {
+  id: string
+  name: string
+  status: 'pending' | 'running' | 'completed' | 'error'
+  progress: number
+  message: string
 }
 
 export default function GenerateSitePage() {
   const router = useRouter()
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [progress, setProgress] = useState(0)
-  const [formData, setFormData] = useState<GenerateSiteForm>({
-    type: 'pbn-blog',
-    domain: '',
-    siteName: '',
-    description: '',
-    keywords: [],
-    theme: 'light',
-    generateArticles: true,
-    articlesCount: 5,
-    articleTopics: [],
-    targetCategories: [],
-    targetAuthor: '',
-    targetPbnSite: ''
-  })
+  const searchParams = useSearchParams()
+  const siteId = searchParams.get('siteId')
+  
+  const [sitePreview, setSitePreview] = useState<SitePreview | null>(null)
+  const [buildSteps, setBuildSteps] = useState<BuildStep[]>([
+    { id: '1', name: 'Подготовка данных', status: 'pending', progress: 0, message: 'Ожидание...' },
+    { id: '2', name: 'Скачивание изображений', status: 'pending', progress: 0, message: 'Ожидание...' },
+    { id: '3', name: 'Генерация контента', status: 'pending', progress: 0, message: 'Ожидание...' },
+    { id: '4', name: 'Сборка Astro', status: 'pending', progress: 0, message: 'Ожидание...' },
+    { id: '5', name: 'Деплой', status: 'pending', progress: 0, message: 'Ожидание...' }
+  ])
+  const [isBuilding, setIsBuilding] = useState(false)
+  const [buildLogs, setBuildLogs] = useState<string[]>([])
+  const [previewMode, setPreviewMode] = useState<'desktop' | 'tablet' | 'mobile'>('desktop')
 
-  const [keywordsInput, setKeywordsInput] = useState('')
-  const [topicsInput, setTopicsInput] = useState('')
-  const [categoriesInput, setCategoriesInput] = useState('')
+  useEffect(() => {
+    if (siteId) {
+      loadSitePreview()
+    }
+  }, [siteId])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsGenerating(true)
-    setProgress(0)
+  const loadSitePreview = async () => {
+    try {
+      const response = await fetch(`/api/sites/${siteId}`)
+      if (response.ok) {
+        const data = await response.json()
+        setSitePreview(data.site)
+      }
+    } catch (error) {
+      console.error('Error loading site preview:', error)
+    }
+  }
+
+  const startBuild = async () => {
+    if (!siteId) return
+    
+    setIsBuilding(true)
+    setBuildLogs([])
+    
+    // Сбрасываем статусы шагов
+    setBuildSteps(prev => prev.map(step => ({
+      ...step,
+      status: 'pending' as const,
+      progress: 0,
+      message: 'Ожидание...'
+    })))
 
     try {
-      // Подготавливаем данные для отправки
-      const payload = {
-        ...formData,
-        keywords: formData.keywords,
-        articleTopics: formData.articleTopics,
-        targetCategories: formData.targetCategories
-      }
-
-      setProgress(20)
-
-      const response = await fetch('/api/sites/generate', {
+      // Запускаем пайплайн сборки
+      const response = await fetch('/api/sites/build', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ siteId })
       })
 
-      setProgress(60)
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to generate site')
-      }
-
       const result = await response.json()
-      setProgress(100)
 
-      // Перенаправляем на страницу сайтов
-      setTimeout(() => {
-        router.push('/sites')
-      }, 1000)
+      if (response.ok) {
+        // Обновляем статус сайта
+        setSitePreview(prev => prev ? {
+          ...prev,
+          buildUrl: result.buildUrl,
+          buildStatus: 'success',
+          statuspbn: 'deployed'
+        } : null)
 
+        // Отмечаем все шаги как завершенные
+        setBuildSteps(prev => prev.map(step => ({
+          ...step,
+          status: 'completed' as const,
+          progress: 100,
+          message: 'Завершено'
+        })))
+
+        setBuildLogs(prev => [...prev, '✅ Сборка завершена успешно!'])
+      } else {
+        throw new Error(result.error || 'Ошибка сборки')
+      }
     } catch (error) {
-      console.error('Error generating site:', error)
-      alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      console.error('Build error:', error)
+      setBuildLogs(prev => [...prev, `❌ Ошибка: ${error}`])
+      
+      // Отмечаем текущий шаг как ошибку
+      setBuildSteps(prev => prev.map((step, index) => 
+        step.status === 'running' ? {
+          ...step,
+          status: 'error' as const,
+          message: `Ошибка: ${error}`
+        } : step
+      ))
     } finally {
-      setIsGenerating(false)
-      setProgress(0)
+      setIsBuilding(false)
     }
   }
 
-  const handleKeywordsChange = (value: string) => {
-    setKeywordsInput(value)
-    const keywords = value.split(',').map(k => k.trim()).filter(k => k)
-    setFormData(prev => ({ ...prev, keywords }))
+  const retryBuild = () => {
+    startBuild()
   }
 
-  const handleTopicsChange = (value: string) => {
-    setTopicsInput(value)
-    const topics = value.split(',').map(t => t.trim()).filter(t => t)
-    setFormData(prev => ({ ...prev, articleTopics: topics }))
+  const goToSites = () => {
+    router.push('/sites')
   }
 
-  const handleCategoriesChange = (value: string) => {
-    setCategoriesInput(value)
-    const categories = value.split(',').map(c => c.trim()).filter(c => c)
-    setFormData(prev => ({ ...prev, targetCategories: categories }))
+  const openPreview = () => {
+    if (sitePreview?.buildUrl) {
+      window.open(sitePreview.buildUrl, '_blank')
+    }
+  }
+
+  if (!sitePreview) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Загрузка предварительного просмотра...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <PageHeader 
-        title="Generate New Site" 
-        subtitle="Create a new site with AI-generated content"
+        title="Предварительный просмотр сайта" 
+        subtitle="Проверьте настройки и запустите сборку"
         breadcrumbs={[
-          { name: 'Sites', href: '/sites' },
-          { name: 'Generate', href: '/sites/generate' }
+          { label: 'Сайты', href: '/sites' },
+          { label: 'Создание', href: '/sites/new' },
+          { label: 'Просмотр' }
         ]}
       />
 
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-lg shadow-sm border">
-          <div className="p-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Site Configuration</h2>
-
-            {isGenerating && (
-              <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-blue-800 font-medium">Generating site...</span>
-                  <span className="text-blue-600">{progress}%</span>
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Левая колонка - Предварительный просмотр */}
+          <div className="space-y-6">
+            {/* Информация о сайте */}
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Информация о сайте</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Название:</span>
+                  <span className="font-medium">{sitePreview.name}</span>
                 </div>
-                <div className="w-full bg-blue-200 rounded-full h-2">
-                  <div 
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${progress}%` }}
-                  ></div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Домен:</span>
+                  <span className="font-medium">{sitePreview.domain}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Шаблон:</span>
+                  <span className="font-medium">{sitePreview.template}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Статус:</span>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    sitePreview.statuspbn === 'deployed' 
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {sitePreview.statuspbn === 'deployed' ? 'Развернут' : 'Черновик'}
+                  </span>
                 </div>
               </div>
-            )}
+            </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Basic Site Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Site Type
-                  </label>
-                  <select
-                    value={formData.type}
-                    onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value as any }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    disabled={isGenerating}
+            {/* Предварительный просмотр */}
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Предварительный просмотр</h3>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => setPreviewMode('desktop')}
+                    className={`px-3 py-1 rounded text-sm ${
+                      previewMode === 'desktop' 
+                        ? 'bg-blue-100 text-blue-700' 
+                        : 'bg-gray-100 text-gray-600'
+                    }`}
                   >
-                    <option value="pbn-blog">PBN Blog</option>
-                    <option value="pbn-news">PBN News</option>
-                    <option value="casino-premium">Casino Premium</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Theme
-                  </label>
-                  <select
-                    value={formData.theme}
-                    onChange={(e) => setFormData(prev => ({ ...prev, theme: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    disabled={isGenerating}
+                    🖥️
+                  </button>
+                  <button
+                    onClick={() => setPreviewMode('tablet')}
+                    className={`px-3 py-1 rounded text-sm ${
+                      previewMode === 'tablet' 
+                        ? 'bg-blue-100 text-blue-700' 
+                        : 'bg-gray-100 text-gray-600'
+                    }`}
                   >
-                    <option value="light">Light</option>
-                    <option value="dark">Dark</option>
-                    <option value="blue">Blue</option>
-                    <option value="green">Green</option>
-                  </select>
+                    📱
+                  </button>
+                  <button
+                    onClick={() => setPreviewMode('mobile')}
+                    className={`px-3 py-1 rounded text-sm ${
+                      previewMode === 'mobile' 
+                        ? 'bg-blue-100 text-blue-700' 
+                        : 'bg-gray-100 text-gray-600'
+                    }`}
+                  >
+                    📱
+                  </button>
                 </div>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Domain
-                </label>
-                <input
-                  type="text"
-                  value={formData.domain}
-                  onChange={(e) => setFormData(prev => ({ ...prev, domain: e.target.value }))}
-                  placeholder="example.com"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={isGenerating}
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Site Name
-                </label>
-                <input
-                  type="text"
-                  value={formData.siteName}
-                  onChange={(e) => setFormData(prev => ({ ...prev, siteName: e.target.value }))}
-                  placeholder="My Awesome Site"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={isGenerating}
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Brief description of your site..."
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={isGenerating}
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Keywords (comma-separated)
-                </label>
-                <input
-                  type="text"
-                  value={keywordsInput}
-                  onChange={(e) => handleKeywordsChange(e.target.value)}
-                  placeholder="keyword1, keyword2, keyword3"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={isGenerating}
-                />
-              </div>
-
-              {/* AI Article Generation */}
-              <div className="border-t pt-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">AI Article Generation</h3>
-                
-                <div className="space-y-4">
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="generateArticles"
-                      checked={formData.generateArticles}
-                      onChange={(e) => setFormData(prev => ({ ...prev, generateArticles: e.target.checked }))}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                      disabled={isGenerating}
-                    />
-                    <label htmlFor="generateArticles" className="ml-2 text-sm text-gray-700">
-                      Generate articles automatically
-                    </label>
+              
+              <div className={`border-2 border-gray-200 rounded-lg overflow-hidden ${
+                previewMode === 'desktop' ? 'w-full' :
+                previewMode === 'tablet' ? 'w-3/4 mx-auto' :
+                'w-1/2 mx-auto'
+              }`}>
+                <div className="bg-gray-100 p-2 flex items-center space-x-2">
+                  <div className="flex space-x-1">
+                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                    <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                   </div>
-
-                  {formData.generateArticles && (
-                    <div className="space-y-4 pl-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Number of Articles
-                        </label>
-                        <input
-                          type="number"
-                          min="1"
-                          max="20"
-                          value={formData.articlesCount}
-                          onChange={(e) => setFormData(prev => ({ ...prev, articlesCount: parseInt(e.target.value) }))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          disabled={isGenerating}
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Article Topics (comma-separated, optional)
-                        </label>
-                        <input
-                          type="text"
-                          value={topicsInput}
-                          onChange={(e) => handleTopicsChange(e.target.value)}
-                          placeholder="cryptocurrency, blockchain, trading"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          disabled={isGenerating}
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                          Leave empty to use default topics
-                        </p>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Target Categories (comma-separated IDs, optional)
-                        </label>
-                        <input
-                          type="text"
-                          value={categoriesInput}
-                          onChange={(e) => handleCategoriesChange(e.target.value)}
-                          placeholder="1, 2, 3"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          disabled={isGenerating}
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                          Category IDs to assign articles to
-                        </p>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Target Author ID (optional)
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.targetAuthor}
-                          onChange={(e) => setFormData(prev => ({ ...prev, targetAuthor: e.target.value }))}
-                          placeholder="1"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          disabled={isGenerating}
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Target PBN Site ID (optional)
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.targetPbnSite}
-                          onChange={(e) => setFormData(prev => ({ ...prev, targetPbnSite: e.target.value }))}
-                          placeholder="1"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          disabled={isGenerating}
-                        />
-                      </div>
+                  <div className="text-xs text-gray-600 ml-2">{sitePreview.domain}</div>
+                </div>
+                <div className="bg-white p-4 h-64 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="text-4xl mb-2">
+                      {sitePreview.template === 'casino-blog' && '🎰'}
+                      {sitePreview.template === 'slots-review' && '🎰'}
+                      {sitePreview.template === 'gaming-news' && '🎮'}
+                      {sitePreview.template === 'sports-betting' && '⚽'}
+                      {sitePreview.template === 'poker-platform' && '♠️'}
+                      {sitePreview.template === 'premium-casino' && '💰'}
                     </div>
-                  )}
+                    <h2 className="text-xl font-bold text-gray-900 mb-2">{sitePreview.name}</h2>
+                    <p className="text-gray-600">{sitePreview.description}</p>
+                    <div className="mt-4 text-sm text-gray-500">
+                      {sitePreview.articles?.length || 0} статей
+                    </div>
+                  </div>
                 </div>
               </div>
+            </div>
 
-              <div className="flex justify-end space-x-4 pt-6 border-t">
+            {/* Действия */}
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Действия</h3>
+              <div className="space-y-3">
+                {sitePreview.buildUrl && (
+                  <button
+                    onClick={openPreview}
+                    className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                  >
+                    🌐 Открыть сайт
+                  </button>
+                )}
                 <button
-                  type="button"
-                  onClick={() => router.push('/sites')}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                  disabled={isGenerating}
+                  onClick={startBuild}
+                  disabled={isBuilding}
+                  className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Cancel
+                  {isBuilding ? '🔄 Сборка...' : '🚀 Запустить сборку'}
                 </button>
                 <button
-                  type="submit"
-                  disabled={isGenerating}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={goToSites}
+                  className="w-full px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
                 >
-                  {isGenerating ? 'Generating...' : 'Generate Site'}
+                  📋 К списку сайтов
                 </button>
               </div>
-            </form>
+            </div>
+          </div>
+
+          {/* Правая колонка - Пайплайн сборки */}
+          <div className="space-y-6">
+            {/* Шаги сборки */}
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Пайплайн сборки</h3>
+              <div className="space-y-4">
+                {buildSteps.map((step) => (
+                  <div key={step.id} className="flex items-center space-x-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                      step.status === 'completed' ? 'bg-green-100 text-green-700' :
+                      step.status === 'running' ? 'bg-blue-100 text-blue-700' :
+                      step.status === 'error' ? 'bg-red-100 text-red-700' :
+                      'bg-gray-100 text-gray-500'
+                    }`}>
+                      {step.status === 'completed' ? '✓' :
+                       step.status === 'running' ? '⟳' :
+                       step.status === 'error' ? '✗' : step.id}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-gray-900">{step.name}</span>
+                        <span className="text-xs text-gray-500">{step.progress}%</span>
+                      </div>
+                      <div className="mt-1">
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div 
+                            className={`h-2 rounded-full transition-all duration-300 ${
+                              step.status === 'completed' ? 'bg-green-500' :
+                              step.status === 'running' ? 'bg-blue-500' :
+                              step.status === 'error' ? 'bg-red-500' :
+                              'bg-gray-300'
+                            }`}
+                            style={{ width: `${step.progress}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-600 mt-1">{step.message}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Логи сборки */}
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Логи сборки</h3>
+              <div className="bg-gray-900 text-green-400 p-4 rounded-lg h-64 overflow-y-auto font-mono text-sm">
+                {buildLogs.length === 0 ? (
+                  <div className="text-gray-500">Логи появятся здесь во время сборки...</div>
+                ) : (
+                  buildLogs.map((log, index) => (
+                    <div key={index} className="mb-1">
+                      <span className="text-gray-500">[{new Date().toLocaleTimeString()}]</span> {log}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Статистика */}
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Статистика</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">{sitePreview.articles?.length || 0}</div>
+                  <div className="text-sm text-gray-600">Статей</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">
+                    {buildSteps.filter(s => s.status === 'completed').length}
+                  </div>
+                  <div className="text-sm text-gray-600">Шагов выполнено</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
   )
-} 
+}

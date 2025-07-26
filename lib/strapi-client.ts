@@ -154,12 +154,29 @@ export const strapiAPI = {
   },
 
   async getPbnSiteById(id: string) {
-    const res = await strapi.get(`/pbn-sites/${id}`)
-    return { id: res.data.data.id, ...res.data.data.attributes }
+    // Сначала попробуем найти по ID
+    try {
+      const res = await strapi.get(`/pbn-sites/${id}`)
+      return { id: res.data.data.id, ...res.data.data.attributes }
+    } catch (error) {
+      // Если не найдено по ID, попробуем найти по documentId
+      const allSites = await this.getPbnSites()
+      const site = allSites.find((site: any) => site.documentId === id || site.id.toString() === id)
+      if (site) {
+        return site
+      }
+      throw error
+    }
   },
 
   async updatePbnSite(id: string, data: any) {
-    const res = await strapi.put(`/pbn-sites/${id}`, { data })
+    // Сначала найдем сайт по ID, чтобы получить documentId
+    const site = await this.getPbnSiteById(id)
+    if (!site) {
+      throw new Error(`Site with id ${id} not found`)
+    }
+    
+    const res = await strapi.put(`/pbn-sites/${site.documentId}`, { data })
     return { id: res.data.data.id, ...res.data.data.attributes }
   },
 
