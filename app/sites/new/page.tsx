@@ -32,9 +32,32 @@ export default function NewSitePage() {
   const [authors, setAuthors] = useState<any[]>([])
   const [selectedSite, setSelectedSite] = useState<string>('')
   const [pbnSites, setPbnSites] = useState<any[]>([])
+  
+  // Состояния для доменов и VPS серверов
+  const [domains, setDomains] = useState<any[]>([])
+  const [vpsServers, setVpsServers] = useState<any[]>([])
 
-  // Загрузка статей и категорий
+  // Загрузка данных
   useEffect(() => {
+    // Загружаем домены и VPS серверы для всех типов сайтов
+    fetch('/api/infrastructure/domains')
+      .then(res => res.json())
+      .then(data => {
+        if (data && Array.isArray(data.domains)) {
+          setDomains(data.domains)
+        }
+      })
+      .catch(() => setDomains([]))
+    
+    fetch('/api/infrastructure/vps')
+      .then(res => res.json())
+      .then(data => {
+        if (data && Array.isArray(data.vpsServers)) {
+          setVpsServers(data.vpsServers)
+        }
+      })
+      .catch(() => setVpsServers([]))
+    
     if (siteType === 'pbn') {
       // Всегда загружаем статьи, фильтрация происходит в компоненте
       fetch('/api/content/articles')
@@ -324,13 +347,23 @@ export default function NewSitePage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Домен
                 </label>
-                <input
-                  type="text"
+                <select
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="example.com"
                   value={formData.domain}
                   onChange={(e) => updateFormData('domain', e.target.value)}
-                />
+                >
+                  <option value="">Выберите домен</option>
+                  {domains.map((domain: any) => (
+                    <option key={domain.id} value={domain.name}>
+                      {domain.name} ({domain.status})
+                    </option>
+                  ))}
+                </select>
+                {domains.length === 0 && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Нет доступных доменов. <Link href="/infrastructure/domains/new" className="text-blue-600 hover:underline">Добавить домен</Link>
+                  </p>
+                )}
               </div>
 
               <div>
@@ -343,10 +376,17 @@ export default function NewSitePage() {
                   onChange={(e) => updateFormData('vps', e.target.value)}
                 >
                   <option value="">Выберите VPS</option>
-                  <option value="main-server-01">main-server-01 (Germany)</option>
-                  <option value="backup-server">backup-server (Netherlands)</option>
-                  <option value="test-server">test-server (USA)</option>
+                  {vpsServers.map((vps: any) => (
+                    <option key={vps.id} value={vps.id}>
+                      {vps.name} ({vps.provider}) - {vps.status}
+                    </option>
+                  ))}
                 </select>
+                {vpsServers.length === 0 && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Нет доступных VPS серверов. <Link href="/infrastructure/vps/new" className="text-blue-600 hover:underline">Добавить VPS</Link>
+                  </p>
+                )}
               </div>
 
               <div>
