@@ -1,8 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { verifyTokenEdge } from '@/lib/auth'
 
 export function middleware(request: NextRequest) {
   // Skip middleware for public routes
-  const publicPaths = ['/login', '/api/auth/login', '/api/content', '/_next', '/favicon.ico']
+  const publicPaths = [
+    '/login', 
+    '/api/auth/login', 
+    '/api/auth/check-token', 
+    '/api/content', 
+    '/_next', 
+    '/favicon.ico'
+  ]
+  
   const isPublicPath = publicPaths.some(path => request.nextUrl.pathname.startsWith(path))
   
   if (isPublicPath) {
@@ -16,6 +25,16 @@ export function middleware(request: NextRequest) {
   if (!token) {
     const loginUrl = new URL('/login', request.url)
     return NextResponse.redirect(loginUrl)
+  }
+
+  // Verify JWT token using Edge-compatible function
+  const payload = verifyTokenEdge(token)
+  
+  if (!payload) {
+    // Invalid token, clear cookie and redirect to login
+    const response = NextResponse.redirect(new URL('/login', request.url))
+    response.cookies.delete('auth-token')
+    return response
   }
 
   // Allow the request to continue

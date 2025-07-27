@@ -30,8 +30,8 @@ export default function LoginPage() {
         // Set auth cookie
         document.cookie = `auth-token=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}; samesite=lax`
         
-        // Redirect to dashboard
-        router.push('/')
+        // Redirect to main page
+        window.location.href = '/'
       } else {
         setError(data.error || 'Ошибка входа')
       }

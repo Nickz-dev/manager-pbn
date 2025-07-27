@@ -1,91 +1,56 @@
 #!/usr/bin/env node
 
 const bcrypt = require('bcryptjs')
-const crypto = require('crypto')
 
 /**
  * Generate Password Hash and JWT Secret for PBN Manager
  * Usage: node scripts/generate-password.js [password]
  */
 
-function generateJWTSecret(length = 64) {
-  return crypto.randomBytes(length).toString('hex')
-}
-
-async function generatePasswordHash(password = 'admin123') {
+async function generateHash(password) {
   const saltRounds = 12
-  
-  try {
-    const hash = await bcrypt.hash(password, saltRounds)
-    return hash
-  } catch (error) {
-    console.error('Error generating hash:', error)
-    return null
-  }
+  const hash = await bcrypt.hash(password, saltRounds)
+  return hash
 }
 
-function generateRandomPassword(length = 16) {
-  const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*'
-  let password = ''
-  for (let i = 0; i < length; i++) {
-    password += charset.charAt(Math.floor(Math.random() * charset.length))
-  }
-  return password
+async function verifyPassword(password, hash) {
+  return await bcrypt.compare(password, hash)
 }
 
 async function main() {
   const args = process.argv.slice(2)
   
-  console.log('🔐 PBN Manager - Генератор паролей и секретов\n')
-
-  // Generate JWT Secret
-  const jwtSecret = generateJWTSecret()
-  console.log('JWT_SECRET (добавьте в .env):')
-  console.log(`JWT_SECRET=${jwtSecret}\n`)
-
-  // Handle password
-  let password
-  if (args.length > 0) {
-    password = args[0]
-    console.log(`📝 Используется пароль: ${password}`)
-  } else {
-    password = 'admin123'
-    console.log(`🎲 Используется пароль по умолчанию: ${password}`)
+  if (args.length === 0) {
+    console.log('Использование:')
+    console.log('  node generate-password.js <пароль>')
+    console.log('  node generate-password.js <пароль> <хеш> - для проверки')
+    console.log('')
+    console.log('Примеры:')
+    console.log('  node generate-password.js mypassword')
+    console.log('  node generate-password.js mypassword $2a$12$...')
+    process.exit(1)
   }
 
-  // Generate password hash
-  const passwordHash = await generatePasswordHash(password)
-  if (!passwordHash) {
-    console.error('❌ Ошибка генерации хеша пароля')
+  const password = args[0]
+  const hash = args[1]
+
+  if (hash) {
+    // Verify password
+    const isValid = await verifyPassword(password, hash)
+    console.log(`Проверка пароля: ${isValid ? '✅ ВЕРНО' : '❌ НЕВЕРНО'}`)
     return
   }
-  
-  console.log('\nADMIN_PASSWORD_HASH (добавьте в .env):')
-  console.log(`ADMIN_PASSWORD_HASH=${passwordHash}\n`)
 
-  // Admin email
-  console.log('ADMIN_EMAIL (добавьте в .env):')
-  console.log('ADMIN_EMAIL=admin@pbn-manager.local\n')
-
-  console.log('📋 Полная конфигурация для .env:')
-  console.log('='.repeat(50))
-  console.log(`JWT_SECRET=${jwtSecret}`)
-  console.log(`ADMIN_EMAIL=admin@pbn-manager.local`)
-  console.log(`ADMIN_PASSWORD_HASH=${passwordHash}`)
-  console.log('='.repeat(50))
-
-  console.log('\n✅ Готово! Скопируйте переменные в ваш .env файл')
-  console.log(`🔑 Логин: admin@pbn-manager.local`)
-  console.log(`🔑 Пароль: ${password}`)
+  // Generate hash
+  const generatedHash = await generateHash(password)
+  console.log('🔐 Сгенерированный хеш:')
+  console.log(generatedHash)
+  console.log('')
+  console.log('📋 Для .env файла:')
+  console.log(`ADMIN_PASSWORD_HASH=${generatedHash}`)
+  console.log('')
+  console.log('🔍 Для проверки:')
+  console.log(`node generate-password.js "${password}" "${generatedHash}"`)
 }
 
-// Handle CLI usage
-if (require.main === module) {
-  main().catch(console.error)
-}
-
-module.exports = {
-  generateJWTSecret,
-  generatePasswordHash,
-  generateRandomPassword
-} 
+main().catch(console.error) 

@@ -3,21 +3,11 @@ import { authenticateUser, createToken, isAuthConfigured } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
   try {
-    // Debug logs
-    console.log('🔍 DEBUG - Environment check:', {
-      hasJWT: !!process.env.JWT_SECRET,
-      jwtLength: process.env.JWT_SECRET?.length,
-      hasAdminEmail: !!process.env.ADMIN_EMAIL,
-      adminEmail: process.env.ADMIN_EMAIL,
-      hasPasswordHash: !!process.env.ADMIN_PASSWORD_HASH
-    })
-
     // Check if authentication is properly configured
     const { configured, errors } = isAuthConfigured()
     if (!configured) {
-      console.error('Auth configuration errors:', errors)
       return NextResponse.json(
-        { error: 'Аутентификация не настроена', details: errors },
+        { error: 'Система авторизации не настроена', details: errors },
         { status: 500 }
       )
     }
@@ -34,19 +24,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Authenticate user
-    console.log('🔍 AUTH - Trying to authenticate:', { email, password: '***' })
-    
     const user = await authenticateUser(email, password)
     
     if (!user) {
-      console.log('❌ AUTH - Authentication failed')
       return NextResponse.json(
         { error: 'Неверный email или пароль' },
         { status: 401 }
       )
     }
-
-    console.log('✅ AUTH - Authentication successful')
 
     // Create JWT token
     const token = createToken({
@@ -76,8 +61,7 @@ export async function POST(request: NextRequest) {
 
     return response
 
-  } catch (error) {
-    console.error('Login error:', error)
+  } catch (error: any) {
     return NextResponse.json(
       { error: 'Внутренняя ошибка сервера' },
       { status: 500 }
