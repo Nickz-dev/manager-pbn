@@ -241,6 +241,17 @@ export const strapiAPI = {
     return { id: res.data.data.id, ...res.data.data.attributes }
   },
 
+  async deletePbnSite(id: string) {
+    // Сначала найдем сайт по ID, чтобы получить documentId
+    const site = await this.getPbnSiteById(id)
+    if (!site) {
+      throw new Error(`Site with id ${id} not found`)
+    }
+    
+    await strapi.delete(`/pbn-sites/${site.documentId}`)
+    return { success: true, deletedSite: site }
+  },
+
   async getArticlesBySite(siteId: string) {
     const res = await strapi.get(`/content-articles?filters[pbn_site][documentId][$eq]=${siteId}&populate=*`)
     return (res.data.data || []).map((item: any) => ({

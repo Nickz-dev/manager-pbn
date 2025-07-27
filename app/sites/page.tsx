@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { StatsCard } from '@/components/ui/StatsCard'
 import { StatusBadge } from '@/components/ui/StatusBadge'
+import { Modal } from '@/components/ui/Modal'
 
 interface Site {
   id: string
@@ -21,6 +22,16 @@ export default function SitesPage() {
   const [sites, setSites] = useState<Site[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [selectedSite, setSelectedSite] = useState<Site | null>(null)
+  const [editForm, setEditForm] = useState({
+    name: '',
+    domain: '',
+    template: '',
+    statuspbn: ''
+  })
+  const [actionLoading, setActionLoading] = useState(false)
 
   useEffect(() => {
     fetchSites()
@@ -42,6 +53,113 @@ export default function SitesPage() {
       console.error('Error fetching sites:', err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleEdit = (site: Site) => {
+    setSelectedSite(site)
+    setEditForm({
+      name: site.name,
+      domain: site.domain,
+      template: site.template,
+      statuspbn: site.statuspbn
+    })
+    setShowEditModal(true)
+  }
+
+  const handleDelete = (site: Site) => {
+    setSelectedSite(site)
+    setShowDeleteModal(true)
+  }
+
+  const handleUpdateSite = async () => {
+    if (!selectedSite) return
+    
+    try {
+      setActionLoading(true)
+      const response = await fetch(`/api/sites/${selectedSite.documentId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editForm)
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        setShowEditModal(false)
+        setSelectedSite(null)
+        fetchSites() // Обновляем список
+        alert('Сайт успешно обновлен!')
+      } else {
+        alert('Ошибка при обновлении сайта: ' + data.error)
+      }
+    } catch (err) {
+      console.error('Error updating site:', err)
+      alert('Ошибка при обновлении сайта')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleDeleteSite = async () => {
+    if (!selectedSite) return
+    
+    try {
+      setActionLoading(true)
+      const response = await fetch(`/api/sites/${selectedSite.documentId}`, {
+        method: 'DELETE'
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        setShowDeleteModal(false)
+        setSelectedSite(null)
+        fetchSites() // Обновляем список
+        alert('Сайт успешно удален!')
+      } else {
+        alert('Ошибка при удалении сайта: ' + data.error)
+      }
+    } catch (err) {
+      console.error('Error deleting site:', err)
+      alert('Ошибка при удалении сайта')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleDownloadDist = async (site: Site) => {
+    try {
+      setActionLoading(true)
+      
+      // Создаем временную ссылку для скачивания
+      const link = document.createElement('a')
+      link.href = `/api/sites/${site.documentId}/download`
+      link.download = `${site.name}-${site.documentId}.zip`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      
+      alert('Начинается скачивание ZIP файла...')
+    } catch (err) {
+      console.error('Error downloading dist:', err)
+      alert('Ошибка при скачивании файла')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleRebuild = async (site: Site) => {
+    try {
+      setActionLoading(true)
+      
+      // Перенаправляем на страницу генерации с предустановленным ID сайта
+      window.location.href = `/sites/generate?siteId=${site.documentId}`
+    } catch (err) {
+      console.error('Error redirecting to rebuild:', err)
+      alert('Ошибка при переходе к пересборке')
+    } finally {
+      setActionLoading(false)
     }
   }
 
@@ -250,13 +368,34 @@ export default function SitesPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex justify-end space-x-2">
-                          <button className="text-indigo-600 hover:text-indigo-900">
+                          <button 
+                            onClick={() => handleEdit(site)}
+                            disabled={actionLoading}
+                            className="text-indigo-600 hover:text-indigo-900 disabled:opacity-50"
+                          >
                             Редактировать
                           </button>
-                          <button className="text-green-600 hover:text-green-900">
+                          <button 
+                            onClick={() => handleRebuild(site)}
+                            disabled={actionLoading}
+                            className="text-green-600 hover:text-green-900 disabled:opacity-50"
+                          >
                             Пересобрать
                           </button>
-                          <button className="text-red-600 hover:text-red-900">
+                          {site.statuspbn === 'deployed' && (
+                            <button 
+                              onClick={() => handleDownloadDist(site)}
+                              disabled={actionLoading}
+                              className="text-blue-600 hover:text-blue-900 disabled:opacity-50"
+                            >
+                              Скачать ZIP
+                            </button>
+                          )}
+                          <button 
+                            onClick={() => handleDelete(site)}
+                            disabled={actionLoading}
+                            className="text-red-600 hover:text-red-900 disabled:opacity-50"
+                          >
                             Удалить
                           </button>
                         </div>
@@ -269,6 +408,138 @@ export default function SitesPage() {
           )}
         </div>
       </main>
+
+      {/* Модальное окно редактирования */}
+      <Modal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false)
+          setSelectedSite(null)
+        }}
+        title="Редактировать сайт"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Название сайта
+            </label>
+            <input
+              type="text"
+              value={editForm.name}
+              onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+              className="input-field w-full"
+              placeholder="Введите название сайта"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Домен
+            </label>
+            <input
+              type="text"
+              value={editForm.domain}
+              onChange={(e) => setEditForm({ ...editForm, domain: e.target.value })}
+              className="input-field w-full"
+              placeholder="example.com"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Шаблон
+            </label>
+            <select
+              value={editForm.template}
+              onChange={(e) => setEditForm({ ...editForm, template: e.target.value })}
+              className="input-field w-full"
+            >
+              <option value="blog">Blog</option>
+              <option value="casino-standard">Casino Standard</option>
+              <option value="casino-premium">Casino Premium</option>
+              <option value="gaming-news">Gaming News</option>
+              <option value="poker-platform">Poker Platform</option>
+              <option value="slots-review">Slots Review</option>
+              <option value="sports-betting">Sports Betting</option>
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Статус
+            </label>
+            <select
+              value={editForm.statuspbn}
+              onChange={(e) => setEditForm({ ...editForm, statuspbn: e.target.value })}
+              className="input-field w-full"
+            >
+              <option value="draft">Черновик</option>
+              <option value="building">В сборке</option>
+              <option value="deployed">Развернут</option>
+              <option value="error">Ошибка</option>
+            </select>
+          </div>
+          
+          <div className="flex justify-end space-x-3 pt-4">
+            <button
+              onClick={() => {
+                setShowEditModal(false)
+                setSelectedSite(null)
+              }}
+              className="btn-secondary"
+              disabled={actionLoading}
+            >
+              Отмена
+            </button>
+            <button
+              onClick={handleUpdateSite}
+              disabled={actionLoading}
+              className="btn-primary"
+            >
+              {actionLoading ? 'Сохранение...' : 'Сохранить'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Модальное окно удаления */}
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false)
+          setSelectedSite(null)
+        }}
+        title="Удалить сайт"
+      >
+        <div className="space-y-4">
+          <p className="text-gray-600">
+            Вы уверены, что хотите удалить сайт <strong>{selectedSite?.name}</strong>?
+          </p>
+          <p className="text-sm text-gray-500">
+            Это действие нельзя отменить. Все данные сайта будут удалены безвозвратно.
+          </p>
+          
+          <div className="flex justify-end space-x-3 pt-4">
+            <button
+              onClick={() => {
+                setShowDeleteModal(false)
+                setSelectedSite(null)
+              }}
+              className="btn-secondary"
+              disabled={actionLoading}
+            >
+              Отмена
+            </button>
+            <button
+              onClick={handleDeleteSite}
+              disabled={actionLoading}
+              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium disabled:opacity-50"
+            >
+              {actionLoading ? 'Удаление...' : 'Удалить'}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 } 

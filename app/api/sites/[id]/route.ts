@@ -49,41 +49,91 @@ export async function DELETE(
 ) {
   try {
     const { id } = params
-    const sites = readSites()
-    const siteIndex = sites.findIndex(s => s.id === id)
+    console.log('🗑️ API: Deleting site with ID:', id)
+    
+    const result = await strapiAPI.deletePbnSite(id)
+    
+    console.log('✅ API: Site deleted successfully')
+    
+    return NextResponse.json({
+      success: true,
+      message: 'Site deleted successfully',
+      deletedSite: {
+        id: result.deletedSite.id,
+        documentId: result.deletedSite.documentId,
+        name: result.deletedSite.name,
+        domain: result.deletedSite.domain
+      }
+    })
 
-    if (siteIndex === -1) {
+  } catch (error: any) {
+    console.error('❌ API: Error deleting site:', error)
+    
+    if (error.message && error.message.includes('not found')) {
       return NextResponse.json(
         { error: 'Site not found' },
         { status: 404 }
       )
     }
+    
+    return NextResponse.json(
+      { error: 'Failed to delete site', details: error.message },
+      { status: 500 }
+    )
+  }
+}
 
-    // Remove site from array
-    const deletedSite = sites.splice(siteIndex, 1)[0]
-
-    // Save updated sites list
-    const fs = require('fs')
-    const dataDir = join(process.cwd(), 'data')
-    if (!existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true })
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const { id } = params
+    const body = await request.json()
+    
+    console.log('✏️ API: Updating site with ID:', id)
+    console.log('✏️ API: Update data:', JSON.stringify(body, null, 2))
+    
+    // Валидация входных данных
+    if (!body.name && !body.domain && !body.template && !body.statuspbn) {
+      return NextResponse.json(
+        { error: 'No valid fields to update' },
+        { status: 400 }
+      )
     }
-    fs.writeFileSync(SITES_DB_PATH, JSON.stringify(sites, null, 2))
-
+    
+    // Подготавливаем данные для обновления
+    const updateData: any = {}
+    if (body.name) updateData.name = body.name
+    if (body.domain) updateData.domain = body.domain
+    if (body.template) updateData.template = body.template
+    if (body.statuspbn) updateData.statuspbn = body.statuspbn
+    if (body.description !== undefined) updateData.description = body.description
+    if (body.selectedArticles !== undefined) updateData.selectedArticles = body.selectedArticles
+    if (body.config !== undefined) updateData.config = body.config
+    
+    const updatedSite = await strapiAPI.updatePbnSite(id, updateData)
+    
+    console.log('✅ API: Site updated successfully')
+    
     return NextResponse.json({
       success: true,
-      message: 'Site deleted successfully',
-      deletedSite: {
-        id: deletedSite.id,
-        domain: deletedSite.domain,
-        siteName: deletedSite.siteName
-      }
+      message: 'Site updated successfully',
+      site: updatedSite
     })
 
-  } catch (error) {
-    console.error('Error deleting site:', error)
+  } catch (error: any) {
+    console.error('❌ API: Error updating site:', error)
+    
+    if (error.message && error.message.includes('not found')) {
+      return NextResponse.json(
+        { error: 'Site not found' },
+        { status: 404 }
+      )
+    }
+    
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to update site', details: error.message },
       { status: 500 }
     )
   }

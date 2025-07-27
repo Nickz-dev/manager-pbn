@@ -4,9 +4,10 @@ interface ModalProps {
   isOpen: boolean
   onClose: () => void
   children: ReactNode
+  title?: string
 }
 
-export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
+export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children, title }) => {
   useEffect(() => {
     if (!isOpen) return;
     const handleEsc = (e: KeyboardEvent) => {
@@ -25,6 +26,11 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
         style={{ minWidth: 320 }}
         onClick={e => e.stopPropagation()}
       >
+        {title && (
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+          </div>
+        )}
         <button
           className="absolute top-2 right-3 text-gray-400 hover:text-gray-700 text-2xl font-bold focus:outline-none"
           onClick={onClose}
@@ -32,7 +38,9 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
         >
           ×
         </button>
-        {children}
+        <div className="px-6 py-4">
+          {children}
+        </div>
       </div>
       <style jsx>{`
         .animate-fadeIn {
