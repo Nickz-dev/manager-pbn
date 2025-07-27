@@ -1,7 +1,7 @@
 {
-  "name": "test",
-  "short_name": "test",
-  "description": "test",
+  "name": "Casino-test",
+  "short_name": "Casino-test",
+  "description": "Casino-test",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

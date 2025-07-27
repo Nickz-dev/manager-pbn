@@ -9,18 +9,86 @@ const latestArticles = articles
   .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
   .slice(0, 8);
 
-// Получаем популярные категории
-const popularCategories = categories.slice(0, 6);
+// Получаем популярные категории (только из статей на сайте)
+const popularCategories = categories.slice(0, 5);
+
+// Генерируем структурированные данные
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": site.name,
+  "url": `https://${site.domain}`,
+  "description": site.description,
+  "publisher": {
+    "@type": "Organization",
+    "name": site.name,
+    "url": `https://${site.domain}`
+  },
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": `https://${site.domain}/search?q={search_term_string}`,
+    "query-input": "required name=search_term_string"
+  }
+};
+
+// Генерируем Open Graph данные
+const ogData = {
+  title: site.name,
+  description: site.description,
+  url: `https://${site.domain}`,
+  type: 'website',
+  site_name: site.name,
+  image: site.og_image || `/images/default-og.jpg`
+};
 ---
 
 <!DOCTYPE html>
-<html lang={site.config?.language || 'ru'}>
+<html lang={site.config?.language || 'en'}>
 <head>
   <meta charset="utf-8">
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <meta name="viewport" content="width=device-width">
-  <title>{site.name}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#dc2626">
+  
+  <!-- Primary Meta Tags -->
+  <title>{site.name} - {site.description}</title>
+  <meta name="title" content={site.name}>
   <meta name="description" content={site.description}>
+  <meta name="keywords" content={site.keywords?.join(', ') || ''}>
+  <meta name="author" content={site.name}>
+  <meta name="robots" content="index, follow">
+  <meta name="language" content={site.config?.language || 'en'}>
+  
+  <!-- Canonical URL -->
+  <link rel="canonical" href={`https://${site.domain}`}>
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content={ogData.type}>
+  <meta property="og:url" content={ogData.url}>
+  <meta property="og:title" content={ogData.title}>
+  <meta property="og:description" content={ogData.description}>
+  <meta property="og:image" content={ogData.image}>
+  <meta property="og:site_name" content={ogData.site_name}>
+  <meta property="og:locale" content={site.config?.language || 'en_US'}>
+  
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content={ogData.url}>
+  <meta property="twitter:title" content={ogData.title}>
+  <meta property="twitter:description" content={ogData.description}>
+  <meta property="twitter:image" content={ogData.image}>
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="manifest" href="/site.webmanifest">
+  
+  <!-- Preload critical resources -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Open+Sans:wght@400;500;600&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Open+Sans:wght@400;500;600&display=swap"></noscript>
   
   <!-- Google Analytics -->
   {site.analytics?.googleAnalytics && (
@@ -29,176 +97,442 @@ const popularCategories = categories.slice(0, 6);
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-      gtag('config', '{site.analytics.googleAnalytics}');
+      gtag('config', '{site.analytics.googleAnalytics}', {
+        page_title: '{site.name}',
+        page_location: '{ogData.url}'
+      });
     </script>
   )}
   
+  <!-- Structured Data -->
+  <script type="application/ld+json" set:html={JSON.stringify(structuredData)}></script>
+  
   <style>
-    body {
-      font-family: 'Inter', system-ui, sans-serif;
+    :root {
+      --primary-color: #dc2626;
+      --primary-hover: #b91c1c;
+      --accent-color: #f59e0b;
+      --accent-hover: #d97706;
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-accent: #334155;
+      --text-primary: #f8fafc;
+      --text-secondary: #cbd5e1;
+      --text-muted: #94a3b8;
+      --border-color: #475569;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+    
+    * {
       margin: 0;
       padding: 0;
-      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-      color: #ffffff;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
       line-height: 1.6;
     }
     
     .container {
       max-width: 1200px;
       margin: 0 auto;
-      padding: 0 20px;
+      padding: 0 1rem;
     }
     
     .header {
-      background: rgba(0, 0, 0, 0.4);
-      backdrop-filter: blur(10px);
-      padding: 2rem 0;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+      padding: 3rem 0;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="lines" width="20" height="20" patternUnits="userSpaceOnUse"><line x1="0" y1="0" x2="20" y2="20" stroke="rgba(255,255,255,0.1)" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23lines)"/></svg>');
+      opacity: 0.3;
+    }
+    
+    .header-content {
+      position: relative;
+      z-index: 1;
+      text-align: center;
     }
     
     .header h1 {
-      font-size: 2.5rem;
-      font-weight: 800;
-      background: linear-gradient(45deg, #fbbf24, #f59e0b);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      margin: 0;
-      text-align: center;
+      font-family: 'Oswald', sans-serif;
+      font-size: 3.5rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: white;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      text-transform: uppercase;
+      letter-spacing: 2px;
     }
     
     .header p {
-      text-align: center;
-      color: #a0a0a0;
-      font-size: 1.1rem;
-      margin: 0.5rem 0 0 0;
+      font-size: 1.25rem;
+      color: rgba(255, 255, 255, 0.9);
+      max-width: 600px;
+      margin: 0 auto;
     }
     
     .main {
-      padding: 3rem 0;
+      padding: 4rem 0;
     }
     
-    .articles-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 2rem;
+    .section-title {
+      font-family: 'Oswald', sans-serif;
+      font-size: 2.5rem;
+      font-weight: 600;
       margin-bottom: 3rem;
+      text-align: center;
+      color: var(--text-primary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      position: relative;
     }
     
-    .article-card {
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 15px;
+    .section-title::after {
+      content: '';
+      position: absolute;
+      bottom: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80px;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+      border-radius: 2px;
+    }
+    
+    /* LIST DESIGN WITH SIDE IMAGES */
+    .articles-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      margin-bottom: 4rem;
+    }
+    
+    .article-card-list {
+      background: var(--bg-secondary);
+      border-radius: 12px;
       overflow: hidden;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: var(--shadow-md);
+      transition: all 0.3s ease;
+      border: 1px solid var(--border-color);
+      display: flex;
+      min-height: 200px;
     }
     
-    .article-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    .article-card-list:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-xl);
+      border-color: var(--primary-color);
     }
     
-    .article-image {
+    .article-image-side {
+      flex: 0 0 300px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .article-image-side img {
       width: 100%;
-      height: 200px;
+      height: 100%;
       object-fit: cover;
+      transition: transform 0.3s ease;
     }
     
-    .article-content {
-      padding: 1.5rem;
+    .article-card-list:hover .article-image-side img {
+      transform: scale(1.05);
     }
     
-    .article-title {
+    .article-image-placeholder-side {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, var(--bg-accent) 0%, var(--border-color) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
       font-size: 1.25rem;
-      font-weight: 700;
-      margin: 0 0 1rem 0;
-      color: #ffffff;
+      font-weight: 500;
     }
     
-    .article-excerpt {
-      color: #b0b0b0;
-      margin: 0 0 1rem 0;
-      line-height: 1.6;
+    .article-content-list {
+      flex: 1;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
     }
     
-    .article-meta {
+    .article-title-list {
+      font-family: 'Oswald', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: var(--text-primary);
+      line-height: 1.3;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .article-excerpt-list {
+      color: var(--text-secondary);
+      margin-bottom: 1.5rem;
+      line-height: 1.7;
+      font-size: 1rem;
+      flex-grow: 1;
+    }
+    
+    .article-meta-list {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border-color);
+    }
+    
+    .article-author-list {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
       font-size: 0.875rem;
-      color: #808080;
+      color: var(--text-muted);
+    }
+    
+    .author-avatar-list {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+    
+    .article-date-list {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    
+    .read-more-link {
+      color: var(--primary-color);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      transition: color 0.3s ease;
+    }
+    
+    .read-more-link:hover {
+      color: var(--accent-color);
     }
     
     .categories-section {
-      margin-top: 3rem;
+      margin-bottom: 4rem;
     }
     
     .categories-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
     }
     
     .category-card {
-      background: linear-gradient(45deg, #fbbf24, #f59e0b);
-      padding: 1rem;
-      border-radius: 10px;
+      background: var(--bg-secondary);
+      padding: 2rem 1.5rem;
+      border-radius: 12px;
       text-align: center;
-      transition: transform 0.3s ease;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.3s ease;
+      border: 1px solid var(--border-color);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .category-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
     }
     
     .category-card:hover {
-      transform: scale(1.05);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
     }
     
-    .category-name {
+    .category-card h3 {
+      font-family: 'Oswald', sans-serif;
+      font-size: 1.25rem;
       font-weight: 600;
-      color: #1e293b;
+      margin-bottom: 0.5rem;
+      color: var(--text-primary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     
-    .empty-state {
-      text-align: center;
-      padding: 3rem;
-      color: #808080;
+    .category-card p {
+      color: var(--text-secondary);
+      font-size: 0.875rem;
     }
     
-    .empty-state h2 {
-      font-size: 2rem;
+    .footer {
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border-color);
+      padding: 3rem 0;
+      margin-top: 4rem;
+    }
+    
+    .footer-content {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 2rem;
+    }
+    
+    .footer-section h3 {
+      font-family: 'Oswald', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
       margin-bottom: 1rem;
-      color: #ffffff;
+      color: var(--text-primary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     
-    h2 {
-      font-size: 2rem;
-      font-weight: 700;
-      margin-bottom: 2rem;
-      text-align: center;
-      background: linear-gradient(45deg, #fbbf24, #f59e0b);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+    .footer-section ul {
+      list-style: none;
     }
     
-    .live-scores {
-      background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-      color: #ffffff;
-      padding: 1rem;
-      border-radius: 8px;
-      margin-bottom: 2rem;
+    .footer-section li {
+      margin-bottom: 0.5rem;
+    }
+    
+    .footer-section a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: color 0.3s ease;
+    }
+    
+    .footer-section a:hover {
+      color: var(--primary-color);
+    }
+    
+    .footer-bottom {
       text-align: center;
-      font-weight: 600;
+      padding-top: 2rem;
+      margin-top: 2rem;
+      border-top: 1px solid var(--border-color);
+      color: var(--text-muted);
+    }
+    
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .header h1 {
+        font-size: 2.5rem;
+      }
+      
+      .header p {
+        font-size: 1rem;
+      }
+      
+      .section-title {
+        font-size: 2rem;
+      }
+      
+      .article-card-list {
+        flex-direction: column;
+        min-height: auto;
+      }
+      
+      .article-image-side {
+        flex: none;
+        height: 200px;
+      }
+      
+      .article-content-list {
+        padding: 1.5rem;
+      }
+      
+      .article-title-list {
+        font-size: 1.25rem;
+      }
+      
+      .categories-grid {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+      }
+      
+      .footer-content {
+        grid-template-columns: 1fr;
+        text-align: center;
+        gap: 1.5rem;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .container {
+        padding: 0 0.75rem;
+      }
+      
+      .header {
+        padding: 2rem 0;
+      }
+      
+      .main {
+        padding: 2rem 0;
+      }
+      
+      .article-content-list {
+        padding: 1rem;
+      }
+      
+      .category-card {
+        padding: 1.5rem 1rem;
+      }
+    }
+    
+    /* Loading states */
+    .loading {
+      opacity: 0.7;
+      pointer-events: none;
+    }
+    
+    /* Focus styles for accessibility */
+    a:focus,
+    button:focus {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 2px;
     }
   </style>
-  <!-- Preload critical resources -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"></noscript>
-  
 </head>
 <body>
   <header class="header">
     <div class="container">
-      <h1>⚽ {site.name}</h1>
-      <p>{site.description}</p>
+      <div class="header-content">
+        <h1>⚽ {site.name}</h1>
+        <p>{site.description}</p>
+      </div>
     </div>
   </header>
 
@@ -206,34 +540,48 @@ const popularCategories = categories.slice(0, 6);
     <div class="container">
       {latestArticles.length > 0 ? (
         <>
-          <div class="live-scores">
-            🏆 Live Scores & Betting Odds
-          </div>
-          <h2>📊 Последние аналитики</h2>
-          <div class="articles-grid">
+          <h2 class="section-title">Latest Betting Tips</h2>
+          <div class="articles-list">
             {latestArticles.map(article => (
-              <article class="article-card">
-                <a href={`/articles/${article.slug}`} style="text-decoration: none; color: inherit;">
-                  {article.featured_image && (
-                    <img 
-                      src={article.featured_image} 
-                      alt={article.title}
-                      class="article-image"
-                      loading="lazy"
-                    />
-                  )}
-                  <div class="article-content">
-                    <h3 class="article-title">{article.title}</h3>
-                    {article.excerpt && (
-                      <p class="article-excerpt">{article.excerpt}</p>
+              <article class="article-card-list">
+                <a href={`/articles/${article.slug}`} style="text-decoration: none; color: inherit; display: flex; width: 100%;">
+                  <div class="article-image-side">
+                    {article.featured_image ? (
+                      <img 
+                        src={article.featured_image} 
+                        alt={article.title}
+                        loading="lazy"
+                        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                      />
+                    ) : null}
+                    {!article.featured_image && (
+                      <div class="article-image-placeholder-side">
+                        ⚽ No Image
+                      </div>
                     )}
-                    <div class="article-meta">
-                      <span>
-                        {article.author?.name || 'Anonymous'}
-                      </span>
-                      <span>
-                        {new Date(article.publishedAt).toLocaleDateString()}
-                      </span>
+                  </div>
+                  <div class="article-content-list">
+                    <div>
+                      <h3 class="article-title-list">{article.title}</h3>
+                      {article.excerpt && (
+                        <p class="article-excerpt-list">{article.excerpt}</p>
+                      )}
+                    </div>
+                    <div class="article-meta-list">
+                      <div class="article-author-list">
+                        <div class="author-avatar-list">
+                          {(article.author?.name || 'A').charAt(0).toUpperCase()}
+                        </div>
+                        <span>{article.author?.name || 'Anonymous'}</span>
+                      </div>
+                      <div style="display: flex; align-items: center; gap: 1rem;">
+                        <span class="article-date-list">
+                          {new Date(article.publishedAt).toLocaleDateString()}
+                        </span>
+                        <span class="read-more-link">
+                          Read More →
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </a>
@@ -242,19 +590,20 @@ const popularCategories = categories.slice(0, 6);
           </div>
         </>
       ) : (
-        <div class="empty-state">
-          <h2>⚽ Спортивные ставки</h2>
-          <p>Аналитика и прогнозы появятся здесь после публикации.</p>
+        <div style="text-align: center; padding: 4rem 0;">
+          <h2>No articles available</h2>
+          <p>Check back soon for new content!</p>
         </div>
       )}
 
       {popularCategories.length > 0 && (
         <div class="categories-section">
-          <h2>🏷️ Популярные категории</h2>
+          <h2 class="section-title">Popular Categories</h2>
           <div class="categories-grid">
             {popularCategories.map(category => (
               <div class="category-card">
-                <div class="category-name">{category.name}</div>
+                <h3>{category.name}</h3>
+                <p>Best betting tips in {category.name.toLowerCase()}</p>
               </div>
             ))}
           </div>
@@ -262,5 +611,35 @@ const popularCategories = categories.slice(0, 6);
       )}
     </div>
   </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-section">
+          <h3>About {site.name}</h3>
+          <p>{site.description}</p>
+        </div>
+        <div class="footer-section">
+          <h3>Latest Articles</h3>
+          <ul>
+            {latestArticles.slice(0, 5).map(article => (
+              <li><a href={`/articles/${article.slug}`}>{article.title}</a></li>
+            ))}
+          </ul>
+        </div>
+        <div class="footer-section">
+          <h3>Categories</h3>
+          <ul>
+            {popularCategories.map(category => (
+              <li><a href={`/categories/${category.slug}`}>{category.name}</a></li>
+            ))}
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; {new Date().getFullYear()} {site.name}. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
 </body>
 </html> 

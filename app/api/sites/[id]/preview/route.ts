@@ -35,13 +35,30 @@ export async function POST(
       })
     }
 
-    // Определяем путь к шаблону
-    const templatePath = path.join(process.cwd(), 'templates', template)
+    // Helper function to map template names to directory names
+    function getTemplateDirectory(template: string): string {
+      const templateMap: { [key: string]: string } = {
+        'casino-blog': 'astro-pbn-blog',
+        'casino-standard': 'astro-pbn-blog',
+        'casino-premium': 'casino/premium',
+        'slots-review': 'astro-slots-review',
+        'gaming-news': 'astro-gaming-news',
+        'premium-casino': 'casino/premium',
+        'sports-betting': 'astro-sports-betting',
+        'poker-platform': 'astro-poker-platform'
+      }
+      
+      return templateMap[template] || 'astro-pbn-blog' // fallback to default
+    }
+
+    // Определяем путь к шаблону с учетом маппинга
+    const templateDir = getTemplateDirectory(template)
+    const templatePath = path.join(process.cwd(), 'templates', templateDir)
     
     if (!fs.existsSync(templatePath)) {
       return NextResponse.json({ 
         success: false, 
-        error: `Template ${template} not found` 
+        error: `Template directory not found: ${templateDir} (for template: ${template})` 
       }, { status: 404 })
     }
 

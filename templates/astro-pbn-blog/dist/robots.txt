@@ -2,7 +2,7 @@ User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://slots-review.info/sitemap.xml
+Sitemap: https://Casino-test.com/sitemap.xml
 
 # Disallow admin areas
 Disallow: /admin/
