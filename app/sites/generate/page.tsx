@@ -58,12 +58,43 @@ export default function GenerateSitePage() {
   const [buildLogs, setBuildLogs] = useState<string[]>([])
   const [previewMode, setPreviewMode] = useState<'desktop' | 'tablet' | 'mobile'>('desktop')
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+  const [previewStatus, setPreviewStatus] = useState<{
+    isRunning: boolean
+    url?: string
+    timeLeft?: number
+    loading: boolean
+  }>({
+    isRunning: false,
+    loading: false
+  })
 
   useEffect(() => {
     if (siteId) {
       loadSitePreview()
+      checkPreviewStatus()
     }
   }, [siteId])
+
+  const checkPreviewStatus = async () => {
+    if (!siteId) return
+    
+    try {
+      const response = await fetch(`/api/sites/${siteId}/preview`)
+      const data = await response.json()
+
+      if (data.success && data.isRunning) {
+        setPreviewStatus({
+          isRunning: true,
+          url: data.url,
+          timeLeft: data.timeLeft,
+          loading: false
+        })
+        startTimeUpdate()
+      }
+    } catch (error) {
+      console.error('Error checking preview status:', error)
+    }
+  }
 
   const loadSitePreview = async () => {
     try {
@@ -224,8 +255,110 @@ export default function GenerateSitePage() {
     router.push('/sites')
   }
 
+  const startPreview = async () => {
+    if (!siteId || !sitePreview?.template) return
+    
+    try {
+      setPreviewStatus(prev => ({ ...prev, loading: true }))
+      
+      const response = await fetch(`/api/sites/${siteId}/preview`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ template: sitePreview.template })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setPreviewStatus({
+          isRunning: true,
+          url: data.url,
+          timeLeft: data.timeLeft,
+          loading: false
+        })
+        
+        // Открываем сайт в новой вкладке
+        window.open(data.url, '_blank')
+        
+        // Запускаем обновление времени
+        startTimeUpdate()
+      } else {
+        alert('Ошибка запуска preview: ' + data.error)
+        setPreviewStatus(prev => ({ ...prev, loading: false }))
+      }
+    } catch (error) {
+      console.error('Error starting preview:', error)
+      alert('Ошибка запуска preview')
+      setPreviewStatus(prev => ({ ...prev, loading: false }))
+    }
+  }
+
+  const stopPreview = async () => {
+    if (!siteId) return
+    
+    try {
+      const response = await fetch(`/api/sites/${siteId}/preview`, {
+        method: 'DELETE'
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setPreviewStatus({
+          isRunning: false,
+          loading: false
+        })
+        alert('Preview сервер остановлен')
+      } else {
+        alert('Ошибка остановки preview: ' + data.error)
+      }
+    } catch (error) {
+      console.error('Error stopping preview:', error)
+      alert('Ошибка остановки preview')
+    }
+  }
+
+  const startTimeUpdate = () => {
+    const interval = setInterval(async () => {
+      if (!siteId || !previewStatus.isRunning) {
+        clearInterval(interval)
+        return
+      }
+
+      try {
+        const response = await fetch(`/api/sites/${siteId}/preview`)
+        const data = await response.json()
+
+        if (data.success && data.isRunning) {
+          setPreviewStatus(prev => ({
+            ...prev,
+            timeLeft: data.timeLeft
+          }))
+        } else {
+          setPreviewStatus({
+            isRunning: false,
+            loading: false
+          })
+          clearInterval(interval)
+        }
+      } catch (error) {
+        console.error('Error updating preview time:', error)
+        clearInterval(interval)
+      }
+    }, 1000) // Обновляем каждую секунду
+
+    // Очищаем интервал через 2 минуты (максимальное время работы)
+    setTimeout(() => {
+      clearInterval(interval)
+    }, 120000)
+  }
+
   const openPreview = () => {
-    if (sitePreview?.buildUrl) {
+    if (previewStatus.url) {
+      window.open(previewStatus.url, '_blank')
+    } else if (sitePreview?.buildUrl) {
       window.open(sitePreview.buildUrl, '_blank')
     }
   }
@@ -495,14 +628,57 @@ export default function GenerateSitePage() {
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Действия</h3>
               <div className="space-y-3">
+                {/* Preview сервер */}
+                {sitePreview.statuspbn === 'deployed' && (
+                  <div className="space-y-2">
+                    {previewStatus.isRunning ? (
+                      <>
+                        <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                            <span className="text-sm font-medium text-green-800">Preview активен</span>
+                          </div>
+                          <span className="text-xs text-green-600">
+                            {previewStatus.timeLeft ? `${Math.floor(previewStatus.timeLeft / 60)}:${(previewStatus.timeLeft % 60).toString().padStart(2, '0')}` : '--:--'}
+                          </span>
+                        </div>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={openPreview}
+                            className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                          >
+                            🌐 Открыть
+                          </button>
+                          <button
+                            onClick={stopPreview}
+                            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
+                          >
+                            ⏹️ Остановить
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <button
+                        onClick={startPreview}
+                        disabled={previewStatus.loading}
+                        className="w-full px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {previewStatus.loading ? '🔄 Запуск...' : '🎯 Запустить Preview (1 мин)'}
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Статический сайт */}
                 {sitePreview.buildUrl && (
                   <button
                     onClick={openPreview}
                     className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
                   >
-                    🌐 Открыть сайт
+                    🌐 Открыть статический сайт
                   </button>
                 )}
+
                 <button
                   onClick={startBuild}
                   disabled={isBuilding}
@@ -615,6 +791,14 @@ export default function GenerateSitePage() {
                   <div className="text-center">
                     <div className="text-2xl font-bold text-indigo-600">{selectedCategories.length}</div>
                     <div className="text-sm text-gray-600">Категорий</div>
+                  </div>
+                )}
+                {previewStatus.isRunning && (
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-purple-600">
+                      {previewStatus.timeLeft ? Math.ceil(previewStatus.timeLeft / 60) : 1}
+                    </div>
+                    <div className="text-sm text-gray-600">Preview (мин)</div>
                   </div>
                 )}
               </div>
