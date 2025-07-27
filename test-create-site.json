@@ -1,8 +1,0 @@
-{
-  "type": "pbn-blog",
-  "domain": "test-blog.com",
-  "siteName": "Test Blog",
-  "description": "Test blog for PBN",
-  "keywords": ["blog", "test"],
-  "theme": "light"
-} 
