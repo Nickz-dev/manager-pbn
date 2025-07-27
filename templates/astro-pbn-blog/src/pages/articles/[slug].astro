@@ -11,17 +11,115 @@ export async function getStaticPaths() {
 }
 
 const { article } = Astro.props;
-const { site } = siteData;
+const { site, articles, categories } = siteData;
+
+// Находим связанные статьи (той же категории)
+const relatedArticles = articles
+  .filter(a => 
+    a.id !== article.id && 
+    a.publishedAt &&
+    a.content_categories?.some(cat => 
+      article.content_categories?.some(articleCat => articleCat.id === cat.id)
+    )
+  )
+  .slice(0, 3);
+
+// Генерируем структурированные данные для статьи
+const articleStructuredData = {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": article.title,
+  "description": article.meta_description || article.excerpt,
+  "image": article.featured_image || `${site.domain}/images/default-article.jpg`,
+  "author": {
+    "@type": "Person",
+    "name": article.author?.name || "Anonymous"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": site.name,
+    "url": `https://${site.domain}`,
+    "logo": {
+      "@type": "ImageObject",
+      "url": `https://${site.domain}/logo.png`
+    }
+  },
+  "datePublished": article.publishedAt,
+  "dateModified": article.updatedAt || article.publishedAt,
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": `https://${site.domain}/articles/${article.slug}`
+  },
+  "articleSection": article.content_categories?.map(cat => cat.name).join(", ") || "General"
+};
+
+// Генерируем Open Graph данные
+const ogData = {
+  title: article.meta_title || article.title,
+  description: article.meta_description || article.excerpt,
+  url: `https://${site.domain}/articles/${article.slug}`,
+  type: 'article',
+  site_name: site.name,
+  image: article.featured_image || `${site.domain}/images/default-og.jpg`,
+  published_time: article.publishedAt,
+  modified_time: article.updatedAt || article.publishedAt,
+  author: article.author?.name || "Anonymous"
+};
 ---
 
 <!DOCTYPE html>
 <html lang={site.config?.language || 'en'}>
 <head>
   <meta charset="utf-8">
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <meta name="viewport" content="width=device-width">
-  <title>{article.meta_title || article.title}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#3b82f6">
+  
+  <!-- Primary Meta Tags -->
+  <title>{article.meta_title || article.title} - {site.name}</title>
+  <meta name="title" content={article.meta_title || article.title}>
   <meta name="description" content={article.meta_description || article.excerpt}>
+  <meta name="keywords" content={article.keywords?.join(', ') || ''}>
+  <meta name="author" content={article.author?.name || site.name}>
+  <meta name="robots" content="index, follow">
+  <meta name="language" content={site.config?.language || 'en'}>
+  
+  <!-- Canonical URL -->
+  <link rel="canonical" href={`https://${site.domain}/articles/${article.slug}`}>
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content={ogData.type}>
+  <meta property="og:url" content={ogData.url}>
+  <meta property="og:title" content={ogData.title}>
+  <meta property="og:description" content={ogData.description}>
+  <meta property="og:image" content={ogData.image}>
+  <meta property="og:site_name" content={ogData.site_name}>
+  <meta property="og:locale" content={site.config?.language || 'en_US'}>
+  <meta property="article:published_time" content={ogData.published_time}>
+  <meta property="article:modified_time" content={ogData.modified_time}>
+  <meta property="article:author" content={ogData.author}>
+  {article.content_categories?.map(category => (
+    <meta property="article:section" content={category.name} />
+  ))}
+  
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content={ogData.url}>
+  <meta property="twitter:title" content={ogData.title}>
+  <meta property="twitter:description" content={ogData.description}>
+  <meta property="twitter:image" content={ogData.image}>
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="manifest" href="/site.webmanifest">
+  
+  <!-- Preload critical resources -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"></noscript>
   
   <!-- Google Analytics -->
   {site.analytics?.googleAnalytics && (
@@ -30,22 +128,41 @@ const { site } = siteData;
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-      gtag('config', '{site.analytics.googleAnalytics}');
+      gtag('config', '{site.analytics.googleAnalytics}', {
+        page_title: '{article.title}',
+        page_location: window.location.href
+      });
     </script>
   )}
   
+  <!-- Structured Data -->
+  <script type="application/ld+json" set:html={JSON.stringify(articleStructuredData)}></script>
+  
   <style>
     :root {
-      --bg-primary: #f9fafb;
+      --bg-primary: #f8fafc;
       --bg-secondary: #ffffff;
-      --text-primary: #222;
-      --text-secondary: #6b7280;
-      --border-color: #e5e7eb;
-      --link-color: #3b82f6;
+      --bg-accent: #f1f5f9;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+      --accent-color: #3b82f6;
+      --accent-hover: #2563eb;
+      --success-color: #10b981;
+      --warning-color: #f59e0b;
+      --error-color: #ef4444;
+    }
+    
+    * {
+      box-sizing: border-box;
     }
     
     body {
-      font-family: system-ui, sans-serif;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
       background: var(--bg-primary);
       color: var(--text-primary);
       margin: 0;
@@ -53,34 +170,49 @@ const { site } = siteData;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
+      font-size: 16px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
     
     .container {
       max-width: 800px;
       margin: 0 auto;
-      padding: 0 20px;
+      padding: 0 1.5rem;
     }
     
     .header {
       background: var(--bg-secondary);
       border-bottom: 1px solid var(--border-color);
-      padding: 1rem 0;
+      padding: 1.5rem 0;
       margin-bottom: 2rem;
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
     }
     
     .header h1 {
       margin: 0;
       font-size: 1.5rem;
-      color: #1f2937;
+      font-weight: 600;
+      color: var(--text-primary);
     }
     
     .header a {
-      color: var(--link-color);
+      color: var(--accent-color);
       text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s ease;
     }
     
     .header a:hover {
-      text-decoration: underline;
+      color: var(--accent-hover);
     }
     
     .main {
@@ -89,105 +221,247 @@ const { site } = siteData;
     }
     
     .article-header {
-      margin-bottom: 2rem;
+      margin-bottom: 3rem;
+      text-align: center;
     }
     
     .article-title {
       font-size: 2.5rem;
       font-weight: 700;
-      margin: 0 0 1rem 0;
-      color: #1f2937;
+      margin: 0 0 1.5rem 0;
+      color: var(--text-primary);
       line-height: 1.2;
     }
     
     .article-meta {
       display: flex;
-      gap: 1rem;
-      margin-bottom: 1rem;
-      font-size: 0.875rem;
-      color: var(--text-secondary);
-      flex-wrap: wrap;
+      justify-content: center;
       align-items: center;
+      gap: 2rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+    
+    .article-author {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .author-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--accent-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+    
+    .article-categories {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    
+    .category-tag {
+      background: var(--accent-color);
+      color: white;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: background-color 0.2s ease;
+    }
+    
+    .category-tag:hover {
+      background: var(--accent-hover);
+    }
+    
+    .article-image-container {
+      margin-bottom: 2rem;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: var(--shadow-md);
     }
     
     .article-image {
       width: 100%;
-      max-height: 400px;
+      height: 400px;
       object-fit: cover;
-      border-radius: 12px;
-      margin-bottom: 2rem;
-      background: #f3f4f6;
     }
     
     .article-image-placeholder {
       width: 100%;
-      height: 300px;
-      background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-      border-radius: 12px;
-      margin-bottom: 2rem;
+      height: 400px;
+      background: linear-gradient(135deg, var(--bg-accent) 0%, var(--border-color) 100%);
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #9ca3af;
-      font-size: 1rem;
+      color: var(--text-muted);
+      font-size: 1.125rem;
+      font-weight: 500;
     }
     
     .article-content {
       background: var(--bg-secondary);
       padding: 2rem;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px #00000010;
+      border-radius: 16px;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border-color);
+      margin-bottom: 3rem;
     }
     
-    .article-content h2 {
-      font-size: 1.5rem;
+    .article-content h1,
+    .article-content h2,
+    .article-content h3,
+    .article-content h4,
+    .article-content h5,
+    .article-content h6 {
+      color: var(--text-primary);
       margin: 2rem 0 1rem 0;
-      color: #1f2937;
+      line-height: 1.3;
     }
     
-    .article-content h3 {
-      font-size: 1.25rem;
-      margin: 1.5rem 0 0.75rem 0;
-      color: #1f2937;
-    }
+    .article-content h1 { font-size: 2rem; font-weight: 700; }
+    .article-content h2 { font-size: 1.75rem; font-weight: 600; }
+    .article-content h3 { font-size: 1.5rem; font-weight: 600; }
+    .article-content h4 { font-size: 1.25rem; font-weight: 600; }
+    .article-content h5 { font-size: 1.125rem; font-weight: 600; }
+    .article-content h6 { font-size: 1rem; font-weight: 600; }
     
     .article-content p {
-      margin: 0 0 1rem 0;
-      color: #374151;
-    }
-    
-    .article-content ul, .article-content ol {
-      margin: 0 0 1rem 0;
-      padding-left: 1.5rem;
-      color: #374151;
-    }
-    
-    .article-content li {
-      margin: 0.25rem 0;
-    }
-    
-    .article-content blockquote {
-      border-left: 4px solid var(--link-color);
-      padding-left: 1rem;
-      margin: 1.5rem 0;
-      font-style: italic;
+      margin: 1rem 0;
+      line-height: 1.7;
       color: var(--text-secondary);
     }
     
-    .categories {
-      display: flex;
-      gap: 0.5rem;
-      margin-bottom: 1rem;
-      flex-wrap: wrap;
+    .article-content ul,
+    .article-content ol {
+      margin: 1rem 0;
+      padding-left: 2rem;
     }
     
-    .category-tag {
-      background: #f3f4f6;
-      color: #374151;
-      padding: 0.25rem 0.75rem;
-      border-radius: 9999px;
-      font-size: 0.75rem;
-      font-weight: 500;
+    .article-content li {
+      margin: 0.5rem 0;
+      line-height: 1.6;
+      color: var(--text-secondary);
+    }
+    
+    .article-content blockquote {
+      border-left: 4px solid var(--accent-color);
+      padding-left: 1.5rem;
+      margin: 2rem 0;
+      font-style: italic;
+      color: var(--text-secondary);
+      background: var(--bg-accent);
+      padding: 1.5rem;
+      border-radius: 8px;
+    }
+    
+    .article-content code {
+      background: var(--bg-accent);
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 0.875rem;
+    }
+    
+    .article-content pre {
+      background: var(--bg-accent);
+      padding: 1.5rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 1.5rem 0;
+    }
+    
+    .article-content pre code {
+      background: none;
+      padding: 0;
+    }
+    
+    .article-content a {
+      color: var(--accent-color);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.2s ease;
+    }
+    
+    .article-content a:hover {
+      border-bottom-color: var(--accent-color);
+    }
+    
+    .article-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      margin: 1.5rem 0;
+    }
+    
+    .related-articles {
+      margin-top: 4rem;
+    }
+    
+    .related-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      color: var(--text-primary);
+    }
+    
+    .related-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+    }
+    
+    .related-card {
+      background: var(--bg-secondary);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.3s ease;
+      border: 1px solid var(--border-color);
+    }
+    
+    .related-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+    
+    .related-image {
+      width: 100%;
+      height: 150px;
+      object-fit: cover;
+    }
+    
+    .related-content {
+      padding: 1rem;
+    }
+    
+    .related-title-small {
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem 0;
+      color: var(--text-primary);
+      line-height: 1.4;
+    }
+    
+    .related-excerpt {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
     
     .footer {
@@ -199,39 +473,72 @@ const { site } = siteData;
     
     .footer-content {
       text-align: center;
-      color: var(--text-secondary);
+      color: var(--text-muted);
     }
     
-    .footer-content a {
-      color: var(--link-color);
+    .footer a {
+      color: var(--accent-color);
       text-decoration: none;
     }
     
-    .footer-content a:hover {
+    .footer a:hover {
       text-decoration: underline;
     }
     
+    /* Responsive Design */
     @media (max-width: 768px) {
+      .container {
+        padding: 0 1rem;
+      }
+      
       .article-title {
         font-size: 2rem;
       }
       
       .article-meta {
         flex-direction: column;
-        align-items: flex-start;
-        gap: 0.5rem;
+        gap: 1rem;
       }
       
       .article-content {
         padding: 1.5rem;
       }
+      
+      .related-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .article-title {
+        font-size: 1.75rem;
+      }
+      
+      .article-content {
+        padding: 1rem;
+      }
+      
+      .article-image,
+      .article-image-placeholder {
+        height: 250px;
+      }
+    }
+    
+    /* Focus styles for accessibility */
+    a:focus,
+    button:focus {
+      outline: 2px solid var(--accent-color);
+      outline-offset: 2px;
     }
   </style>
 </head>
 <body>
   <header class="header">
     <div class="container">
-      <h1><a href="/">{site.name}</a></h1>
+      <div class="header-content">
+        <h1><a href="/">{site.name}</a></h1>
+        <a href="/">← Back to Home</a>
+      </div>
     </div>
   </header>
 
@@ -242,55 +549,82 @@ const { site } = siteData;
           <h1 class="article-title">{article.title}</h1>
           
           <div class="article-meta">
-            <span>By {article.author?.name || 'Anonymous'}</span>
-            <span>•</span>
+            <div class="article-author">
+              <div class="author-avatar">
+                {(article.author?.name || 'A').charAt(0).toUpperCase()}
+              </div>
+              <span>{article.author?.name || 'Anonymous'}</span>
+            </div>
             <span>{new Date(article.publishedAt).toLocaleDateString()}</span>
-            {article.categories && article.categories.length > 0 && (
-              <>
-                <span>•</span>
-                <span>Categories:</span>
-                <div class="categories">
-                  {article.categories.map(category => (
-                    <span class="category-tag">{category.name}</span>
-                  ))}
-                </div>
-              </>
+            {article.content_categories && article.content_categories.length > 0 && (
+              <div class="article-categories">
+                {article.content_categories.map(category => (
+                  <a href={`/category/${category.slug}`} class="category-tag">
+                    {category.name}
+                  </a>
+                ))}
+              </div>
             )}
           </div>
           
-          {article.featured_image ? (
-            <img 
-              src={article.featured_image} 
-              alt={article.title}
-              class="article-image"
-              onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
-            />
-          ) : null}
+          {article.featured_image && (
+            <div class="article-image-container">
+              <img 
+                src={article.featured_image} 
+                alt={article.title}
+                class="article-image"
+                loading="lazy"
+              />
+            </div>
+          )}
           {!article.featured_image && (
-            <div class="article-image-placeholder">
-              📄 No Featured Image
+            <div class="article-image-container">
+              <div class="article-image-placeholder">
+                📄 No Featured Image
+              </div>
             </div>
           )}
         </header>
-        
+
         <div class="article-content">
-          {article.excerpt && (
-            <p style="font-size: 1.125rem; color: {site.config?.theme === 'dark' ? '#9ca3af' : '#6b7280'}; font-style: italic; margin-bottom: 2rem;">
-              {article.excerpt}
-            </p>
-          )}
-          
-          <div set:html={article.content} />
+          <div set:html={article.content}></div>
         </div>
       </article>
+
+      {relatedArticles.length > 0 && (
+        <section class="related-articles">
+          <h2 class="related-title">Related Articles</h2>
+          <div class="related-grid">
+            {relatedArticles.map(relatedArticle => (
+              <article class="related-card">
+                <a href={`/articles/${relatedArticle.slug}`} style="text-decoration: none; color: inherit;">
+                  {relatedArticle.featured_image && (
+                    <img 
+                      src={relatedArticle.featured_image} 
+                      alt={relatedArticle.title}
+                      class="related-image"
+                      loading="lazy"
+                    />
+                  )}
+                  <div class="related-content">
+                    <h3 class="related-title-small">{relatedArticle.title}</h3>
+                    {relatedArticle.excerpt && (
+                      <p class="related-excerpt">{relatedArticle.excerpt}</p>
+                    )}
+                  </div>
+                </a>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   </main>
 
   <footer class="footer">
     <div class="container">
       <div class="footer-content">
-        <p>&copy; {new Date().getFullYear()} {site.name}. All rights reserved.</p>
-        <p><a href="/">← Back to Home</a></p>
+        <p>&copy; {new Date().getFullYear()} <a href="/">{site.name}</a>. All rights reserved.</p>
       </div>
     </div>
   </footer>
