@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -13,10 +14,13 @@ interface SitePreview {
   description: string
   config: any
   articles: any[]
+  selectedArticles: string[]
   buildUrl?: string
   buildStatus: 'pending' | 'building' | 'success' | 'error'
   buildProgress: number
   buildLogs: string[]
+  imagesDownloaded?: number
+  totalImages?: number
 }
 
 interface BuildStep {
@@ -33,12 +37,13 @@ export default function GenerateSitePage() {
   const siteId = searchParams.get('siteId')
   
   const [sitePreview, setSitePreview] = useState<SitePreview | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [buildSteps, setBuildSteps] = useState<BuildStep[]>([
     { id: '1', name: 'Подготовка данных', status: 'pending', progress: 0, message: 'Ожидание...' },
     { id: '2', name: 'Скачивание изображений', status: 'pending', progress: 0, message: 'Ожидание...' },
     { id: '3', name: 'Генерация контента', status: 'pending', progress: 0, message: 'Ожидание...' },
     { id: '4', name: 'Сборка Astro', status: 'pending', progress: 0, message: 'Ожидание...' },
-    { id: '5', name: 'Деплой', status: 'pending', progress: 0, message: 'Ожидание...' }
+    { id: '5', name: 'Обновление статуса', status: 'pending', progress: 0, message: 'Ожидание...' }
   ])
   const [isBuilding, setIsBuilding] = useState(false)
   const [buildLogs, setBuildLogs] = useState<string[]>([])
@@ -52,13 +57,19 @@ export default function GenerateSitePage() {
 
   const loadSitePreview = async () => {
     try {
+      console.log('Loading site preview for ID:', siteId)
       const response = await fetch(`/api/sites/${siteId}`)
+      console.log('Response status:', response.status)
       if (response.ok) {
         const data = await response.json()
+        console.log('Site data received:', data)
         setSitePreview(data.site)
+        setLoadError(null)
+      } else {
+        setLoadError(`Ошибка загрузки: ${response.status} ${response.statusText}`)
       }
     } catch (error) {
-      console.error('Error loading site preview:', error)
+      setLoadError('Ошибка загрузки: ' + (error instanceof Error ? error.message : String(error)))
     }
   }
 
@@ -89,12 +100,14 @@ export default function GenerateSitePage() {
       const result = await response.json()
 
       if (response.ok) {
-        // Обновляем статус сайта
+        // Обновляем статус сайта с информацией о изображениях
         setSitePreview(prev => prev ? {
           ...prev,
           buildUrl: result.buildUrl,
           buildStatus: 'success',
-          statuspbn: 'deployed'
+          statuspbn: 'deployed',
+          imagesDownloaded: result.imagesDownloaded || 0,
+          totalImages: result.totalImages || 0
         } : null)
 
         // Отмечаем все шаги как завершенные
@@ -102,7 +115,9 @@ export default function GenerateSitePage() {
           ...step,
           status: 'completed' as const,
           progress: 100,
-          message: 'Завершено'
+          message: step.name === 'Скачивание изображений' && result.imagesDownloaded 
+            ? `Скачано ${result.imagesDownloaded} из ${result.totalImages} изображений`
+            : 'Завершено'
         })))
 
         setBuildLogs(prev => [...prev, '✅ Сборка завершена успешно!'])
@@ -140,6 +155,14 @@ export default function GenerateSitePage() {
     }
   }
 
+  if (loadError) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center text-red-600 text-lg font-semibold">{loadError}</div>
+      </div>
+    )
+  }
+
   if (!sitePreview) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -152,18 +175,48 @@ export default function GenerateSitePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <PageHeader 
-        title="Предварительный просмотр сайта" 
-        subtitle="Проверьте настройки и запустите сборку"
-        breadcrumbs={[
-          { label: 'Сайты', href: '/sites' },
-          { label: 'Создание', href: '/sites/new' },
-          { label: 'Просмотр' }
-        ]}
-      />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      {/* Navigation */}
+      <nav className="bg-white/90 backdrop-blur-md shadow-sm border-b border-white/20 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-4">
+            <Link href="/" className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <span className="text-xl font-bold text-gray-900">PBN Manager</span>
+            </Link>
+            <div className="flex space-x-1">
+              <Link href="/sites" className="nav-link-active">Сайты</Link>
+              <Link href="/infrastructure" className="nav-link">Инфраструктура</Link>
+              <Link href="/content" className="nav-link">Контент</Link>
+              <Link href="/monitoring" className="nav-link">Мониторинг</Link>
+            </div>
+          </div>
+        </div>
+      </nav>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      {/* Main Content */}
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <PageHeader 
+          title="Предварительный просмотр сайта" 
+          description="Проверьте настройки и запустите сборку"
+          breadcrumbs={[
+            { label: 'Главная', href: '/' },
+            { label: 'Сайты', href: '/sites' },
+            { label: 'Создание', href: '/sites/new' },
+            { label: 'Просмотр' }
+          ]}
+          actions={
+            <Link href="/sites" className="btn-secondary">
+              ← Назад к сайтам
+            </Link>
+          }
+        />
+
+        <div className="space-y-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Левая колонка - Предварительный просмотр */}
           <div className="space-y-6">
@@ -193,6 +246,18 @@ export default function GenerateSitePage() {
                     {sitePreview.statuspbn === 'deployed' ? 'Развернут' : 'Черновик'}
                   </span>
                 </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Выбрано статей:</span>
+                  <span className="font-medium">{sitePreview.selectedArticles?.length || 0}</span>
+                </div>
+                {sitePreview.imagesDownloaded !== undefined && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Скачано изображений:</span>
+                    <span className="font-medium">
+                      {sitePreview.imagesDownloaded} / {sitePreview.totalImages || 0}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -266,6 +331,33 @@ export default function GenerateSitePage() {
                 </div>
               </div>
             </div>
+
+            {/* Выбранные статьи */}
+            {sitePreview.selectedArticles && sitePreview.selectedArticles.length > 0 && (
+              <div className="bg-white rounded-lg shadow-sm border p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Выбранные статьи ({sitePreview.selectedArticles.length})</h3>
+                <div className="max-h-48 overflow-y-auto space-y-2">
+                  {sitePreview.articles?.filter(article => 
+                    sitePreview.selectedArticles.includes(article.id)
+                  ).map(article => (
+                    <div key={article.id} className="flex items-center space-x-3 p-2 bg-gray-50 rounded-lg">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      <div className="flex-1">
+                        <div className="text-sm font-medium text-gray-900 truncate">{article.title}</div>
+                        <div className="text-xs text-gray-500">
+                          {article.content_author?.name && `Автор: ${article.content_author.name}`}
+                          {article.content_categories?.length > 0 && (
+                            <span className="ml-2">
+                              Категории: {article.content_categories.map((cat: any) => cat.name).join(', ')}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Действия */}
             <div className="bg-white rounded-lg shadow-sm border p-6">
@@ -360,8 +452,8 @@ export default function GenerateSitePage() {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Статистика</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">{sitePreview.articles?.length || 0}</div>
-                  <div className="text-sm text-gray-600">Статей</div>
+                  <div className="text-2xl font-bold text-blue-600">{sitePreview.selectedArticles?.length || 0}</div>
+                  <div className="text-sm text-gray-600">Выбрано статей</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-green-600">
@@ -369,11 +461,24 @@ export default function GenerateSitePage() {
                   </div>
                   <div className="text-sm text-gray-600">Шагов выполнено</div>
                 </div>
+                {sitePreview.imagesDownloaded !== undefined && (
+                  <>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-purple-600">{sitePreview.imagesDownloaded}</div>
+                      <div className="text-sm text-gray-600">Скачано изображений</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-orange-600">{sitePreview.totalImages || 0}</div>
+                      <div className="text-sm text-gray-600">Всего изображений</div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
         </div>
-      </div>
+        </div>
+      </main>
     </div>
   )
 }

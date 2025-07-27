@@ -107,6 +107,9 @@
       "relation": "oneToMany",
       "target": "api::content-article.content-article",
       "mappedBy": "pbn_site"
+    },
+    "selectedArticles": {
+      "type": "json"
     }
   }
 }

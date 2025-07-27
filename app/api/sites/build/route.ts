@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     const astroData = await generateAstroData(site, articles)
     
     // 4. Скачиваем изображения и упаковываем в assets
-    await downloadAndProcessImages(articles, siteId, site.template)
+    const imageStats = await downloadAndProcessImages(articles, siteId, site.template)
     
     // 5. Записываем data.json в шаблон
     await writeAstroData(astroData, siteId, site.template)
@@ -63,7 +63,9 @@ export async function POST(request: NextRequest) {
       success: true,
       message: 'Build completed successfully',
       siteId,
-      buildUrl: `http://localhost:4321/sites/${siteId}` // URL для предпросмотра
+      buildUrl: `http://localhost:4321/sites/${siteId}`, // URL для предпросмотра
+      imagesDownloaded: imageStats.downloaded,
+      totalImages: imageStats.total
     })
 
   } catch (error) {
@@ -126,8 +128,12 @@ async function downloadAndProcessImages(articles: any[], siteId: string, templat
   // Создаем директорию если не существует
   await fs.mkdir(assetsDir, { recursive: true })
 
+  let downloaded = 0
+  let total = 0
+
   for (const article of articles) {
     if (article.featured_image) {
+      total++
       try {
         const imageUrl = article.featured_image
         const imageName = `${article.id}-${Date.now()}.jpg`
@@ -140,6 +146,7 @@ async function downloadAndProcessImages(articles: any[], siteId: string, templat
         // Обновляем путь к изображению в статье
         article.featured_image = `/src/assets/images/articles/${imageName}`
         
+        downloaded++
         console.log(`✅ Downloaded image for article ${article.id}: ${imageName}`)
       } catch (error) {
         console.warn(`⚠️ Failed to download image for article ${article.id}:`, error)
@@ -148,6 +155,9 @@ async function downloadAndProcessImages(articles: any[], siteId: string, templat
       }
     }
   }
+  
+  console.log(`📊 Image download stats: ${downloaded}/${total} images downloaded`)
+  return { downloaded, total }
 }
 
 async function writeAstroData(data: any, siteId: string, template: string) {

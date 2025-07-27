@@ -626,6 +626,7 @@ export interface ApiPbnSitePbnSite extends Struct.CollectionTypeSchema {
     pbn_site: Schema.Attribute.Relation<'manyToOne', 'api::pbn-site.pbn-site'>;
     pbn_sites: Schema.Attribute.Relation<'oneToMany', 'api::pbn-site.pbn-site'>;
     publishedAt: Schema.Attribute.DateTime;
+    selectedArticles: Schema.Attribute.JSON;
     slug: Schema.Attribute.String &
       Schema.Attribute.Required &
       Schema.Attribute.Unique;

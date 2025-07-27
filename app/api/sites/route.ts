@@ -39,6 +39,7 @@ export async function POST(request: NextRequest) {
       template: body.type.includes('casino') ? 'casino-standard' : 'blog',
       statuspbn: 'draft',
       description: body.description || '',
+      selectedArticles: Array.isArray(body.selectedArticles) ? body.selectedArticles : [],
       config: {
         keywords: Array.isArray(body.keywords) ? body.keywords : [],
         theme: body.theme || 'light',
@@ -46,6 +47,8 @@ export async function POST(request: NextRequest) {
         settings: body.settings || {}
       }
     }
+
+    console.log('Creating site with data:', JSON.stringify(siteData, null, 2))
 
     const createdSite = await strapiAPI.createPbnSite(siteData)
 
@@ -55,10 +58,24 @@ export async function POST(request: NextRequest) {
       site: createdSite
     }, { status: 201 })
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating site:', error)
+    
+    // Добавляем подробное логирование ошибки Strapi
+    if (error.response) {
+      console.error('Strapi response error:', {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data
+      })
+    }
+    
     return NextResponse.json(
-      { error: 'Failed to create site', details: error instanceof Error ? error.message : 'Unknown error' },
+      { 
+        error: 'Failed to create site', 
+        details: error instanceof Error ? error.message : 'Unknown error',
+        strapiError: error.response?.data || null
+      },
       { status: 500 }
     )
   }

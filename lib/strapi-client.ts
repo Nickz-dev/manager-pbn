@@ -140,6 +140,7 @@ export const strapiAPI = {
       statuspbn: item.statuspbn,
       description: item.description,
       config: item.config,
+      selectedArticles: item.selectedArticles,
       url: item.url,
       status: item.status,
       createdAt: item.createdAt,
@@ -154,19 +155,79 @@ export const strapiAPI = {
   },
 
   async getPbnSiteById(id: string) {
-    // Сначала попробуем найти по ID
+    console.log('🔍 Searching for site with ID:', id)
+    
+    // Сначала пробуем найти по прямому ID
     try {
       const res = await strapi.get(`/pbn-sites/${id}`)
-      return { id: res.data.data.id, ...res.data.data.attributes }
-    } catch (error) {
-      // Если не найдено по ID, попробуем найти по documentId
-      const allSites = await this.getPbnSites()
-      const site = allSites.find((site: any) => site.documentId === id || site.id.toString() === id)
-      if (site) {
-        return site
+      if (res.data.data) {
+        console.log('✅ Found by direct ID:', res.data.data.id)
+        return {
+          id: res.data.data.id,
+          documentId: res.data.data.documentId,
+          name: res.data.data.name,
+          siteName: res.data.data.siteName || res.data.data.name,
+          domain: res.data.data.domain,
+          template: res.data.data.template,
+          statuspbn: res.data.data.statuspbn,
+          description: res.data.data.description,
+          config: res.data.data.config,
+          selectedArticles: res.data.data.selectedArticles,
+          url: res.data.data.url,
+          status: res.data.data.status,
+          createdAt: res.data.data.createdAt,
+          updatedAt: res.data.data.updatedAt,
+          publishedAt: res.data.data.publishedAt,
+        }
       }
-      throw error
+    } catch (error) {
+      console.log('❌ Error searching by direct ID:', error instanceof Error ? error.message : String(error))
     }
+    
+    // Если не найдено по ID, пробуем найти по documentId
+    try {
+      const res = await strapi.get(`/pbn-sites?filters[documentId][$eq]=${id}`)
+      if (res.data.data && res.data.data.length > 0) {
+        console.log('✅ Found by documentId:', res.data.data[0].id)
+        return {
+          id: res.data.data[0].id,
+          documentId: res.data.data[0].documentId,
+          name: res.data.data[0].name,
+          siteName: res.data.data[0].siteName || res.data.data[0].name,
+          domain: res.data.data[0].domain,
+          template: res.data.data[0].template,
+          statuspbn: res.data.data[0].statuspbn,
+          description: res.data.data[0].description,
+          config: res.data.data[0].config,
+          selectedArticles: res.data.data[0].selectedArticles,
+          url: res.data.data[0].url,
+          status: res.data.data[0].status,
+          createdAt: res.data.data[0].createdAt,
+          updatedAt: res.data.data[0].updatedAt,
+          publishedAt: res.data.data[0].publishedAt,
+        }
+      }
+    } catch (error) {
+      console.log('❌ Error searching by documentId:', error instanceof Error ? error.message : String(error))
+    }
+    
+    // Если ничего не найдено, пробуем найти среди всех сайтов
+    try {
+      const allSites = await this.getPbnSites()
+      const foundSite = allSites.find((site: any) => 
+        site.id.toString() === id || site.documentId === id
+      )
+      
+      if (foundSite) {
+        console.log('✅ Found among all sites:', foundSite.id)
+        return foundSite
+      }
+    } catch (error) {
+      console.log('❌ Error searching among all sites:', error instanceof Error ? error.message : String(error))
+    }
+    
+    console.log('❌ Site not found')
+    return null
   },
 
   async updatePbnSite(id: string, data: any) {

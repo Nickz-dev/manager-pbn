@@ -7,19 +7,24 @@ export async function GET(
 ) {
   try {
     const siteId = params.id
+    console.log('🔍 API: Searching for site with ID:', siteId)
     
     // Получаем информацию о сайте
     const site = await strapiAPI.getPbnSiteById(siteId)
+    console.log('🔍 API: Site result:', site ? 'Found' : 'Not found')
     
     if (!site) {
+      console.log('❌ API: Site not found for ID:', siteId)
       return NextResponse.json(
         { error: 'Site not found' },
         { status: 404 }
       )
     }
 
+    console.log('✅ API: Site found, getting articles...')
     // Получаем статьи, связанные с сайтом
     const articles = await strapiAPI.getArticlesBySite(siteId)
+    console.log('✅ API: Articles count:', articles.length)
 
     return NextResponse.json({
       success: true,
@@ -30,7 +35,7 @@ export async function GET(
     })
 
   } catch (error) {
-    console.error('Error fetching site:', error)
+    console.error('❌ API: Error fetching site:', error)
     return NextResponse.json(
       { error: 'Failed to fetch site', details: error },
       { status: 500 }

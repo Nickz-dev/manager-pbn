@@ -128,6 +128,8 @@ export default function NewSitePage() {
         description: formData.description,
         keywords: formData.keywords.split(',').map(k => k.trim()).filter(k => k),
         theme: 'light',
+        // Добавляем выбранные статьи
+        selectedArticles: selectedArticles,
         content: {
           featured: [],
           recent: [],
