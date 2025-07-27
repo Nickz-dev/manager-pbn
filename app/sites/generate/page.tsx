@@ -48,13 +48,15 @@ export default function GenerateSitePage() {
   const [buildSteps, setBuildSteps] = useState<BuildStep[]>([
     { id: '1', name: 'Подготовка данных', status: 'pending', progress: 0, message: 'Ожидание...' },
     { id: '2', name: 'Скачивание изображений', status: 'pending', progress: 0, message: 'Ожидание...' },
-    { id: '3', name: 'Генерация контента', status: 'pending', progress: 0, message: 'Ожидание...' },
-    { id: '4', name: 'Сборка Astro', status: 'pending', progress: 0, message: 'Ожидание...' },
-    { id: '5', name: 'Обновление статуса', status: 'pending', progress: 0, message: 'Ожидание...' }
+    { id: '3', name: 'Формирование слогов статей', status: 'pending', progress: 0, message: 'Ожидание...' },
+    { id: '4', name: 'Генерация контента', status: 'pending', progress: 0, message: 'Ожидание...' },
+    { id: '5', name: 'Сборка Astro', status: 'pending', progress: 0, message: 'Ожидание...' },
+    { id: '6', name: 'Обновление статуса', status: 'pending', progress: 0, message: 'Ожидание...' }
   ])
   const [isBuilding, setIsBuilding] = useState(false)
   const [buildLogs, setBuildLogs] = useState<string[]>([])
   const [previewMode, setPreviewMode] = useState<'desktop' | 'tablet' | 'mobile'>('desktop')
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
 
   useEffect(() => {
     if (siteId) {
@@ -71,6 +73,23 @@ export default function GenerateSitePage() {
         const data = await response.json()
         console.log('Site data received:', data)
         setSitePreview(data.site)
+        
+        // Извлекаем уникальные категории из выбранных статей
+        if (data.site.articles && data.site.selectedArticles) {
+          const selectedArticles = data.site.articles.filter((article: any) => 
+            data.site.selectedArticles.includes(article.id)
+          )
+          const categories = new Set<string>()
+          selectedArticles.forEach((article: any) => {
+            if (article.content_categories && Array.isArray(article.content_categories)) {
+              article.content_categories.forEach((cat: any) => {
+                categories.add(cat.name)
+              })
+            }
+          })
+          setSelectedCategories(Array.from(categories))
+        }
+        
         setLoadError(null)
       } else {
         setLoadError(`Ошибка загрузки: ${response.status} ${response.statusText}`)
@@ -95,6 +114,30 @@ export default function GenerateSitePage() {
     })))
 
     try {
+      // Шаг 1: Подготовка данных
+      updateBuildStep('1', 'running', 25, 'Подготовка данных сайта...')
+      setBuildLogs(prev => [...prev, '📊 Подготовка данных сайта...'])
+      
+      // Шаг 2: Скачивание изображений
+      updateBuildStep('1', 'completed', 100, 'Данные подготовлены')
+      updateBuildStep('2', 'running', 0, 'Начинаем скачивание изображений...')
+      setBuildLogs(prev => [...prev, '🖼️ Начинаем скачивание изображений...'])
+      
+      // Шаг 3: Формирование слогов
+      updateBuildStep('2', 'completed', 100, 'Изображения скачаны')
+      updateBuildStep('3', 'running', 0, 'Формирование слогов статей...')
+      setBuildLogs(prev => [...prev, '🔗 Формирование слогов статей...'])
+      
+      // Шаг 4: Генерация контента
+      updateBuildStep('3', 'completed', 100, 'Слаги сформированы')
+      updateBuildStep('4', 'running', 0, 'Генерация контента...')
+      setBuildLogs(prev => [...prev, '📝 Генерация контента...'])
+      
+      // Шаг 5: Сборка Astro
+      updateBuildStep('4', 'completed', 100, 'Контент сгенерирован')
+      updateBuildStep('5', 'running', 0, 'Сборка Astro сайта...')
+      setBuildLogs(prev => [...prev, '🔨 Сборка Astro сайта...'])
+
       // Запускаем пайплайн сборки
       const response = await fetch('/api/sites/build', {
         method: 'POST',
@@ -107,7 +150,13 @@ export default function GenerateSitePage() {
       const result = await response.json()
 
       if (response.ok) {
-        // Обновляем статус сайта с информацией о изображениях
+        // Шаг 6: Обновление статуса
+        updateBuildStep('5', 'completed', 100, 'Astro сборка завершена')
+        updateBuildStep('6', 'running', 0, 'Обновление статуса сайта...')
+        setBuildLogs(prev => [...prev, '✅ Astro сборка завершена успешно!'])
+        setBuildLogs(prev => [...prev, '🔄 Обновление статуса сайта...'])
+
+        // Обновляем статус сайта с информацией о изображениях и страницах
         setSitePreview(prev => prev ? {
           ...prev,
           buildUrl: result.buildUrl,
@@ -116,7 +165,10 @@ export default function GenerateSitePage() {
           deploymentInfo: {
             ...prev.deploymentInfo,
             imagesDownloaded: result.imagesDownloaded || 0,
-            totalImages: result.totalImages || 0
+            totalImages: result.totalImages || 0,
+            articleCount: result.articleCount || prev.selectedArticles?.length || 0,
+            hasIndex: true,
+            hasArticles: true
           }
         } : null)
 
@@ -125,12 +177,17 @@ export default function GenerateSitePage() {
           ...step,
           status: 'completed' as const,
           progress: 100,
-          message: step.name === 'Скачивание изображений' && result.imagesDownloaded 
-            ? `Скачано ${result.imagesDownloaded} из ${result.totalImages} изображений`
-            : 'Завершено'
+                      message: step.name === 'Скачивание изображений' && result.imagesDownloaded 
+              ? `Скачано ${result.imagesDownloaded} из ${result.totalImages} изображений`
+              : step.name === 'Формирование слогов статей'
+              ? `Сформировано ${sitePreview?.selectedArticles?.length || 0} слогов`
+              : step.name === 'Сборка Astro'
+              ? `Собрано ${result.articleCount || sitePreview?.selectedArticles?.length || 0} страниц`
+              : 'Завершено'
         })))
 
         setBuildLogs(prev => [...prev, '✅ Сборка завершена успешно!'])
+        setBuildLogs(prev => [...prev, `📊 Статистика: ${result.articleCount || 0} страниц, ${result.imagesDownloaded || 0} изображений`])
       } else {
         throw new Error(result.error || 'Ошибка сборки')
       }
@@ -151,6 +208,12 @@ export default function GenerateSitePage() {
     }
   }
 
+  const updateBuildStep = (stepId: string, status: 'pending' | 'running' | 'completed' | 'error', progress: number, message: string) => {
+    setBuildSteps(prev => prev.map(step => 
+      step.id === stepId ? { ...step, status, progress, message } : step
+    ))
+  }
+
   const retryBuild = () => {
     startBuild()
   }
@@ -163,6 +226,16 @@ export default function GenerateSitePage() {
     if (sitePreview?.buildUrl) {
       window.open(sitePreview.buildUrl, '_blank')
     }
+  }
+
+  // Генерируем слаги для статей
+  const generateSlug = (title: string) => {
+    return title
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim()
   }
 
   if (loadError) {
@@ -274,6 +347,12 @@ export default function GenerateSitePage() {
                     </span>
                   </div>
                 )}
+                {selectedCategories.length > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Категории:</span>
+                    <span className="font-medium">{selectedCategories.length}</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -343,33 +422,68 @@ export default function GenerateSitePage() {
                     <div className="mt-4 text-sm text-gray-500">
                       {sitePreview.articles?.length || 0} статей
                     </div>
+                    {selectedCategories.length > 0 && (
+                      <div className="mt-2 text-xs text-gray-500">
+                        Категории: {selectedCategories.slice(0, 3).join(', ')}
+                        {selectedCategories.length > 3 && ` +${selectedCategories.length - 3}`}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Выбранные статьи */}
+            {/* Выбранные статьи с предварительными слагами */}
             {sitePreview.selectedArticles && sitePreview.selectedArticles.length > 0 && (
               <div className="bg-white rounded-lg shadow-sm border p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Выбранные статьи ({sitePreview.selectedArticles.length})</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Выбранные статьи ({sitePreview.selectedArticles.length})
+                </h3>
                 <div className="max-h-48 overflow-y-auto space-y-2">
                   {sitePreview.articles?.filter(article => 
                     sitePreview.selectedArticles.includes(article.id)
                   ).map(article => (
-                    <div key={article.id} className="flex items-center space-x-3 p-2 bg-gray-50 rounded-lg">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <div key={article.id} className="flex items-start space-x-3 p-2 bg-gray-50 rounded-lg">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
                       <div className="flex-1">
                         <div className="text-sm font-medium text-gray-900 truncate">{article.title}</div>
-                        <div className="text-xs text-gray-500">
-                          {article.content_author?.name && `Автор: ${article.content_author.name}`}
+                        <div className="text-xs text-gray-500 mt-1">
+                          <div>Слаг: <code className="bg-gray-200 px-1 rounded">{generateSlug(article.title)}</code></div>
+                          {article.content_author?.name && <div>Автор: {article.content_author.name}</div>}
                           {article.content_categories?.length > 0 && (
-                            <span className="ml-2">
-                              Категории: {article.content_categories.map((cat: any) => cat.name).join(', ')}
-                            </span>
+                            <div className="mt-1">
+                              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                {article.content_categories.map((cat: any) => cat.name).join(', ')}
+                              </span>
+                            </div>
+                          )}
+                          {article.featured_image && (
+                            <div className="mt-1 text-xs text-green-600">
+                              ✓ Изображение будет скачано
+                            </div>
                           )}
                         </div>
                       </div>
                     </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Популярные категории (только из выбранных статей) */}
+            {selectedCategories.length > 0 && (
+              <div className="bg-white rounded-lg shadow-sm border p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Популярные категории ({selectedCategories.length})
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {selectedCategories.map((category, index) => (
+                    <span 
+                      key={index}
+                      className="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
+                    >
+                      {category}
+                    </span>
                   ))}
                 </div>
               </div>
@@ -494,6 +608,12 @@ export default function GenerateSitePage() {
                       <div className="text-sm text-gray-600">Всего изображений</div>
                     </div>
                   </>
+                )}
+                {selectedCategories.length > 0 && (
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-indigo-600">{selectedCategories.length}</div>
+                    <div className="text-sm text-gray-600">Категорий</div>
+                  </div>
                 )}
               </div>
             </div>

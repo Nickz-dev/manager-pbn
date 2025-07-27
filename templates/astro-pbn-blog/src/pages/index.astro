@@ -9,7 +9,7 @@ const latestArticles = articles
   .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
   .slice(0, 6);
 
-// Получаем популярные категории
+// Получаем популярные категории (только из статей на сайте)
 const popularCategories = categories.slice(0, 5);
 ---
 
@@ -49,6 +49,9 @@ const popularCategories = categories.slice(0, 5);
       color: var(--text-primary);
       margin: 0;
       line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
     
     .container {
@@ -77,6 +80,7 @@ const popularCategories = categories.slice(0, 5);
     
     .main {
       padding: 2rem 0;
+      flex: 1;
     }
     
     .articles-grid {
@@ -102,6 +106,18 @@ const popularCategories = categories.slice(0, 5);
       width: 100%;
       height: 200px;
       object-fit: cover;
+      background: #f3f4f6;
+    }
+    
+    .article-image-placeholder {
+      width: 100%;
+      height: 200px;
+      background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #9ca3af;
+      font-size: 0.875rem;
     }
     
     .article-content {
@@ -144,6 +160,11 @@ const popularCategories = categories.slice(0, 5);
       border-radius: 8px;
       text-align: center;
       box-shadow: 0 2px 4px #00000008;
+      transition: transform 0.2s ease;
+    }
+    
+    .category-card:hover {
+      transform: translateY(-2px);
     }
     
     .category-name {
@@ -160,6 +181,74 @@ const popularCategories = categories.slice(0, 5);
     .empty-state h2 {
       font-size: 1.5rem;
       margin-bottom: 1rem;
+    }
+    
+    .footer {
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border-color);
+      padding: 2rem 0;
+      margin-top: auto;
+    }
+    
+    .footer-content {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 2rem;
+      margin-bottom: 2rem;
+    }
+    
+    .footer-section h3 {
+      color: #1f2937;
+      margin-bottom: 1rem;
+      font-size: 1.125rem;
+    }
+    
+    .footer-section p {
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+    }
+    
+    .footer-section ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    
+    .footer-section li {
+      margin-bottom: 0.5rem;
+    }
+    
+    .footer-section a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: color 0.2s ease;
+    }
+    
+    .footer-section a:hover {
+      color: #1f2937;
+    }
+    
+    .footer-bottom {
+      border-top: 1px solid var(--border-color);
+      padding-top: 1rem;
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+    }
+    
+    @media (max-width: 768px) {
+      .articles-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .categories-grid {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      }
+      
+      .footer-content {
+        grid-template-columns: 1fr;
+        text-align: center;
+      }
     }
   </style>
 </head>
@@ -180,13 +269,19 @@ const popularCategories = categories.slice(0, 5);
             {latestArticles.map(article => (
               <article class="article-card">
                 <a href={`/articles/${article.slug}`} style="text-decoration: none; color: inherit;">
-                  {article.featured_image && (
+                  {article.featured_image ? (
                     <img 
                       src={article.featured_image} 
                       alt={article.title}
                       class="article-image"
                       loading="lazy"
+                      onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
                     />
+                  ) : null}
+                  {!article.featured_image && (
+                    <div class="article-image-placeholder">
+                      📄 No Image
+                    </div>
                   )}
                   <div class="article-content">
                     <h3 class="article-title">{article.title}</h3>
@@ -228,5 +323,41 @@ const popularCategories = categories.slice(0, 5);
       )}
     </div>
   </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-section">
+          <h3>{site.name}</h3>
+          <p>{site.description}</p>
+        </div>
+        <div class="footer-section">
+          <h3>Quick Links</h3>
+          <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/articles">Articles</a></li>
+            <li><a href="/about">About</a></li>
+            <li><a href="/contact">Contact</a></li>
+          </ul>
+        </div>
+        <div class="footer-section">
+          <h3>Categories</h3>
+          <ul>
+            {popularCategories.slice(0, 4).map(category => (
+              <li><a href={`/category/${category.slug}`}>{category.name}</a></li>
+            ))}
+          </ul>
+        </div>
+        <div class="footer-section">
+          <h3>Contact</h3>
+          <p>For inquiries: info@{site.domain}</p>
+          <p>Domain: {site.domain}</p>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; {new Date().getFullYear()} {site.name}. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
 </body>
 </html> 

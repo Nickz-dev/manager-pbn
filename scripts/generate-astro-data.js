@@ -10,6 +10,16 @@ const STRAPI_TOKEN = process.env.STRAPI_TOKEN || '';
 const ASTRO_DATA_PATH = path.join(__dirname, '../templates/astro-pbn-blog/src/data/site-data.json');
 const ASTRO_PUBLIC_PATH = path.join(__dirname, '../templates/astro-pbn-blog/public');
 
+// Функция для генерации слага из заголовка
+function generateSlug(title) {
+  return title
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .trim();
+}
+
 // Утилита для скачивания изображений
 async function downloadImage(imageUrl, fileName) {
   try {
@@ -121,12 +131,12 @@ async function fetchStrapiData() {
     
     // Отладочная информация
     if (articles.length > 0) {
-          console.log(`📝 Sample article:`, {
-      id: articles[0].id,
-      title: articles[0].attributes?.title,
-      slug: articles[0].attributes?.slug,
-      rawData: JSON.stringify(articles[0], null, 2).substring(0, 500) + '...'
-    });
+      console.log(`📝 Sample article:`, {
+        id: articles[0].id,
+        title: articles[0].attributes?.title,
+        slug: articles[0].attributes?.slug,
+        rawData: JSON.stringify(articles[0], null, 2).substring(0, 500) + '...'
+      });
     }
     
     return { articles, categories, authors };
@@ -152,6 +162,9 @@ async function processArticles(articles) {
     // Данные приходят напрямую, а не в attributes
     const attrs = article.attributes || article;
     
+    // Формируем слаг если его нет
+    const slug = attrs.slug || generateSlug(attrs.title || '');
+    
     // Обрабатываем изображения в контенте
     let processedContent = attrs.content || '';
     if (attrs.content) {
@@ -173,6 +186,11 @@ async function processArticles(articles) {
         const fileName = `images/featured_${article.id}_${Date.now()}.jpg`;
         featuredImage = await downloadImage(imageUrl, fileName);
         if (featuredImage) imageStats.downloaded += 1;
+      } else if (typeof attrs.featured_image === 'string' && attrs.featured_image.startsWith('http')) {
+        // Прямая ссылка на изображение
+        const fileName = `images/featured_${article.id}_${Date.now()}.jpg`;
+        featuredImage = await downloadImage(attrs.featured_image, fileName);
+        if (featuredImage) imageStats.downloaded += 1;
       }
     }
     
@@ -180,18 +198,22 @@ async function processArticles(articles) {
       id: article.id,
       documentId: attrs.documentId || '',
       title: attrs.title || '',
-      slug: attrs.slug || '',
+      slug: slug,
       excerpt: attrs.excerpt || '',
       content: processedContent,
-      featuredImage: featuredImage,
-      meta_title: attrs.meta_title || '',
-      meta_description: attrs.meta_description || '',
+      featured_image: featuredImage,
+      meta_title: attrs.meta_title || attrs.title || '',
+      meta_description: attrs.meta_description || attrs.excerpt || '',
       publishedAt: attrs.publishedAt || '',
       createdAt: attrs.createdAt || '',
       updatedAt: attrs.updatedAt || '',
       readTime: attrs.readTime || '',
       category: attrs.content_categories?.[0]?.name || null,
-      author: attrs.content_author?.name || null
+      author: attrs.content_author?.name || null,
+      categories: attrs.content_categories ? attrs.content_categories.map((cat) => ({
+        name: cat.name,
+        slug: cat.slug || generateSlug(cat.name)
+      })) : []
     };
     
     processedArticles.push(processedArticle);
@@ -208,7 +230,7 @@ function processCategories(categories) {
       id: category.id,
       documentId: attrs.documentId || '',
       name: attrs.name || '',
-      slug: attrs.slug || '',
+      slug: attrs.slug || generateSlug(attrs.name || ''),
       color: attrs.color || '',
       description: attrs.description || '',
       icon: attrs.icon || '',
@@ -244,6 +266,16 @@ function processAuthors(authors) {
 
 // Создание структуры данных сайта
 function createSiteData(siteConfig, articles, categories, authors) {
+  // Получаем уникальные категории из статей
+  const selectedCategories = new Set();
+  articles.forEach(article => {
+    if (article.categories && Array.isArray(article.categories)) {
+      article.categories.forEach(cat => {
+        selectedCategories.add(cat.name);
+      });
+    }
+  });
+
   return {
     site: {
       name: siteConfig.name || "PBN Blog",
@@ -256,7 +288,7 @@ function createSiteData(siteConfig, articles, categories, authors) {
         content: {
           featured: articles.slice(0, 3),
           recent: articles.slice(0, 6),
-          categories: categories.map(cat => cat.name),
+          categories: Array.from(selectedCategories),
           ...siteConfig.content
         },
         settings: {
@@ -270,8 +302,17 @@ function createSiteData(siteConfig, articles, categories, authors) {
       }
     },
     articles,
-    categories,
-    authors
+    categories: Array.from(selectedCategories).map(name => ({ 
+      name, 
+      slug: generateSlug(name) 
+    })),
+    authors,
+    buildInfo: {
+      timestamp: new Date().toISOString(),
+      version: '1.0.0',
+      articleCount: articles.length,
+      categoryCount: selectedCategories.size
+    }
   };
 }
 
@@ -303,9 +344,10 @@ async function generateAstroData(siteConfig = {}) {
     console.log(`✅ Astro data generated successfully!`);
     console.log(`📁 Data saved to: ${ASTRO_DATA_PATH}`);
     console.log(`📊 Articles: ${processedArticles.length}`);
-    console.log(`📂 Categories: ${processedCategories.length}`);
+    console.log(`📂 Categories: ${siteData.categories.length}`);
     console.log(`👥 Authors: ${processedAuthors.length}`);
     console.log(`🖼️ Images: ${imageStats.downloaded}/${imageStats.total} downloaded`);
+    console.log(`🔗 Slugs generated for ${processedArticles.length} articles`);
     
     return { siteData, imageStats };
     
@@ -316,7 +358,7 @@ async function generateAstroData(siteConfig = {}) {
 }
 
 // Экспорт для использования в других модулях
-module.exports = { generateAstroData, processImages, downloadImage };
+module.exports = { generateAstroData, processImages, downloadImage, generateSlug };
 
 // Запуск если скрипт вызван напрямую
 if (require.main === module) {

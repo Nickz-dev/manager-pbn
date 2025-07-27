@@ -18,6 +18,16 @@ function getTemplateDirectory(template: string): string {
   return templateMap[template] || 'astro-pbn-blog' // fallback to default
 }
 
+// Функция для генерации слага из заголовка
+function generateSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .trim()
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -44,19 +54,25 @@ export async function POST(request: NextRequest) {
     // 2. Получаем статьи для сайта
     const articles = await strapiAPI.getArticlesBySite(siteId)
     
-    // 3. Формируем data.json для Astro
-    const astroData = await generateAstroData(site, articles)
+    // 3. Формируем слаги для статей
+    const articlesWithSlugs = articles.map(article => ({
+      ...article,
+      slug: article.slug || generateSlug(article.title)
+    }))
     
-    // 4. Скачиваем изображения и упаковываем в assets
-    const imageStats = await downloadAndProcessImages(articles, siteId, site.template)
+    // 4. Формируем data.json для Astro
+    const astroData = await generateAstroData(site, articlesWithSlugs)
     
-    // 5. Записываем data.json в шаблон
+    // 5. Скачиваем изображения и упаковываем в assets
+    const imageStats = await downloadAndProcessImages(articlesWithSlugs, siteId, site.template)
+    
+    // 6. Записываем data.json в шаблон
     await writeAstroData(astroData, siteId, site.template)
     
-    // 6. Запускаем билд Astro
-    await buildAstroTemplate(siteId, site.template)
+    // 7. Запускаем билд Astro
+    const buildResult = await buildAstroTemplate(siteId, site.template)
 
-    // 7. Обновляем статус сайта
+    // 8. Обновляем статус сайта
     await strapiAPI.updatePbnSite(siteId, { statuspbn: 'deployed' })
 
     return NextResponse.json({
@@ -65,7 +81,9 @@ export async function POST(request: NextRequest) {
       siteId,
       buildUrl: `http://localhost:4321/sites/${siteId}`, // URL для предпросмотра
       imagesDownloaded: imageStats.downloaded,
-      totalImages: imageStats.total
+      totalImages: imageStats.total,
+      articleCount: articlesWithSlugs.length,
+      buildResult
     })
 
   } catch (error) {
@@ -100,6 +118,16 @@ async function generateAstroData(site: any, articles: any[]) {
     })) : []
   }))
 
+  // Получаем уникальные категории из выбранных статей
+  const selectedCategories = new Set<string>()
+  articles.forEach(article => {
+    if (article.content_categories && Array.isArray(article.content_categories)) {
+      article.content_categories.forEach((cat: any) => {
+        selectedCategories.add(cat.name)
+      })
+    }
+  })
+
   return {
     site: {
       name: site.name,
@@ -112,11 +140,13 @@ async function generateAstroData(site: any, articles: any[]) {
       }
     },
     articles: processedArticles,
-    categories: await strapiAPI.getCategories(),
+    categories: Array.from(selectedCategories).map(name => ({ name, slug: generateSlug(name) })),
     authors: await strapiAPI.getAuthors(),
     buildInfo: {
       timestamp: new Date().toISOString(),
-      version: '1.0.0'
+      version: '1.0.0',
+      articleCount: articles.length,
+      categoryCount: selectedCategories.size
     }
   }
 }
@@ -195,7 +225,12 @@ async function buildAstroTemplate(siteId: string, template: string) {
     console.log('🔨 Building Astro template...')
     execSync('npm run build', { stdio: 'inherit' })
     
+    // Проверяем результат сборки
+    const distDir = path.join(templateDir, 'dist')
+    const buildResult = await checkBuildResults(distDir)
+    
     console.log(`✅ Astro build completed for site ${siteId}`)
+    return buildResult
   } catch (error) {
     console.error('Build error:', error)
     throw new Error(`Astro build failed: ${error}`)
@@ -203,4 +238,52 @@ async function buildAstroTemplate(siteId: string, template: string) {
     // Возвращаемся в корневую директорию
     process.chdir(process.cwd())
   }
+}
+
+async function checkBuildResults(distDir: string) {
+  const results = {
+    hasIndex: false,
+    hasArticles: false,
+    articleCount: 0,
+    files: [] as string[]
+  }
+  
+  try {
+    await fs.access(distDir)
+  } catch {
+    return results
+  }
+  
+  // Получаем список файлов
+  const files = await getAllFiles(distDir)
+  results.files = files
+  
+  // Проверяем наличие index.html
+  results.hasIndex = files.some(file => file.endsWith('index.html'))
+  
+  // Проверяем наличие страниц статей
+  const articleFiles = files.filter(file => 
+    file.includes('articles') && file.includes('index.html')
+  )
+  results.hasArticles = articleFiles.length > 0
+  results.articleCount = articleFiles.length
+  
+  return results
+}
+
+async function getAllFiles(dirPath: string, arrayOfFiles: string[] = []): Promise<string[]> {
+  const files = await fs.readdir(dirPath)
+  
+  for (const file of files) {
+    const fullPath = path.join(dirPath, file)
+    const stat = await fs.stat(fullPath)
+    
+    if (stat.isDirectory()) {
+      arrayOfFiles = await getAllFiles(fullPath, arrayOfFiles)
+    } else {
+      arrayOfFiles.push(fullPath)
+    }
+  }
+  
+  return arrayOfFiles
 } 

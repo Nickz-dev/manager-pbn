@@ -50,6 +50,9 @@ const { site } = siteData;
       color: var(--text-primary);
       margin: 0;
       line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
     
     .container {
@@ -82,6 +85,7 @@ const { site } = siteData;
     
     .main {
       padding: 2rem 0;
+      flex: 1;
     }
     
     .article-header {
@@ -102,6 +106,8 @@ const { site } = siteData;
       margin-bottom: 1rem;
       font-size: 0.875rem;
       color: var(--text-secondary);
+      flex-wrap: wrap;
+      align-items: center;
     }
     
     .article-image {
@@ -110,6 +116,20 @@ const { site } = siteData;
       object-fit: cover;
       border-radius: 12px;
       margin-bottom: 2rem;
+      background: #f3f4f6;
+    }
+    
+    .article-image-placeholder {
+      width: 100%;
+      height: 300px;
+      background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+      border-radius: 12px;
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #9ca3af;
+      font-size: 1rem;
     }
     
     .article-content {
@@ -158,6 +178,7 @@ const { site } = siteData;
       display: flex;
       gap: 0.5rem;
       margin-bottom: 1rem;
+      flex-wrap: wrap;
     }
     
     .category-tag {
@@ -167,6 +188,43 @@ const { site } = siteData;
       border-radius: 9999px;
       font-size: 0.75rem;
       font-weight: 500;
+    }
+    
+    .footer {
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border-color);
+      padding: 2rem 0;
+      margin-top: auto;
+    }
+    
+    .footer-content {
+      text-align: center;
+      color: var(--text-secondary);
+    }
+    
+    .footer-content a {
+      color: var(--link-color);
+      text-decoration: none;
+    }
+    
+    .footer-content a:hover {
+      text-decoration: underline;
+    }
+    
+    @media (max-width: 768px) {
+      .article-title {
+        font-size: 2rem;
+      }
+      
+      .article-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
+      
+      .article-content {
+        padding: 1.5rem;
+      }
     }
   </style>
 </head>
@@ -200,12 +258,18 @@ const { site } = siteData;
             )}
           </div>
           
-          {article.featured_image && (
+          {article.featured_image ? (
             <img 
               src={article.featured_image} 
               alt={article.title}
               class="article-image"
+              onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
             />
+          ) : null}
+          {!article.featured_image && (
+            <div class="article-image-placeholder">
+              📄 No Featured Image
+            </div>
           )}
         </header>
         
@@ -221,5 +285,14 @@ const { site } = siteData;
       </article>
     </div>
   </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <p>&copy; {new Date().getFullYear()} {site.name}. All rights reserved.</p>
+        <p><a href="/">← Back to Home</a></p>
+      </div>
+    </div>
+  </footer>
 </body>
 </html> 
