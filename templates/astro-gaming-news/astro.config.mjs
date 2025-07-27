@@ -1,9 +1,52 @@
 import { defineConfig } from 'astro/config';
 
 export default defineConfig({
-  site: 'https://gaming-news.com',
-  outDir: './dist',
+  site: 'https://example.com', // Будет переопределяться динамически
+  base: '/',
+  
+  // Оптимизации сборки
   build: {
-    assets: 'assets'
+    assets: 'assets',
+    inlineStylesheets: 'auto',
+  },
+  
+  // Настройки для статической генерации
+  output: 'static',
+  
+  // Оптимизации для SEO
+  trailingSlash: 'never',
+  
+  // Настройки для безопасности
+  server: {
+    headers: {
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'DENY',
+      'X-XSS-Protection': '1; mode=block',
+      'Referrer-Policy': 'strict-origin-when-cross-origin',
+      'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+    }
+  },
+  
+  // Настройки для разработки
+  dev: {
+    port: 4321,
+    host: true,
+  },
+  
+  // Оптимизации для CSS
+  vite: {
+    css: {
+      devSourcemap: true,
+    },
+    build: {
+      cssMinify: true,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'vendor': ['astro']
+          }
+        }
+      }
+    }
   }
 }); 
