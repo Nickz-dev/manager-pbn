@@ -4,4 +4,15 @@ export default ({ env }) => ({
   app: {
     keys: env.array('APP_KEYS'),
   },
+  url: env('PUBLIC_URL', 'http://localhost:1337'),
+  proxy: false,
+  cron: {
+    enabled: false,
+  },
+  admin: {
+    autoOpen: false,
+    auth: {
+      secret: env('ADMIN_JWT_SECRET'),
+    },
+  },
 });

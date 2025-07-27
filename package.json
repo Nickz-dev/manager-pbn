@@ -23,7 +23,11 @@
     "generate-nextjs": "node scripts/generate-nextjs-site.js",
     "deploy": "node scripts/deploy.js",
     "sync-content": "node scripts/sync-strapi-content.js",
-    "strapi-cli": "node scripts/strapi-cli.js"
+    "strapi-cli": "node scripts/strapi-cli.js",
+    "switch-mode": "node scripts/switch-mode.js",
+    "mode:local": "node scripts/switch-mode.js local",
+    "mode:vps": "node scripts/switch-mode.js vps",
+    "strapi:local": "node scripts/start-strapi-local.js"
   },
   "dependencies": {
     "@heroicons/react": "^2.0.18",

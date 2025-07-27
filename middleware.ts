@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export function middleware(request: NextRequest) {
   // Skip middleware for public routes
-  const publicPaths = ['/login', '/api/auth/login', '/_next', '/favicon.ico']
+  const publicPaths = ['/login', '/api/auth/login', '/api/content', '/_next', '/favicon.ico']
   const isPublicPath = publicPaths.some(path => request.nextUrl.pathname.startsWith(path))
   
   if (isPublicPath) {

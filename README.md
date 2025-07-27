@@ -25,6 +25,8 @@
 
 ### Локальная разработка
 
+#### Вариант 1: Полная локальная разработка
+
 1. **Клонирование репозитория**
 ```bash
 git clone https://github.com/your-username/pbn-manager.git
@@ -51,6 +53,23 @@ cd strapi && npm run develop
 # Терминал 2 - Next.js
 npm run dev
 ```
+
+#### Вариант 2: Только клиент (рекомендуется)
+
+Для разработки с актуальными данными из VPS:
+
+1. **Настройка локального окружения**
+```bash
+cp env.local.example .env
+# Укажите IP вашего VPS в .env
+```
+
+2. **Запуск только клиента**
+```bash
+npm run dev
+```
+
+Подробная инструкция: [LOCAL_DEVELOPMENT.md](./LOCAL_DEVELOPMENT.md)
 
 ### Развертывание на VPS
 
