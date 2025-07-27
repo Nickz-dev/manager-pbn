@@ -14,7 +14,7 @@ async function buildAstroSite(siteConfig) {
     
     // Шаг 1: Генерируем данные из Strapi
     console.log('📊 Step 1: Generating data from Strapi...');
-    await generateAstroData(siteConfig);
+    const { imageStats } = await generateAstroData(siteConfig);
     
     // Шаг 2: Переходим в директорию Astro
     console.log('📁 Step 2: Navigating to Astro directory...');
@@ -42,7 +42,9 @@ async function buildAstroSite(siteConfig) {
     return {
       success: true,
       distPath: DIST_DIR,
-      ...buildResults
+      ...buildResults,
+      imagesDownloaded: imageStats.downloaded,
+      totalImages: imageStats.total
     };
     
   } catch (error) {
@@ -76,7 +78,7 @@ function checkBuildResults() {
   
   // Проверяем наличие страниц статей
   const articleFiles = files.filter(file => 
-    file.includes('/articles/') && file.endsWith('.html')
+    file.includes('articles') && file.includes('index.html')
   );
   results.hasArticles = articleFiles.length > 0;
   results.articleCount = articleFiles.length;

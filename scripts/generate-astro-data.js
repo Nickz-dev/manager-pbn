@@ -61,12 +61,14 @@ async function saveBase64Image(base64Data, fileName) {
 }
 
 // Обработка изображений в контенте
-async function processImages(content) {
-  if (!content) return content;
+async function processImages(content, imageStats = { downloaded: 0, total: 0 }) {
+  if (!content) return { content, imageStats };
   
   let processedContent = content;
   const imageRegex = /<img[^>]+src=["']([^"']+)["'][^>]*>/gi;
   const matches = [...content.matchAll(imageRegex)];
+  
+  imageStats.total += matches.length;
   
   for (const match of matches) {
     const originalUrl = match[1];
@@ -86,10 +88,11 @@ async function processImages(content) {
     if (localPath) {
       // Заменяем URL в контенте
       processedContent = processedContent.replace(originalUrl, localPath);
+      imageStats.downloaded += 1;
     }
   }
   
-  return processedContent;
+  return { content: processedContent, imageStats };
 }
 
 // Получение данных из Strapi
@@ -143,6 +146,7 @@ async function processArticles(articles) {
   } : 'No articles');
   
   const processedArticles = [];
+  const imageStats = { downloaded: 0, total: 0 };
   
   for (const article of articles) {
     // Данные приходят напрямую, а не в attributes
@@ -151,20 +155,24 @@ async function processArticles(articles) {
     // Обрабатываем изображения в контенте
     let processedContent = attrs.content || '';
     if (attrs.content) {
-      processedContent = await processImages(attrs.content);
+      const result = await processImages(attrs.content, imageStats);
+      processedContent = result.content;
     }
     
     // Обрабатываем главное изображение
     let featuredImage = null;
     if (attrs.featured_image) {
+      imageStats.total += 1;
       // Если изображение в base64, сохраняем его
       if (attrs.featured_image.startsWith('data:image/')) {
         const fileName = `images/featured_${article.id}_${Date.now()}.jpg`;
         featuredImage = await saveBase64Image(attrs.featured_image, fileName);
+        if (featuredImage) imageStats.downloaded += 1;
       } else if (attrs.featuredImage?.data?.attributes?.url) {
         const imageUrl = `${STRAPI_URL}${attrs.featuredImage.data.attributes.url}`;
         const fileName = `images/featured_${article.id}_${Date.now()}.jpg`;
         featuredImage = await downloadImage(imageUrl, fileName);
+        if (featuredImage) imageStats.downloaded += 1;
       }
     }
     
@@ -189,7 +197,7 @@ async function processArticles(articles) {
     processedArticles.push(processedArticle);
   }
   
-  return processedArticles;
+  return { articles: processedArticles, imageStats };
 }
 
 // Обработка категорий
@@ -282,7 +290,7 @@ async function generateAstroData(siteConfig = {}) {
     const { articles, categories, authors } = await fetchStrapiData();
     
     // Обрабатываем данные
-    const processedArticles = await processArticles(articles);
+    const { articles: processedArticles, imageStats } = await processArticles(articles);
     const processedCategories = processCategories(categories);
     const processedAuthors = processAuthors(authors);
     
@@ -297,8 +305,9 @@ async function generateAstroData(siteConfig = {}) {
     console.log(`📊 Articles: ${processedArticles.length}`);
     console.log(`📂 Categories: ${processedCategories.length}`);
     console.log(`👥 Authors: ${processedAuthors.length}`);
+    console.log(`🖼️ Images: ${imageStats.downloaded}/${imageStats.total} downloaded`);
     
-    return siteData;
+    return { siteData, imageStats };
     
   } catch (error) {
     console.error('❌ Error generating Astro data:', error);

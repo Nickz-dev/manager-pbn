@@ -47,6 +47,8 @@ interface GeneratedSite {
     hasIndex?: boolean
     hasArticles?: boolean
     articleCount?: number
+    imagesDownloaded?: number
+    totalImages?: number
     error?: string
   }
 }
@@ -1028,6 +1030,8 @@ export async function POST(request: NextRequest) {
           hasIndex: result.hasIndex,
           hasArticles: result.hasArticles,
           articleCount: result.articleCount,
+          imagesDownloaded: result.imagesDownloaded,
+          totalImages: result.totalImages,
           error: result.error
         }
       })

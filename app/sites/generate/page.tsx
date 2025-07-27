@@ -19,8 +19,15 @@ interface SitePreview {
   buildStatus: 'pending' | 'building' | 'success' | 'error'
   buildProgress: number
   buildLogs: string[]
-  imagesDownloaded?: number
-  totalImages?: number
+  deploymentInfo?: {
+    buildPath?: string
+    hasIndex?: boolean
+    hasArticles?: boolean
+    articleCount?: number
+    imagesDownloaded?: number
+    totalImages?: number
+    error?: string
+  }
 }
 
 interface BuildStep {
@@ -106,8 +113,11 @@ export default function GenerateSitePage() {
           buildUrl: result.buildUrl,
           buildStatus: 'success',
           statuspbn: 'deployed',
-          imagesDownloaded: result.imagesDownloaded || 0,
-          totalImages: result.totalImages || 0
+          deploymentInfo: {
+            ...prev.deploymentInfo,
+            imagesDownloaded: result.imagesDownloaded || 0,
+            totalImages: result.totalImages || 0
+          }
         } : null)
 
         // Отмечаем все шаги как завершенные
@@ -250,11 +260,17 @@ export default function GenerateSitePage() {
                   <span className="text-gray-600">Выбрано статей:</span>
                   <span className="font-medium">{sitePreview.selectedArticles?.length || 0}</span>
                 </div>
-                {sitePreview.imagesDownloaded !== undefined && (
+                {sitePreview.deploymentInfo?.articleCount !== undefined && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Собрано страниц:</span>
+                    <span className="font-medium">{sitePreview.deploymentInfo.articleCount}</span>
+                  </div>
+                )}
+                {sitePreview.deploymentInfo?.imagesDownloaded !== undefined && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">Скачано изображений:</span>
                     <span className="font-medium">
-                      {sitePreview.imagesDownloaded} / {sitePreview.totalImages || 0}
+                      {sitePreview.deploymentInfo.imagesDownloaded} / {sitePreview.deploymentInfo.totalImages || 0}
                     </span>
                   </div>
                 )}
@@ -461,14 +477,20 @@ export default function GenerateSitePage() {
                   </div>
                   <div className="text-sm text-gray-600">Шагов выполнено</div>
                 </div>
-                {sitePreview.imagesDownloaded !== undefined && (
+                {sitePreview.deploymentInfo?.articleCount !== undefined && (
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-600">{sitePreview.deploymentInfo.articleCount}</div>
+                    <div className="text-sm text-gray-600">Собрано страниц</div>
+                  </div>
+                )}
+                {sitePreview.deploymentInfo?.imagesDownloaded !== undefined && (
                   <>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-purple-600">{sitePreview.imagesDownloaded}</div>
+                      <div className="text-2xl font-bold text-purple-600">{sitePreview.deploymentInfo.imagesDownloaded}</div>
                       <div className="text-sm text-gray-600">Скачано изображений</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-orange-600">{sitePreview.totalImages || 0}</div>
+                      <div className="text-2xl font-bold text-orange-600">{sitePreview.deploymentInfo.totalImages || 0}</div>
                       <div className="text-sm text-gray-600">Всего изображений</div>
                     </div>
                   </>
