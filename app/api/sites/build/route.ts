@@ -8,6 +8,8 @@ import axios from 'axios'
 function getTemplateDirectory(template: string): string {
   const templateMap: { [key: string]: string } = {
     'casino-blog': 'astro-pbn-blog',
+    'casino-standard': 'astro-pbn-blog',
+    'casino-premium': 'casino/premium',
     'slots-review': 'astro-slots-review',
     'gaming-news': 'astro-gaming-news',
     'premium-casino': 'casino/premium',
@@ -52,13 +54,22 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Получаем статьи для сайта
-    const articles = await strapiAPI.getArticlesBySite(siteId)
+    let articles = []
+    if (site.selectedArticles && site.selectedArticles.length > 0) {
+      // Получаем статьи по их ID из selectedArticles
+      articles = await strapiAPI.getArticlesByIds(site.selectedArticles)
+    } else {
+      // Fallback: получаем статьи по связи с сайтом
+      articles = await strapiAPI.getArticlesBySite(siteId)
+    }
+    console.log(`📄 Found ${articles.length} articles for site ${siteId}`)
     
     // 3. Формируем слаги для статей
     const articlesWithSlugs = articles.map(article => ({
       ...article,
       slug: article.slug || generateSlug(article.title)
     }))
+    console.log(`🔗 Generated slugs for ${articlesWithSlugs.length} articles`)
     
     // 4. Формируем data.json для Astro
     const astroData = await generateAstroData(site, articlesWithSlugs)
@@ -75,6 +86,9 @@ export async function POST(request: NextRequest) {
     // 8. Обновляем статус сайта
     await strapiAPI.updatePbnSite(siteId, { statuspbn: 'deployed' })
 
+    // Подсчитываем количество сгенерированных страниц
+    const generatedPages = buildResult.articleCount + (buildResult.hasIndex ? 1 : 0)
+
     return NextResponse.json({
       success: true,
       message: 'Build completed successfully',
@@ -83,6 +97,9 @@ export async function POST(request: NextRequest) {
       imagesDownloaded: imageStats.downloaded,
       totalImages: imageStats.total,
       articleCount: articlesWithSlugs.length,
+      generatedPages: generatedPages,
+      hasIndex: buildResult.hasIndex,
+      hasArticles: buildResult.hasArticles,
       buildResult
     })
 
@@ -155,19 +172,29 @@ async function downloadAndProcessImages(articles: any[], siteId: string, templat
   const templateDir = path.join(process.cwd(), 'templates', getTemplateDirectory(template))
   const assetsDir = path.join(templateDir, 'src', 'assets', 'images', 'articles')
   
+  console.log(`📁 Template directory: ${templateDir}`)
+  console.log(`📁 Assets directory: ${assetsDir}`)
+  
   // Создаем директорию если не существует
   await fs.mkdir(assetsDir, { recursive: true })
 
   let downloaded = 0
   let total = 0
 
+  console.log(`📄 Processing ${articles.length} articles for images...`)
+
   for (const article of articles) {
+    console.log(`📄 Article ${article.id}: ${article.title}`)
+    console.log(`🖼️ Featured image: ${article.featured_image}`)
+    
     if (article.featured_image) {
       total++
       try {
         const imageUrl = article.featured_image
         const imageName = `${article.id}-${Date.now()}.jpg`
         const imagePath = path.join(assetsDir, imageName)
+        
+        console.log(`⬇️ Downloading: ${imageUrl} -> ${imagePath}`)
         
         // Скачиваем изображение
         const response = await axios.get(imageUrl, { responseType: 'arraybuffer' })
@@ -183,6 +210,8 @@ async function downloadAndProcessImages(articles: any[], siteId: string, templat
         // Устанавливаем дефолтное изображение
         article.featured_image = '/src/assets/images/default-article.svg'
       }
+    } else {
+      console.log(`❌ No featured image for article ${article.id}`)
     }
   }
   
@@ -251,6 +280,7 @@ async function checkBuildResults(distDir: string) {
   try {
     await fs.access(distDir)
   } catch {
+    console.log(`❌ Директория dist не найдена: ${distDir}`)
     return results
   }
   
@@ -258,15 +288,28 @@ async function checkBuildResults(distDir: string) {
   const files = await getAllFiles(distDir)
   results.files = files
   
+  console.log(`📁 Найдено файлов в dist: ${files.length}`)
+  console.log(`📄 Файлы:`, files.slice(0, 10).map(f => path.basename(f)).join(', '))
+  
   // Проверяем наличие index.html
-  results.hasIndex = files.some(file => file.endsWith('index.html'))
+  const indexFiles = files.filter(file => file.endsWith('index.html'))
+  results.hasIndex = indexFiles.some(file => 
+    path.basename(path.dirname(file)) === 'dist' || 
+    path.basename(file) === 'index.html'
+  )
   
   // Проверяем наличие страниц статей
   const articleFiles = files.filter(file => 
-    file.includes('articles') && file.includes('index.html')
+    file.includes('articles') && file.endsWith('index.html')
   )
   results.hasArticles = articleFiles.length > 0
   results.articleCount = articleFiles.length
+  
+  console.log(`📊 Результаты проверки:`)
+  console.log(`  - Есть index.html: ${results.hasIndex}`)
+  console.log(`  - Есть статьи: ${results.hasArticles}`)
+  console.log(`  - Количество статей: ${results.articleCount}`)
+  console.log(`  - Всего HTML файлов: ${indexFiles.length}`)
   
   return results
 }

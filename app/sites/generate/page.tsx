@@ -24,6 +24,7 @@ interface SitePreview {
     hasIndex?: boolean
     hasArticles?: boolean
     articleCount?: number
+    generatedPages?: number
     imagesDownloaded?: number
     totalImages?: number
     error?: string
@@ -167,8 +168,9 @@ export default function GenerateSitePage() {
             imagesDownloaded: result.imagesDownloaded || 0,
             totalImages: result.totalImages || 0,
             articleCount: result.articleCount || prev.selectedArticles?.length || 0,
-            hasIndex: true,
-            hasArticles: true
+            generatedPages: result.generatedPages || 0,
+            hasIndex: result.hasIndex || false,
+            hasArticles: result.hasArticles || false
           }
         } : null)
 
@@ -177,17 +179,17 @@ export default function GenerateSitePage() {
           ...step,
           status: 'completed' as const,
           progress: 100,
-                      message: step.name === 'Скачивание изображений' && result.imagesDownloaded 
+          message: step.name === 'Скачивание изображений' && result.imagesDownloaded 
               ? `Скачано ${result.imagesDownloaded} из ${result.totalImages} изображений`
               : step.name === 'Формирование слогов статей'
               ? `Сформировано ${sitePreview?.selectedArticles?.length || 0} слогов`
               : step.name === 'Сборка Astro'
-              ? `Собрано ${result.articleCount || sitePreview?.selectedArticles?.length || 0} страниц`
+              ? `Собрано ${result.generatedPages || sitePreview?.selectedArticles?.length || 0} страниц`
               : 'Завершено'
         })))
 
         setBuildLogs(prev => [...prev, '✅ Сборка завершена успешно!'])
-        setBuildLogs(prev => [...prev, `📊 Статистика: ${result.articleCount || 0} страниц, ${result.imagesDownloaded || 0} изображений`])
+        setBuildLogs(prev => [...prev, `📊 Статистика: ${result.generatedPages || 0} страниц, ${result.imagesDownloaded || 0} изображений`])
       } else {
         throw new Error(result.error || 'Ошибка сборки')
       }
@@ -333,10 +335,10 @@ export default function GenerateSitePage() {
                   <span className="text-gray-600">Выбрано статей:</span>
                   <span className="font-medium">{sitePreview.selectedArticles?.length || 0}</span>
                 </div>
-                {sitePreview.deploymentInfo?.articleCount !== undefined && (
+                {sitePreview.deploymentInfo?.generatedPages !== undefined && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">Собрано страниц:</span>
-                    <span className="font-medium">{sitePreview.deploymentInfo.articleCount}</span>
+                    <span className="font-medium">{sitePreview.deploymentInfo.generatedPages}</span>
                   </div>
                 )}
                 {sitePreview.deploymentInfo?.imagesDownloaded !== undefined && (
@@ -591,9 +593,9 @@ export default function GenerateSitePage() {
                   </div>
                   <div className="text-sm text-gray-600">Шагов выполнено</div>
                 </div>
-                {sitePreview.deploymentInfo?.articleCount !== undefined && (
+                {sitePreview.deploymentInfo?.generatedPages !== undefined && (
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">{sitePreview.deploymentInfo.articleCount}</div>
+                    <div className="text-2xl font-bold text-blue-600">{sitePreview.deploymentInfo.generatedPages}</div>
                     <div className="text-sm text-gray-600">Собрано страниц</div>
                   </div>
                 )}

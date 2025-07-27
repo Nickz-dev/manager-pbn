@@ -273,4 +273,44 @@ export const strapiAPI = {
       } : null,
     }))
   },
+
+  async getArticlesByIds(articleIds: number[]) {
+    if (!articleIds || articleIds.length === 0) {
+      return []
+    }
+    
+    // Создаем фильтр для поиска статей по ID
+    const filterQuery = articleIds.map(id => `filters[id][$in][]=${id}`).join('&')
+    const res = await strapi.get(`/content-articles?${filterQuery}&populate=*`)
+    
+    return (res.data.data || []).map((item: any) => ({
+      id: item.id,
+      documentId: item.documentId,
+      title: item.title,
+      slug: item.slug,
+      content: item.content,
+      excerpt: item.excerpt,
+      featured_image: item.featured_image,
+      meta_title: item.meta_title,
+      meta_description: item.meta_description,
+      statusarticles: item.statusarticles,
+      published: item.published,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
+      publishedAt: item.publishedAt,
+      content_categories: (item.content_categories || []).map((cat: any) => ({
+        id: cat.id,
+        ...cat
+      })),
+      content_author: item.content_author ? {
+        id: item.content_author.id,
+        ...item.content_author
+      } : null,
+      pbn_site: item.pbn_site ? {
+        id: item.pbn_site.id,
+        documentId: item.pbn_site.documentId,
+        ...item.pbn_site
+      } : null,
+    }))
+  },
 } 
