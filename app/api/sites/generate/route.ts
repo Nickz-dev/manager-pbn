@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { writeFileSync, mkdirSync, existsSync } from 'fs'
 import { join } from 'path'
 import { TemplateType, SiteData } from '@/templates/TemplateLoader'
+// Динамический импорт для избежания проблем с путями
+// const { buildSite } = require('../../../scripts/build-astro.js')
 
 // Временное хранилище сайтов (позже заменим на Strapi)
 const SITES_DB_PATH = join(process.cwd(), 'data', 'sites.json')
@@ -41,6 +43,11 @@ interface GeneratedSite {
     vpsId?: string
     sslEnabled?: boolean
     nginxConfig?: string
+    buildPath?: string
+    hasIndex?: boolean
+    hasArticles?: boolean
+    articleCount?: number
+    error?: string
   }
 }
 
@@ -197,19 +204,19 @@ class SiteGenerator {
             <section class="featured-articles">
                 <h2>Featured Articles</h2>
                 <div class="articles-grid">
-                    ${featured.slice(0, 3).map(article => `
-                    <article class="article-card">
-                        ${article.image ? `<img src="${article.image}" alt="${article.title}">` : ''}
-                        <div class="article-content">
-                            <h3><a href="/articles/${article.slug}">${article.title}</a></h3>
-                            <p>${article.excerpt}</p>
-                            <div class="article-meta">
-                                <time>${new Date(article.publishedAt).toLocaleDateString()}</time>
-                                ${article.readTime ? `<span>${article.readTime}</span>` : ''}
-                            </div>
-                        </div>
-                    </article>
-                    `).join('')}
+                                ${featured.slice(0, 3).map((article: any) => `
+            <article class="article-card">
+                ${article.image ? `<img src="${article.image}" alt="${article.title}">` : ''}
+                <div class="article-content">
+                    <h3><a href="/articles/${article.slug}">${article.title}</a></h3>
+                    <p>${article.excerpt}</p>
+                    <div class="article-meta">
+                        <time>${new Date(article.publishedAt).toLocaleDateString()}</time>
+                        ${article.readTime ? `<span>${article.readTime}</span>` : ''}
+                    </div>
+                </div>
+            </article>
+            `).join('')}
                 </div>
             </section>
             ` : ''}
@@ -218,7 +225,7 @@ class SiteGenerator {
             <section class="categories">
                 <h2>Categories</h2>
                 <div class="categories-grid">
-                    ${categories.map(category => `
+                    ${categories.map((category: any) => `
                     <a href="/category/${category.toLowerCase().replace(/\s+/g, '-')}" class="category-card">
                         <span>${category}</span>
                     </a>
@@ -982,31 +989,65 @@ export async function POST(request: NextRequest) {
     // Генерируем уникальный ID
     const siteId = `site_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 
-    // Генерируем файлы сайта
-    console.log(`🏗️ Generating site files for ${body.domain}...`)
-    const generatedFiles = siteGenerator.generateSiteFiles(siteData)
-
-    // Создаем объект сгенерированного сайта
+    // Создаем объект сгенерированного сайта с статусом "generating"
     const generatedSite: GeneratedSite = {
       id: siteId,
       domain: body.domain,
       siteName: body.siteName,
       type: body.type,
-      status: 'ready',
+      status: 'generating',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      data: siteData,
-      files: generatedFiles
+      data: siteData
     }
 
     // Сохраняем в базу данных
     sitesDB.addSite(generatedSite)
 
-    console.log(`✅ Site generated successfully: ${body.domain}`)
+    // Запускаем сборку Astro в фоне
+    const { buildAstroSite } = require('../../../scripts/build-astro.js');
+    
+    buildAstroSite({
+      name: body.siteName,
+      description: body.description,
+      domain: body.domain,
+      template: body.type,
+      keywords: body.keywords || [],
+      theme: body.theme || 'light',
+      analytics: {
+        googleAnalytics: body.settings?.analytics?.googleAnalytics || ""
+      }
+    }).then((result: any) => {
+      console.log(`✅ Astro build completed for ${body.domain}:`, result)
+      
+      // Обновляем статус сайта
+      sitesDB.updateSite(siteId, {
+        status: result.success ? 'ready' : 'error',
+        deploymentInfo: {
+          buildPath: result.distPath,
+          hasIndex: result.hasIndex,
+          hasArticles: result.hasArticles,
+          articleCount: result.articleCount,
+          error: result.error
+        }
+      })
+    }).catch((error: any) => {
+      console.error(`❌ Astro build failed for ${body.domain}:`, error)
+      
+      // Обновляем статус сайта на ошибку
+      sitesDB.updateSite(siteId, {
+        status: 'error',
+        deploymentInfo: {
+          error: error.message
+        }
+      })
+    })
+
+    console.log(`🚀 Site generation started: ${body.domain}`)
 
     return NextResponse.json({
       success: true,
-      message: 'Site generated successfully',
+      message: 'Site generation started',
       site: {
         id: generatedSite.id,
         domain: generatedSite.domain,

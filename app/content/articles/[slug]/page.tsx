@@ -251,7 +251,7 @@ export default function ArticleDetailPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
               </div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">Контент</h1>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">PBN Контент</h1>
             </div>
             <nav className="flex space-x-1">
               <Link href="/sites" className="nav-link">Сайты</Link>
