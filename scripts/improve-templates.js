@@ -205,6 +205,43 @@ function improveTemplate(templateName) {
   console.log(`\n✅ Шаблон ${templateName} улучшен!`);
 }
 
+function fixHtmlLang() {
+  console.log('🔧 Проверяю и обновляю html lang атрибуты...');
+  
+  const templates = [
+    'astro-pbn-blog',
+    'astro-slots-review', 
+    'astro-gaming-news',
+    'astro-sports-betting',
+    'astro-poker-platform'
+  ];
+  
+  templates.forEach(template => {
+    const articlePath = path.join(__dirname, '..', 'templates', template, 'src', 'pages', 'articles', '[slug].astro');
+    
+    if (fs.existsSync(articlePath)) {
+      let content = fs.readFileSync(articlePath, 'utf8');
+      
+      // Проверяем, есть ли уже динамический lang атрибут
+      if (content.includes('<html lang={site.config?.language || \'en\'}>')) {
+        console.log(`✅ ${template}: html lang уже настроен правильно`);
+      } else if (content.includes('<html lang=')) {
+        // Заменяем статический lang на динамический
+        content = content.replace(
+          /<html lang="[^"]*">/g,
+          '<html lang={site.config?.language || \'en\'}>'
+        );
+        fs.writeFileSync(articlePath, content, 'utf8');
+        console.log(`✅ ${template}: обновлен html lang атрибут`);
+      } else {
+        console.log(`⚠️  ${template}: не найден html lang атрибут`);
+      }
+    } else {
+      console.log(`❌ ${template}: файл [slug].astro не найден`);
+    }
+  });
+}
+
 // Главная функция
 function main() {
   console.log('🚀 Начинаем улучшение всех шаблонов...\n');
@@ -212,6 +249,8 @@ function main() {
   templates.forEach(template => {
     improveTemplate(template);
   });
+
+  fixHtmlLang();
   
   console.log('\n🎉 Все шаблоны улучшены!');
   console.log('\n📋 Следующие шаги:');
