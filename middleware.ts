@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export function middleware(request: NextRequest) {
   // Skip middleware for public routes
-  const publicPaths = ['/login', '/api/auth/login', '/api/', '/_next', '/favicon.ico', '/sites/generate', '/sites/new', '/api/sites']
+  const publicPaths = ['/login', '/api/auth/login', '/_next', '/favicon.ico']
   const isPublicPath = publicPaths.some(path => request.nextUrl.pathname.startsWith(path))
   
   if (isPublicPath) {
@@ -26,12 +26,11 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except:
-     * - api routes that start with /api
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public folder files
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|public).*)',
+    '/((?!_next/static|_next/image|favicon.ico|public).*)',
   ],
 } 

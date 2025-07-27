@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
       success: true,
       message: 'Build completed successfully',
       siteId,
-      buildUrl: `http://localhost:4321/sites/${siteId}`, // URL для предпросмотра
+      buildUrl: `http://localhost:4321/sites/${siteId}`, // URL для предпросмотра (будет обновлен в UI)
       imagesDownloaded: imageStats.downloaded,
       totalImages: imageStats.total,
       articleCount: articlesWithSlugs.length,

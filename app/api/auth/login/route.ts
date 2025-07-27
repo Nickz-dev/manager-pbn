@@ -36,21 +36,17 @@ export async function POST(request: NextRequest) {
     // Authenticate user
     console.log('🔍 AUTH - Trying to authenticate:', { email, password: '***' })
     
-    // Temporary MVP fix - direct check
-    if (email === 'admin@pbn-manager.local' && password === 'admin123') {
-      console.log('✅ AUTH - Direct match successful')
-      var user = {
-        id: 'admin',
-        email: 'admin@pbn-manager.local',
-        role: 'admin' as const
-      }
-    } else {
-      console.log('❌ AUTH - Direct match failed')
+    const user = await authenticateUser(email, password)
+    
+    if (!user) {
+      console.log('❌ AUTH - Authentication failed')
       return NextResponse.json(
         { error: 'Неверный email или пароль' },
         { status: 401 }
       )
     }
+
+    console.log('✅ AUTH - Authentication successful')
 
     // Create JWT token
     const token = createToken({

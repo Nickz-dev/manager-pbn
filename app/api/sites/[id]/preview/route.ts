@@ -2,9 +2,26 @@ import { NextRequest, NextResponse } from 'next/server'
 import { spawn } from 'child_process'
 import path from 'path'
 import fs from 'fs'
+import { getPreviewUrl } from '@/lib/url-utils'
 
 // Хранилище активных preview процессов
 const activePreviews = new Map<string, { process: any, timer: NodeJS.Timeout, port: number }>()
+
+// Helper function to map template names to directory names
+function getTemplateDirectory(template: string): string {
+  const templateMap: { [key: string]: string } = {
+    'casino-blog': 'astro-pbn-blog',
+    'casino-standard': 'astro-pbn-blog',
+    'casino-premium': 'casino/premium',
+    'slots-review': 'astro-slots-review',
+    'gaming-news': 'astro-gaming-news',
+    'premium-casino': 'casino/premium',
+    'sports-betting': 'astro-sports-betting',
+    'poker-platform': 'astro-poker-platform'
+  }
+  
+  return templateMap[template] || 'astro-pbn-blog' // fallback to default
+}
 
 export async function POST(
   request: NextRequest,
@@ -30,25 +47,9 @@ export async function POST(
       return NextResponse.json({
         success: true,
         message: 'Preview already running',
-        url: `http://localhost:${existing.port}`,
+        url: getPreviewUrl(existing.port),
         timeLeft: timeLeft
       })
-    }
-
-    // Helper function to map template names to directory names
-    function getTemplateDirectory(template: string): string {
-      const templateMap: { [key: string]: string } = {
-        'casino-blog': 'astro-pbn-blog',
-        'casino-standard': 'astro-pbn-blog',
-        'casino-premium': 'casino/premium',
-        'slots-review': 'astro-slots-review',
-        'gaming-news': 'astro-gaming-news',
-        'premium-casino': 'casino/premium',
-        'sports-betting': 'astro-sports-betting',
-        'poker-platform': 'astro-poker-platform'
-      }
-      
-      return templateMap[template] || 'astro-pbn-blog' // fallback to default
     }
 
     // Определяем путь к шаблону с учетом маппинга
@@ -137,7 +138,7 @@ export async function POST(
     return NextResponse.json({
       success: true,
       message: 'Preview server started successfully',
-      url: `http://localhost:${port}`,
+      url: getPreviewUrl(port),
       port: port,
       timeLeft: 60 // секунд
     })
@@ -211,7 +212,7 @@ export async function GET(
     return NextResponse.json({
       success: true,
       isRunning: true,
-      url: `http://localhost:${preview.port}`,
+      url: getPreviewUrl(preview.port),
       port: preview.port,
       timeLeft: Math.max(0, timeLeft)
     })

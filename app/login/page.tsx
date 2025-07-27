@@ -123,8 +123,8 @@ export default function LoginPage() {
           <div className="mt-6 p-4 bg-blue-50/50 rounded-xl border border-blue-100">
             <p className="text-sm text-center text-gray-600">
               <span className="font-medium">💡 Тестовые данные:</span><br />
-              Email: admin@pbn-manager.local<br />
-              Пароль: admin123
+              Email: искать в ТГ <br />
+              Пароль: Там же
             </p>
           </div>
         </div>

@@ -12,9 +12,16 @@ function generateJWTSecret(length = 64) {
   return crypto.randomBytes(length).toString('hex')
 }
 
-async function generatePasswordHash(password) {
+async function generatePasswordHash(password = 'admin123') {
   const saltRounds = 12
-  return await bcrypt.hash(password, saltRounds)
+  
+  try {
+    const hash = await bcrypt.hash(password, saltRounds)
+    return hash
+  } catch (error) {
+    console.error('Error generating hash:', error)
+    return null
+  }
 }
 
 function generateRandomPassword(length = 16) {
@@ -42,12 +49,17 @@ async function main() {
     password = args[0]
     console.log(`📝 Используется пароль: ${password}`)
   } else {
-    password = generateRandomPassword()
-    console.log(`🎲 Сгенерированный пароль: ${password}`)
+    password = 'admin123'
+    console.log(`🎲 Используется пароль по умолчанию: ${password}`)
   }
 
   // Generate password hash
   const passwordHash = await generatePasswordHash(password)
+  if (!passwordHash) {
+    console.error('❌ Ошибка генерации хеша пароля')
+    return
+  }
+  
   console.log('\nADMIN_PASSWORD_HASH (добавьте в .env):')
   console.log(`ADMIN_PASSWORD_HASH=${passwordHash}\n`)
 
@@ -56,11 +68,11 @@ async function main() {
   console.log('ADMIN_EMAIL=admin@pbn-manager.local\n')
 
   console.log('📋 Полная конфигурация для .env:')
-  console.log('=' * 50)
+  console.log('='.repeat(50))
   console.log(`JWT_SECRET=${jwtSecret}`)
   console.log(`ADMIN_EMAIL=admin@pbn-manager.local`)
   console.log(`ADMIN_PASSWORD_HASH=${passwordHash}`)
-  console.log('=' * 50)
+  console.log('='.repeat(50))
 
   console.log('\n✅ Готово! Скопируйте переменные в ваш .env файл')
   console.log(`🔑 Логин: admin@pbn-manager.local`)
