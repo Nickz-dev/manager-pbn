@@ -33,13 +33,16 @@ export default function NewSitePage() {
   const [selectedSite, setSelectedSite] = useState<string>('')
   const [pbnSites, setPbnSites] = useState<any[]>([])
   
-  // Состояния для доменов и VPS серверов
+  // Состояния для доменов и VPS серверов (временно отключены)
+  // TODO: Включить обратно после исправления сборки и превью
   const [domains, setDomains] = useState<any[]>([])
   const [vpsServers, setVpsServers] = useState<any[]>([])
 
   // Загрузка данных
   useEffect(() => {
-    // Загружаем домены и VPS серверы для всех типов сайтов
+    // Временно отключаем загрузку доменов и VPS для ручного заполнения
+    // TODO: Включить обратно после исправления сборки и превью
+    /*
     fetch('/api/infrastructure/domains')
       .then(res => res.json())
       .then(data => {
@@ -57,6 +60,7 @@ export default function NewSitePage() {
         }
       })
       .catch(() => setVpsServers([]))
+    */
     
     if (siteType === 'pbn') {
       // Всегда загружаем статьи, фильтрация происходит в компоненте
@@ -347,46 +351,32 @@ export default function NewSitePage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Домен
                 </label>
-                <select
+                <input
+                  type="text"
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Например: example.com"
                   value={formData.domain}
                   onChange={(e) => updateFormData('domain', e.target.value)}
-                >
-                  <option value="">Выберите домен</option>
-                  {domains.map((domain: any) => (
-                    <option key={domain.id} value={domain.name}>
-                      {domain.name} ({domain.status})
-                    </option>
-                  ))}
-                </select>
-                {domains.length === 0 && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    Нет доступных доменов. <Link href="/infrastructure/domains/new" className="text-blue-600 hover:underline">Добавить домен</Link>
-                  </p>
-                )}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Введите домен вручную (пока CRUD не готов)
+                </p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   VPS Сервер
                 </label>
-                <select 
+                <input
+                  type="text"
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Например: VPS-01 или IP адрес"
                   value={formData.vps}
                   onChange={(e) => updateFormData('vps', e.target.value)}
-                >
-                  <option value="">Выберите VPS</option>
-                  {vpsServers.map((vps: any) => (
-                    <option key={vps.id} value={vps.id}>
-                      {vps.name} ({vps.provider}) - {vps.status}
-                    </option>
-                  ))}
-                </select>
-                {vpsServers.length === 0 && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    Нет доступных VPS серверов. <Link href="/infrastructure/vps/new" className="text-blue-600 hover:underline">Добавить VPS</Link>
-                  </p>
-                )}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Введите VPS сервер вручную (пока CRUD не готов)
+                </p>
               </div>
 
               <div>
@@ -823,4 +813,12 @@ export default function NewSitePage() {
       </main>
     </div>
   )
-} 
+}
+
+/*
+TODO: После исправления сборки и превью на VPS:
+1. Раскомментировать загрузку доменов и VPS серверов в useEffect
+2. Заменить текстовые поля обратно на select с данными из API
+3. Убрать комментарии о ручном вводе
+4. Протестировать создание сайтов с реальными данными
+*/ 

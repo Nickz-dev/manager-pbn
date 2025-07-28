@@ -2,7 +2,7 @@ const { spawn, execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-console.log('🔧 Улучшенное исправление всех проблем VPS...\n');
+console.log('🔧 Улучшенное исправление всех проблем VPS (включая Tailwind CSS)...\n');
 
 // Шаг 1: Исправление окружения
 async function fixEnvironment() {
@@ -59,7 +59,25 @@ async function fixEnvironment() {
   return true;
 }
 
-// Шаг 2: Исправление зависимостей шаблонов
+// Шаг 2: Исправление конфигурации Tailwind CSS
+async function fixTailwindConfig() {
+  console.log('\n🎨 Шаг 2: Исправление конфигурации Tailwind CSS...');
+  
+  try {
+    const { execSync } = require('child_process');
+    execSync('node scripts/fix-tailwind-config.js', { 
+      stdio: 'inherit',
+      cwd: process.cwd()
+    });
+    console.log('✅ Конфигурация Tailwind CSS исправлена');
+    return true;
+  } catch (error) {
+    console.log(`❌ Ошибка исправления Tailwind: ${error.message}`);
+    return false;
+  }
+}
+
+// Шаг 3: Исправление зависимостей шаблонов
 async function fixTemplateDependencies() {
   console.log('\n📦 Шаг 2: Исправление зависимостей шаблонов...');
   
@@ -338,19 +356,25 @@ async function main() {
       return;
     }
     
-    // Шаг 2: Исправление зависимостей
+    // Шаг 2: Исправление конфигурации Tailwind
+    const tailwindOk = await fixTailwindConfig();
+    if (!tailwindOk) {
+      console.log('⚠️  Проблемы с конфигурацией Tailwind');
+    }
+    
+    // Шаг 3: Исправление зависимостей
     const depsOk = await fixTemplateDependencies();
     if (!depsOk) {
       console.log('⚠️  Не все зависимости исправлены');
     }
     
-    // Шаг 3: Тестирование сборки
+    // Шаг 4: Тестирование сборки
     const buildOk = await testBuildSystem();
     if (!buildOk) {
       console.log('⚠️  Проблемы с системой сборки');
     }
     
-    // Шаг 4: Перезапуск сервисов
+    // Шаг 5: Перезапуск сервисов
     const servicesOk = await restartServices();
     if (!servicesOk) {
       console.log('⚠️  Проблемы с перезапуском сервисов');
@@ -358,11 +382,12 @@ async function main() {
     
     console.log('\n📊 Результаты исправления:');
     console.log(`   Окружение: ${envOk ? '✅' : '❌'}`);
+    console.log(`   Tailwind: ${tailwindOk ? '✅' : '❌'}`);
     console.log(`   Зависимости: ${depsOk ? '✅' : '❌'}`);
     console.log(`   Сборка: ${buildOk ? '✅' : '❌'}`);
     console.log(`   Сервисы: ${servicesOk ? '✅' : '❌'}`);
     
-    if (envOk && depsOk && buildOk && servicesOk) {
+    if (envOk && tailwindOk && depsOk && buildOk && servicesOk) {
       console.log('\n🎉 Все проблемы исправлены!');
       console.log('\n🔗 Проверьте доступность:');
       console.log('   - Strapi: http://185.232.205.247:1337');
