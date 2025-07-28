@@ -284,6 +284,12 @@ export default function ArticleDetailPage() {
                   >
                     ✏️ Редактировать
                   </button>
+                  <Link
+                    href={`/content/generate?rewrite=${article.documentId}`}
+                    className="btn-secondary"
+                  >
+                    🔄 Рерайт AI
+                  </Link>
                   <button
                     onClick={() => setShowDeleteConfirm(true)}
                     className="btn-danger"

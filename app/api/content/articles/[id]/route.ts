@@ -7,30 +7,27 @@ export async function GET(
 ) {
   try {
     const { id } = params
-    const articles = await strapiAPI.getArticles()
     
-    // Пробуем найти по documentId, slug, или id
-    const article = articles.find((a: any) => a.documentId === id) || 
-                   articles.find((a: any) => a.slug === id) || 
-                   articles.find((a: any) => a.id.toString() === id)
-
+    const article = await strapiAPI.getArticleById(id)
+    
     if (!article) {
-      return NextResponse.json(
-        { error: 'Article not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Article not found' 
+      }, { status: 404 })
     }
 
     return NextResponse.json({
       success: true,
-      article: article
+      article
     })
 
   } catch (error: any) {
-    return NextResponse.json(
-      { error: error?.message || 'Internal server error' },
-      { status: 500 }
-    )
+    console.error('Error fetching article:', error)
+    return NextResponse.json({ 
+      success: false, 
+      error: 'Internal server error' 
+    }, { status: 500 })
   }
 }
 
@@ -41,36 +38,28 @@ export async function PUT(
   try {
     const { id } = params
     const body = await request.json()
-    const data = body.data || body
+    const { data } = body
+
+    const updatedArticle = await strapiAPI.updateArticle(id, data)
     
-    // Проверяем, что есть хотя бы одно поле для обновления
-    if (Object.keys(data).length === 0) {
-      return NextResponse.json({ error: 'No fields to update' }, { status: 400 })
+    if (!updatedArticle) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Failed to update article' 
+      }, { status: 500 })
     }
 
-    // Находим статью по documentId, slug, или id
-    const articles = await strapiAPI.getArticles()
-    const article = articles.find((a: any) => a.documentId === id) || 
-                   articles.find((a: any) => a.slug === id) || 
-                   articles.find((a: any) => a.id.toString() === id)
-    
-    if (!article) {
-      return NextResponse.json({ error: 'Article not found' }, { status: 404 })
-    }
-
-    const updatedArticle = await strapiAPI.updateArticle(article.documentId, data)
-    
-    // Получаем обновленную статью с полными данными
-    const freshArticles = await strapiAPI.getArticles()
-    const freshArticle = freshArticles.find((a: any) => a.documentId === article.documentId)
-    
-    return NextResponse.json({ success: true, article: freshArticle || updatedArticle })
+    return NextResponse.json({
+      success: true,
+      article: updatedArticle
+    })
 
   } catch (error: any) {
-    return NextResponse.json(
-      { error: error?.message || 'Failed to update article' },
-      { status: 500 }
-    )
+    console.error('Error updating article:', error)
+    return NextResponse.json({ 
+      success: false, 
+      error: 'Internal server error' 
+    }, { status: 500 })
   }
 }
 
@@ -79,22 +68,27 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Находим статью по documentId, slug, или id
-    const articles = await strapiAPI.getArticles()
-    const article = articles.find((a: any) => a.documentId === params.id) || 
-                   articles.find((a: any) => a.slug === params.id) || 
-                   articles.find((a: any) => a.id.toString() === params.id)
+    const { id } = params
     
-    if (!article) {
-      return NextResponse.json({ error: 'Article not found' }, { status: 404 })
+    const success = await strapiAPI.deleteArticle(id)
+    
+    if (!success) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Failed to delete article' 
+      }, { status: 500 })
     }
-    
-    await strapiAPI.deleteArticle(article.documentId)
-    return NextResponse.json({ success: true })
+
+    return NextResponse.json({
+      success: true,
+      message: 'Article deleted successfully'
+    })
+
   } catch (error: any) {
-    return NextResponse.json(
-      { error: error?.message || 'Failed to delete article' },
-      { status: 500 }
-    )
+    console.error('Error deleting article:', error)
+    return NextResponse.json({ 
+      success: false, 
+      error: 'Internal server error' 
+    }, { status: 500 })
   }
 } 

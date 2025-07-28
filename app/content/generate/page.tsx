@@ -32,6 +32,7 @@ export default function ContentGeneratePage() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [prompt, setPrompt] = useState('')
+  const [sourceUrl, setSourceUrl] = useState('')
   const [contentType, setContentType] = useState('article')
   const [language, setLanguage] = useState('ru')
   const [tone, setTone] = useState('professional')
@@ -75,6 +76,41 @@ export default function ContentGeneratePage() {
           const sitesData = await pbnSitesRes.json()
           setPbnSites(sitesData.sites || [])
         }
+
+        // Проверяем параметр rewrite для рерайта статьи
+        const urlParams = new URLSearchParams(window.location.search)
+        const rewriteId = urlParams.get('rewrite')
+        
+        if (rewriteId) {
+          try {
+            const articleRes = await fetch(`/api/content/articles/${rewriteId}`)
+            if (articleRes.ok) {
+              const articleData = await articleRes.json()
+              const article = articleData.article
+              
+              // Заполняем форму данными для рерайта
+              setPrompt(`Рерайт статьи: ${article.title}`)
+              setGeneratedTitle(article.title)
+              setGeneratedExcerpt(article.excerpt)
+              setGeneratedContent(article.content)
+              setGeneratedMetaTitle(article.meta_title)
+              setGeneratedMetaDescription(article.meta_description)
+              
+              // Устанавливаем связанные данные
+              if (article.content_author) {
+                setSelectedAuthor(article.content_author.id)
+              }
+              if (article.pbn_site) {
+                setSelectedSite(article.pbn_site.id)
+              }
+              if (article.content_categories) {
+                setSelectedCategories(article.content_categories.map((cat: any) => cat.id))
+              }
+            }
+          } catch (error) {
+            console.error('Error loading article for rewrite:', error)
+          }
+        }
       } catch (error) {
         console.error('Error loading data:', error)
       }
@@ -88,29 +124,120 @@ export default function ContentGeneratePage() {
     
     setIsGenerating(true)
     try {
+      // Улучшенный промпт с более четкими инструкциями
+      const lengthWords = {
+        short: '800-1200',
+        medium: '1500-2500', 
+        long: '4000-8000'
+      }
+      
+      let enhancedPrompt = ''
+      
+      if (sourceUrl && sourceUrl.trim()) {
+        // Рерайт по URL
+        enhancedPrompt = `Проанализируй статью по ссылке: ${sourceUrl}
+
+Создай качественный рерайт этой статьи с требованиями:
+- Тон: ${tone}
+- Длина: ${lengthWords[length as keyof typeof lengthWords]} слов
+- Язык: ${language}
+- Тематика: казино/азартные игры/спортивные ставки
+- Полностью переписывай текст, сохраняя основную идею
+- Структура: введение, основная часть, заключение
+- Стиль: информативный, но увлекательный
+
+Верни ответ ТОЛЬКО в формате JSON без дополнительного текста:
+{
+  "title": "Новый заголовок статьи",
+  "excerpt": "Краткое описание 2-3 предложения",
+  "content": "Полный переписанный текст с HTML-разметкой для параграфов <p> и заголовков <h2>",
+  "meta_title": "SEO заголовок до 60 символов",
+  "meta_description": "SEO описание до 160 символов"
+}`
+      } else if (generatedContent && generatedContent.trim()) {
+        // Рерайт существующей статьи
+        enhancedPrompt = `Создай качественный рерайт этой статьи:
+
+Оригинальный заголовок: ${generatedTitle}
+Оригинальное содержание: ${generatedContent}
+
+Требования для рерайта:
+- Тон: ${tone}
+- Длина: ${lengthWords[length as keyof typeof lengthWords]} слов
+- Язык: ${language}
+- Тематика: казино/азартные игры/спортивные ставки
+- Полностью переписывай текст, сохраняя основную идею и факты
+- Структура: введение, основная часть, заключение
+- Стиль: информативный, но увлекательный
+- Избегай дублирования оригинальных фраз
+
+Верни ответ ТОЛЬКО в формате JSON без дополнительного текста:
+{
+  "title": "Новый заголовок статьи",
+  "excerpt": "Краткое описание 2-3 предложения",
+  "content": "Полный переписанный текст с HTML-разметкой для параграфов <p> и заголовков <h2>",
+  "meta_title": "SEO заголовок до 60 символов",
+  "meta_description": "SEO описание до 160 символов"
+}`
+      } else {
+        // Обычная генерация по теме
+        enhancedPrompt = `Создай качественную ${contentType} на тему: "${prompt}". 
+
+Требования:
+- Тон: ${tone}
+- Длина: ${lengthWords[length as keyof typeof lengthWords]} слов
+- Язык: ${language}
+- Тематика: казино/азартные игры/спортивные ставки
+- Структура: введение, основная часть, заключение
+- Стиль: информативный, но увлекательный
+
+Верни ответ ТОЛЬКО в формате JSON без дополнительного текста:
+{
+  "title": "Заголовок статьи",
+  "excerpt": "Краткое описание 2-3 предложения",
+  "content": "Полный текст статьи с HTML-разметкой для параграфов <p> и заголовков <h2>",
+  "meta_title": "SEO заголовок до 60 символов",
+  "meta_description": "SEO описание до 160 символов"
+}`
+      }
+
       const response = await fetch('/api/test-ai', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          prompt: `Создай ${contentType} на тему: "${prompt}". Тон: ${tone}. Длина: ${length}. Язык: ${language}. Для сайта казино/азартных игр. Структурируй ответ в формате JSON с полями: title, excerpt, content, meta_title, meta_description.`
+          prompt: enhancedPrompt
         }),
       })
 
       const data = await response.json()
       if (response.ok) {
         try {
+          // Очищаем ответ от возможных лишних символов
+          let cleanText = data.generatedText.trim()
+          
+          // Убираем возможные префиксы типа "```json" и "```"
+          cleanText = cleanText.replace(/^```json\s*/, '').replace(/```\s*$/, '')
+          
           // Пытаемся распарсить JSON ответ
-          const parsedContent = JSON.parse(data.generatedText)
+          const parsedContent = JSON.parse(cleanText)
+          
+          // Проверяем и устанавливаем значения
           setGeneratedTitle(parsedContent.title || '')
           setGeneratedExcerpt(parsedContent.excerpt || '')
-          setGeneratedContent(parsedContent.content || data.generatedText)
-          setGeneratedMetaTitle(parsedContent.meta_title || '')
-          setGeneratedMetaDescription(parsedContent.meta_description || '')
-        } catch {
-          // Если не JSON, используем как есть
-          setGeneratedContent(data.generatedText)
+          setGeneratedContent(parsedContent.content || '')
+          setGeneratedMetaTitle(parsedContent.meta_title || parsedContent.title || '')
+          setGeneratedMetaDescription(parsedContent.meta_description || parsedContent.excerpt || '')
+          
+        } catch (parseError) {
+          console.error('JSON parse error:', parseError)
+          // Если не удалось распарсить JSON, показываем ошибку
+          setGeneratedContent(`Ошибка парсинга ответа AI. Полученный текст:\n\n${data.generatedText}`)
+          setGeneratedTitle('')
+          setGeneratedExcerpt('')
+          setGeneratedMetaTitle('')
+          setGeneratedMetaDescription('')
         }
       } else {
         console.error('Generation failed:', data.error)
@@ -345,6 +472,20 @@ export default function ContentGeneratePage() {
                  />
                </div>
 
+               {/* Source URL for rewriting */}
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 mb-2">
+                   URL статьи для рерайта (опционально)
+                 </label>
+                 <input
+                   type="url"
+                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                   value={sourceUrl}
+                   onChange={(e) => setSourceUrl(e.target.value)}
+                   placeholder="https://example.com/article (для рерайта существующей статьи)"
+                 />
+               </div>
+
                {/* Main Topic/Prompt */}
                <div>
                  <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -355,7 +496,7 @@ export default function ContentGeneratePage() {
                    rows={4}
                    value={prompt}
                    onChange={(e) => setPrompt(e.target.value)}
-                   placeholder="Опишите тему для генерации контента (например: 'Лучшие онлайн слоты с высоким RTP в 2024 году')"
+                   placeholder="Опишите тему для генерации контента (например: 'Лучшие онлайн слоты с высоким RTP в 2024 году') или оставьте пустым для рерайта по URL"
                  />
                </div>
 
@@ -411,7 +552,7 @@ export default function ContentGeneratePage() {
               {/* Generate Button */}
               <button
                 onClick={handleGenerate}
-                disabled={isGenerating || !prompt.trim()}
+                disabled={isGenerating || (!prompt.trim() && !sourceUrl.trim() && !generatedContent.trim())}
                 className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isGenerating ? (
@@ -425,6 +566,25 @@ export default function ContentGeneratePage() {
                 ) : (
                   '✨ Сгенерировать контент'
                 )}
+              </button>
+
+              {/* Clear Form Button */}
+              <button
+                onClick={() => {
+                  setPrompt('')
+                  setSourceUrl('')
+                  setGeneratedContent('')
+                  setGeneratedTitle('')
+                  setGeneratedExcerpt('')
+                  setGeneratedMetaTitle('')
+                  setGeneratedMetaDescription('')
+                  setSelectedAuthor('')
+                  setSelectedSite('')
+                  setSelectedCategories([])
+                }}
+                className="w-full btn-secondary"
+              >
+                🗑️ Очистить форму
               </button>
             </div>
           </div>

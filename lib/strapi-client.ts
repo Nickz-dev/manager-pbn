@@ -152,6 +152,90 @@ export const strapiAPI = {
     return res
   },
 
+  async getArticleById(id: string) {
+    try {
+      // Сначала пробуем найти по documentId
+      const res = await strapi.get(`/content-articles?filters[documentId][$eq]=${id}&populate=*`)
+      if (res.data.data && res.data.data.length > 0) {
+        const item = res.data.data[0]
+        return {
+          id: item.id,
+          documentId: item.attributes?.documentId || item.documentId,
+          title: item.attributes?.title || item.title,
+          slug: item.attributes?.slug || item.slug,
+          content: item.attributes?.content || item.content,
+          excerpt: item.attributes?.excerpt || item.excerpt,
+          featured_image: item.attributes?.featured_image || item.featured_image,
+          meta_title: item.attributes?.meta_title || item.meta_title,
+          meta_description: item.attributes?.meta_description || item.meta_description,
+          statusarticles: item.attributes?.statusarticles || item.statusarticles,
+          published: item.attributes?.published || item.published,
+          createdAt: item.attributes?.createdAt || item.createdAt,
+          updatedAt: item.attributes?.updatedAt || item.updatedAt,
+          publishedAt: item.attributes?.publishedAt || item.publishedAt,
+          content_categories: item.attributes?.content_categories?.data || item.content_categories || [],
+          content_author: item.attributes?.content_author?.data || item.content_author,
+          pbn_site: item.attributes?.pbn_site?.data || item.pbn_site,
+        }
+      }
+      
+      // Если не найдено по documentId, пробуем по slug
+      const slugRes = await strapi.get(`/content-articles?filters[slug][$eq]=${id}&populate=*`)
+      if (slugRes.data.data && slugRes.data.data.length > 0) {
+        const item = slugRes.data.data[0]
+        return {
+          id: item.id,
+          documentId: item.attributes?.documentId || item.documentId,
+          title: item.attributes?.title || item.title,
+          slug: item.attributes?.slug || item.slug,
+          content: item.attributes?.content || item.content,
+          excerpt: item.attributes?.excerpt || item.excerpt,
+          featured_image: item.attributes?.featured_image || item.featured_image,
+          meta_title: item.attributes?.meta_title || item.meta_title,
+          meta_description: item.attributes?.meta_description || item.meta_description,
+          statusarticles: item.attributes?.statusarticles || item.statusarticles,
+          published: item.attributes?.published || item.published,
+          createdAt: item.attributes?.createdAt || item.createdAt,
+          updatedAt: item.attributes?.updatedAt || item.updatedAt,
+          publishedAt: item.attributes?.publishedAt || item.publishedAt,
+          content_categories: item.attributes?.content_categories?.data || item.content_categories || [],
+          content_author: item.attributes?.content_author?.data || item.content_author,
+          pbn_site: item.attributes?.pbn_site?.data || item.pbn_site,
+        }
+      }
+      
+      // Если не найдено по slug, пробуем по id
+      const idRes = await strapi.get(`/content-articles/${id}?populate=*`)
+      if (idRes.data.data) {
+        const item = idRes.data.data
+        return {
+          id: item.id,
+          documentId: item.attributes?.documentId || item.documentId,
+          title: item.attributes?.title || item.title,
+          slug: item.attributes?.slug || item.slug,
+          content: item.attributes?.content || item.content,
+          excerpt: item.attributes?.excerpt || item.excerpt,
+          featured_image: item.attributes?.featured_image || item.featured_image,
+          meta_title: item.attributes?.meta_title || item.meta_title,
+          meta_description: item.attributes?.meta_description || item.meta_description,
+          statusarticles: item.attributes?.statusarticles || item.statusarticles,
+          published: item.attributes?.published || item.published,
+          createdAt: item.attributes?.createdAt || item.createdAt,
+          updatedAt: item.attributes?.updatedAt || item.updatedAt,
+          publishedAt: item.attributes?.publishedAt || item.publishedAt,
+          content_categories: item.attributes?.content_categories?.data || item.content_categories || [],
+          content_author: item.attributes?.content_author?.data || item.content_author,
+          pbn_site: item.attributes?.pbn_site?.data || item.pbn_site,
+        }
+      }
+      
+      return null
+    } catch (error) {
+      console.error('Error getting article by ID:', error)
+      return null
+    }
+  },
+
   // PBN сайты для привязки к статьям
   async getPbnSites() {
     const res = await strapi.get('/pbn-sites?pagination[pageSize]=100')
