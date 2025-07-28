@@ -257,15 +257,15 @@ async function buildAstroTemplate(siteId: string, template: string) {
     if (!hasNodeModules) {
       console.log('📦 Installing dependencies...')
       try {
-        // Устанавливаем зависимости с правильными флагами для Linux
-        execSync('npm install --platform=linux --arch=x64', { 
+        // Устанавливаем зависимости без неподдерживаемых флагов
+        execSync('npm install', { 
           stdio: 'inherit',
           cwd: templateDir,
           timeout: 300000 // 5 минут
         })
         
-        // Принудительно устанавливаем rollup зависимости
-        console.log('🔧 Installing rollup dependencies...')
+        // Принудительно устанавливаем rollup зависимости для Linux
+        console.log('🔧 Installing rollup dependencies for Linux...')
         execSync('npm install @rollup/rollup-linux-x64-gnu', { 
           stdio: 'inherit',
           cwd: templateDir,

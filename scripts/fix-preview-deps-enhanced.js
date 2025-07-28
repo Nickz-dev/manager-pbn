@@ -2,7 +2,7 @@ const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-console.log('🔧 Исправление зависимостей превью сервера для всех шаблонов...\n');
+console.log('🔧 Улучшенное исправление зависимостей превью сервера...\n');
 
 // Пути к шаблонам (все текущие)
 const templatesDir = path.join(__dirname, '../templates');
@@ -29,7 +29,14 @@ async function fixTemplateDeps(templateName) {
     // 1. Переходим в директорию шаблона
     process.chdir(templatePath);
     
-    // 2. Удаляем старые зависимости
+    // 2. Проверяем package.json
+    const packageJsonPath = path.join(templatePath, 'package.json');
+    if (!fs.existsSync(packageJsonPath)) {
+      console.log(`   ❌ package.json не найден в ${templateName}`);
+      return;
+    }
+    
+    // 3. Удаляем старые зависимости
     console.log(`   🗑️  Удаляем старые зависимости...`);
     if (fs.existsSync('node_modules')) {
       await runCommand('rm', ['-rf', 'node_modules'], templatePath, 'Удаление node_modules');
@@ -39,25 +46,34 @@ async function fixTemplateDeps(templateName) {
       await runCommand('rm', ['-f', 'package-lock.json'], templatePath, 'Удаление package-lock.json');
     }
 
-    // 3. Очищаем npm кэш
+    // 4. Очищаем npm кэш
     console.log(`   🧹 Очищаем npm кэш...`);
     await runCommand('npm', ['cache', 'clean', '--force'], templatePath, 'Очистка npm кэша');
 
-    // 4. Устанавливаем зависимости (без неподдерживаемых флагов)
+    // 5. Устанавливаем зависимости
     console.log(`   📦 Устанавливаем зависимости...`);
     await runCommand('npm', ['install'], templatePath, 'Установка зависимостей');
 
-    // 5. Принудительно устанавливаем rollup зависимости для Linux
+    // 6. Принудительно устанавливаем rollup зависимости для Linux
     console.log(`   🔧 Устанавливаем rollup зависимости для Linux...`);
     await runCommand('npm', ['install', '@rollup/rollup-linux-x64-gnu'], templatePath, 'Установка rollup');
 
-    // 6. Пересобираем зависимости
+    // 7. Пересобираем зависимости
     console.log(`   🔨 Пересобираем зависимости...`);
     await runCommand('npm', ['rebuild'], templatePath, 'Пересборка зависимостей');
 
-    // 7. Проверяем, что astro работает
+    // 8. Проверяем, что astro работает
     console.log(`   ✅ Проверяем Astro...`);
     await runCommand('npx', ['astro', '--version'], templatePath, 'Проверка Astro');
+
+    // 9. Тестируем сборку (опционально)
+    console.log(`   🧪 Тестируем сборку...`);
+    try {
+      await runCommand('npm', ['run', 'build'], templatePath, 'Тестовая сборка');
+      console.log(`      ✅ Сборка ${templateName} успешна`);
+    } catch (buildError) {
+      console.log(`      ⚠️  Сборка ${templateName} не удалась, но зависимости установлены`);
+    }
 
     console.log(`   ✅ ${templateName} исправлен`);
 
@@ -81,7 +97,7 @@ function runCommand(command, args, cwd, name) {
 
     child.stdout.on('data', (data) => {
       const output = data.toString().trim();
-      if (output.includes('added') || output.includes('removed') || output.includes('error') || output.includes('built') || output.includes('rebuilt')) {
+      if (output.includes('added') || output.includes('removed') || output.includes('error') || output.includes('built') || output.includes('rebuilt') || output.includes('successfully')) {
         console.log(`      ${output}`);
       }
     });
@@ -112,13 +128,30 @@ function runCommand(command, args, cwd, name) {
 }
 
 async function main() {
-  console.log('🚀 Начинаем исправление зависимостей для всех шаблонов...\n');
+  console.log('🚀 Начинаем улучшенное исправление зависимостей...\n');
+
+  let successCount = 0;
+  let totalTemplates = templates.length;
 
   for (const template of templates) {
-    await fixTemplateDeps(template);
+    try {
+      await fixTemplateDeps(template);
+      successCount++;
+    } catch (error) {
+      console.log(`   ❌ Критическая ошибка в ${template}: ${error.message}`);
+    }
   }
 
-  console.log('\n✅ Все шаблоны обработаны!');
+  console.log('\n📊 Результаты исправления:');
+  console.log(`   ✅ Успешно: ${successCount}/${totalTemplates}`);
+  console.log(`   ❌ Ошибок: ${totalTemplates - successCount}/${totalTemplates}`);
+
+  if (successCount === totalTemplates) {
+    console.log('\n🎉 Все шаблоны успешно исправлены!');
+  } else {
+    console.log('\n⚠️  Некоторые шаблоны не удалось исправить');
+  }
+
   console.log('\n🔧 Дополнительные шаги:');
   console.log('1. Перезапустите превью сервер');
   console.log('2. Проверьте доступность: http://185.232.205.247:4321');
