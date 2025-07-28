@@ -88,14 +88,22 @@ export async function POST(
     })
 
     if (!isPortAvailable) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Preview port 4322 is already in use. Please try again in a moment.' 
-      }, { status: 409 })
+      // Принудительно освобождаем порт 4322
+      try {
+        const { execSync } = require('child_process')
+        execSync('pkill -f "astro.*4322"', { stdio: 'ignore' })
+        execSync('pkill -f "npm.*preview.*4322"', { stdio: 'ignore' })
+        console.log('Принудительно освобожден порт 4322')
+        
+        // Ждем немного для освобождения порта
+        await new Promise(resolve => setTimeout(resolve, 1000))
+      } catch (error) {
+        console.log('Не удалось освободить порт 4322:', error.message)
+      }
     }
 
-    // Запускаем preview сервер с фиксированным портом
-    const previewProcess = spawn('npm', ['run', 'preview', '--', '--port', '4322', '--host', '0.0.0.0'], {
+    // Запускаем preview сервер с фиксированным портом и принудительным указанием порта
+    const previewProcess = spawn('npx', ['astro', 'preview', '--port', '4322', '--host', '0.0.0.0'], {
       cwd: templatePath,
       stdio: 'pipe',
       shell: true
@@ -135,7 +143,11 @@ export async function POST(
       }
     })
 
-    // Логируем ошибки
+    // Логируем вывод и ошибки
+    previewProcess.stdout?.on('data', (data) => {
+      console.log(`Preview output for site ${id}:`, data.toString())
+    })
+    
     previewProcess.stderr?.on('data', (data) => {
       console.error(`Preview error for site ${id}:`, data.toString())
     })
