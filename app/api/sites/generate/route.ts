@@ -1013,7 +1013,7 @@ export async function POST(request: NextRequest) {
       name: body.siteName,
       description: body.description,
       domain: body.domain,
-      template: body.type,
+      template: body.template || body.type, // Используем явно переданный template
       keywords: body.keywords || [],
       theme: body.theme || 'light',
       analytics: {

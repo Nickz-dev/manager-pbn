@@ -150,6 +150,7 @@ export default function NewSitePage() {
       // Map form data to API format
       const siteData = {
         type: `${siteType}-${formData.template}` as any,
+        template: formData.template, // Добавляем явное поле template
         domain: formData.domain,
         siteName: formData.name || formData.title,
         description: formData.description,
@@ -181,6 +182,13 @@ export default function NewSitePage() {
           }
         }
       }
+
+      console.log('🚀 Creating site with data:', {
+        template: formData.template,
+        selectedTemplate,
+        siteType,
+        type: siteData.type
+      })
 
              const response = await fetch('/api/sites', {
          method: 'POST',

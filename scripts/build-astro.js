@@ -3,14 +3,42 @@ const fs = require('fs');
 const path = require('path');
 const { generateAstroData } = require('./generate-astro-data');
 
-// Пути к файлам
-const ASTRO_DIR = path.join(__dirname, '../templates/astro-pbn-blog');
-const DIST_DIR = path.join(ASTRO_DIR, 'dist');
+// Пути к файлам - теперь динамические
+function getAstroDir(template) {
+  const templateMap = {
+    'casino-blog': 'astro-pbn-blog',
+    'slots-review': 'astro-slots-review', 
+    'gaming-news': 'astro-gaming-news',
+    'sports-betting': 'astro-sports-betting',
+    'poker-platform': 'astro-poker-platform',
+    'premium-casino': 'casino-premium'
+  };
+  
+  const templateDir = templateMap[template] || 'astro-pbn-blog';
+  return path.join(__dirname, '../templates', templateDir);
+}
+
+function getDistDir(template) {
+  return path.join(getAstroDir(template), 'dist');
+}
 
 // Функция для сборки Astro
 async function buildAstroSite(siteConfig) {
   try {
     console.log('🚀 Starting Astro site build...');
+    console.log(`📋 Template: ${siteConfig.template}`);
+    
+    // Получаем динамические пути для выбранного шаблона
+    const astroDir = getAstroDir(siteConfig.template);
+    const distDir = getDistDir(siteConfig.template);
+    
+    console.log(`📁 Astro directory: ${astroDir}`);
+    console.log(`📁 Dist directory: ${distDir}`);
+    
+    // Проверяем существование директории шаблона
+    if (!fs.existsSync(astroDir)) {
+      throw new Error(`Template directory not found: ${astroDir}`);
+    }
     
     // Шаг 1: Генерируем данные из Strapi
     console.log('📊 Step 1: Generating data from Strapi...');
@@ -18,11 +46,11 @@ async function buildAstroSite(siteConfig) {
     
     // Шаг 2: Переходим в директорию Astro
     console.log('📁 Step 2: Navigating to Astro directory...');
-    process.chdir(ASTRO_DIR);
+    process.chdir(astroDir);
     
     // Шаг 3: Устанавливаем зависимости если нужно
     console.log('📦 Step 3: Installing dependencies...');
-    if (!fs.existsSync(path.join(ASTRO_DIR, 'node_modules'))) {
+    if (!fs.existsSync(path.join(astroDir, 'node_modules'))) {
       console.log('Installing npm dependencies...');
       execSync('npm install', { stdio: 'inherit' });
     }
@@ -33,15 +61,15 @@ async function buildAstroSite(siteConfig) {
     
     // Шаг 5: Проверяем результат
     console.log('✅ Step 5: Checking build results...');
-    const buildResults = checkBuildResults();
+    const buildResults = checkBuildResults(distDir);
     
     console.log('🎉 Astro build completed successfully!');
-    console.log(`📁 Build directory: ${DIST_DIR}`);
+    console.log(`📁 Build directory: ${distDir}`);
     console.log(`📊 Build results:`, buildResults);
     
     return {
       success: true,
-      distPath: DIST_DIR,
+      distPath: distDir,
       ...buildResults,
       imagesDownloaded: imageStats.downloaded,
       totalImages: imageStats.total
@@ -57,7 +85,7 @@ async function buildAstroSite(siteConfig) {
 }
 
 // Проверка результатов сборки
-function checkBuildResults() {
+function checkBuildResults(distDir) {
   const results = {
     hasIndex: false,
     hasArticles: false,
@@ -65,12 +93,12 @@ function checkBuildResults() {
     files: []
   };
   
-  if (!fs.existsSync(DIST_DIR)) {
+  if (!fs.existsSync(distDir)) {
     return results;
   }
   
   // Получаем список файлов
-  const files = getAllFiles(DIST_DIR);
+  const files = getAllFiles(distDir);
   results.files = files;
   
   // Проверяем наличие index.html

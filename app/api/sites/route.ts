@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       name: body.siteName,
       slug: body.domain.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase(),
       domain: body.domain,
-      template: body.type.includes('casino') ? 'casino-standard' : 'blog',
+      template: body.template || (body.type.includes('casino') ? 'casino-standard' : 'blog'), // Используем явно переданный template
       statuspbn: 'draft',
       description: body.description || '',
       selectedArticles: Array.isArray(body.selectedArticles) ? body.selectedArticles : [],
@@ -49,6 +49,8 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('Creating site with data:', JSON.stringify(siteData, null, 2))
+    console.log('Template from request:', body.template)
+    console.log('Type from request:', body.type)
 
     const createdSite = await strapiAPI.createPbnSite(siteData)
 
