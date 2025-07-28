@@ -1,0 +1,73 @@
+{
+  "kind": "collectionType",
+  "collectionName": "vps_servers",
+  "info": {
+    "singularName": "vps-server",
+    "pluralName": "vps-servers",
+    "displayName": "VPS Server",
+    "description": "VPS server management for PBN infrastructure"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true,
+      "maxLength": 255
+    },
+    "ip": {
+      "type": "string",
+      "required": true,
+      "maxLength": 45
+    },
+    "hostname": {
+      "type": "string",
+      "required": true,
+      "maxLength": 255
+    },
+    "provider": {
+      "type": "string",
+      "required": true,
+      "maxLength": 100
+    },
+    "sshUser": {
+      "type": "string",
+      "required": true,
+      "maxLength": 50
+    },
+    "sshPort": {
+      "type": "integer",
+      "default": 22,
+      "min": 1,
+      "max": 65535
+    },
+    "sshKeyPath": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": [
+        "active",
+        "inactive",
+        "maintenance",
+        "suspended"
+      ],
+      "default": "active",
+      "required": true
+    },
+    "specs": {
+      "type": "json"
+    },
+    "sites": {
+      "type": "json"
+    },
+    "documentId": {
+      "type": "string",
+      "unique": true,
+      "maxLength": 100
+    }
+  }
+} 
