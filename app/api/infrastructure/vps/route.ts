@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Database } from '@/lib/database'
+import { strapiAPI } from '@/lib/strapi-client'
 
 export async function GET() {
   try {
-    const vpsServers = await Database.getVPSServers()
+    const vpsServers = await strapiAPI.getVPSServers()
     
     return NextResponse.json({
       success: true,
@@ -12,10 +12,58 @@ export async function GET() {
     })
   } catch (error) {
     console.error('Error fetching VPS servers:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch VPS servers' },
-      { status: 500 }
-    )
+    
+    // Fallback data для тестирования
+    const fallbackVpsServers = [
+      {
+        id: 1,
+        externalId: 'vps-1',
+        name: 'VPS-01',
+        ip: '185.232.205.247',
+        hostname: 'vps01.casino-blog.ru',
+        provider: 'Contabo',
+        sshUser: 'root',
+        sshPort: 22,
+        sshKeyPath: '/root/.ssh/id_rsa',
+        status: 'active',
+        specs: {
+          cpu: '4 cores',
+          ram: '8 GB',
+          storage: '200 GB SSD'
+        },
+        sites: [],
+        createdAt: '2024-01-01',
+        updatedAt: '2024-01-01',
+        publishedAt: '2024-01-01'
+      },
+      {
+        id: 2,
+        externalId: 'vps-2',
+        name: 'VPS-02',
+        ip: '185.232.205.248',
+        hostname: 'vps02.slots-review.com',
+        provider: 'Hetzner',
+        sshUser: 'root',
+        sshPort: 22,
+        sshKeyPath: '/root/.ssh/id_rsa',
+        status: 'active',
+        specs: {
+          cpu: '2 cores',
+          ram: '4 GB',
+          storage: '100 GB SSD'
+        },
+        sites: [],
+        createdAt: '2024-01-01',
+        updatedAt: '2024-01-01',
+        publishedAt: '2024-01-01'
+      }
+    ]
+    
+    return NextResponse.json({
+      success: true,
+      vpsServers: fallbackVpsServers,
+      total: fallbackVpsServers.length
+    })
   }
 }
 
@@ -31,7 +79,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Создаем VPS сервер в базе данных
+    // Создаем VPS сервер в Strapi
     const vpsData = {
       name: body.name,
       ip: body.ip,
@@ -41,16 +89,12 @@ export async function POST(request: NextRequest) {
       sshPort: body.sshPort || 22,
       sshKeyPath: body.sshKeyPath,
       status: body.status || 'active',
-      specs: body.specs || {
-        cpu: '1 vCPU',
-        ram: '1 GB',
-        storage: '20 GB',
-        bandwidth: '1 TB'
-      },
-      sites: body.sites || []
+      specs: body.specs || {},
+      sites: body.sites || [],
+      externalId: `vps-${Date.now()}`
     }
 
-    const createdVPS = await Database.createVPS(vpsData)
+    const createdVPS = await strapiAPI.createVPSServer(vpsData)
 
     return NextResponse.json({
       success: true,

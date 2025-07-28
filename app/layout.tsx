@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import StrapiStatus from '@/components/ui/StrapiStatus'
 
 export const metadata: Metadata = {
   title: 'PBN Manager - Управление сетью сайтов',
@@ -20,6 +21,7 @@ export default function RootLayout({
       <body>
         <div className="min-h-screen bg-gray-50">
           {children}
+          <StrapiStatus />
         </div>
       </body>
     </html>

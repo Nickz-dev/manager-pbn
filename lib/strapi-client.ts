@@ -1,9 +1,28 @@
 import axios from 'axios'
-import { getStrapiUrl } from './url-utils'
+
+// Определяем адрес Strapi в зависимости от окружения
+const getStrapiUrl = () => {
+  // Проверяем переменную окружения для переключения
+  const useLocalStrapi = process.env.USE_LOCAL_STRAPI === 'true'
+  
+  if (useLocalStrapi) {
+    return 'http://localhost:1337'
+  }
+  
+  // По умолчанию используем VPS
+  return process.env.VPS_ADDRESS || 'http://185.232.205.247:1337'
+}
+
+const strapiUrl = getStrapiUrl()
+
+console.log(`🔗 Strapi URL: ${strapiUrl}`)
 
 const strapi = axios.create({
-  baseURL: getStrapiUrl() + '/api',
-  headers: { 'Content-Type': 'application/json' },
+  baseURL: `${strapiUrl}/api`,
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
 })
 
 export const strapiAPI = {

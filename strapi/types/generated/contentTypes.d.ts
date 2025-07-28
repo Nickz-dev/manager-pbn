@@ -581,6 +581,66 @@ export interface ApiContentCategoryContentCategory
   };
 }
 
+export interface ApiDomainDomain extends Struct.CollectionTypeSchema {
+  collectionName: 'domains';
+  info: {
+    description: 'Domain management for PBN sites';
+    displayName: 'Domain';
+    pluralName: 'domains';
+    singularName: 'domain';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    cloudflareAccountId: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    dnsRecords: Schema.Attribute.JSON;
+    expiresAt: Schema.Attribute.Date & Schema.Attribute.Required;
+    externalId: Schema.Attribute.String &
+      Schema.Attribute.Unique &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::domain.domain'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 255;
+      }>;
+    publishedAt: Schema.Attribute.DateTime;
+    registrar: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    sslEnabled: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    status: Schema.Attribute.Enumeration<
+      ['pending', 'active', 'expired', 'suspended']
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'pending'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    vpsId: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+  };
+}
+
 export interface ApiPbnSitePbnSite extends Struct.CollectionTypeSchema {
   collectionName: 'pbn_sites';
   info: {
@@ -638,6 +698,84 @@ export interface ApiPbnSitePbnSite extends Struct.CollectionTypeSchema {
       ['blog', 'news', 'review', 'casino-premium', 'casino-standard']
     >;
     timezone: Schema.Attribute.String & Schema.Attribute.DefaultTo<'UTC'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiVpsServerVpsServer extends Struct.CollectionTypeSchema {
+  collectionName: 'vps_servers';
+  info: {
+    description: 'VPS server management for PBN infrastructure';
+    displayName: 'VPS Server';
+    pluralName: 'vps-servers';
+    singularName: 'vps-server';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    externalId: Schema.Attribute.String &
+      Schema.Attribute.Unique &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    hostname: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 255;
+      }>;
+    ip: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 45;
+      }>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::vps-server.vps-server'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 255;
+      }>;
+    provider: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    publishedAt: Schema.Attribute.DateTime;
+    sites: Schema.Attribute.JSON;
+    specs: Schema.Attribute.JSON;
+    sshKeyPath: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 500;
+      }>;
+    sshPort: Schema.Attribute.Integer &
+      Schema.Attribute.SetMinMax<
+        {
+          max: 65535;
+          min: 1;
+        },
+        number
+      > &
+      Schema.Attribute.DefaultTo<22>;
+    sshUser: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    status: Schema.Attribute.Enumeration<
+      ['active', 'inactive', 'maintenance', 'suspended']
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'active'>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -1157,7 +1295,9 @@ declare module '@strapi/strapi' {
       'api::content-article.content-article': ApiContentArticleContentArticle;
       'api::content-author.content-author': ApiContentAuthorContentAuthor;
       'api::content-category.content-category': ApiContentCategoryContentCategory;
+      'api::domain.domain': ApiDomainDomain;
       'api::pbn-site.pbn-site': ApiPbnSitePbnSite;
+      'api::vps-server.vps-server': ApiVpsServerVpsServer;
       'plugin::content-releases.release': PluginContentReleasesRelease;
       'plugin::content-releases.release-action': PluginContentReleasesReleaseAction;
       'plugin::i18n.locale': PluginI18NLocale;
