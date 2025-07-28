@@ -53,7 +53,7 @@
       "type": "boolean",
       "default": false
     },
-    "documentId": {
+    "externalId": {
       "type": "string",
       "unique": true,
       "maxLength": 100

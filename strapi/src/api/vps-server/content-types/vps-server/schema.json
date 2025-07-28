@@ -64,7 +64,7 @@
     "sites": {
       "type": "json"
     },
-    "documentId": {
+    "externalId": {
       "type": "string",
       "unique": true,
       "maxLength": 100

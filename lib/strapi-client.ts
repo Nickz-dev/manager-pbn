@@ -323,4 +323,78 @@ export const strapiAPI = {
       } : null,
     }))
   },
+
+  // Домены
+  async getDomains() {
+    const res = await strapi.get('/domains?pagination[pageSize]=100')
+    return (res.data.data || []).map((item: any) => ({
+      id: item.id,
+      externalId: item.attributes?.externalId || item.externalId,
+      name: item.attributes?.name || item.name,
+      registrar: item.attributes?.registrar || item.registrar,
+      expiresAt: item.attributes?.expiresAt || item.expiresAt,
+      status: item.attributes?.status || item.status,
+      vpsId: item.attributes?.vpsId || item.vpsId,
+      cloudflareAccountId: item.attributes?.cloudflareAccountId || item.cloudflareAccountId,
+      dnsRecords: item.attributes?.dnsRecords || item.dnsRecords,
+      sslEnabled: item.attributes?.sslEnabled || item.sslEnabled,
+      createdAt: item.attributes?.createdAt || item.createdAt,
+      updatedAt: item.attributes?.updatedAt || item.updatedAt,
+      publishedAt: item.attributes?.publishedAt || item.publishedAt,
+    }))
+  },
+
+  async createDomain(data: any) {
+    const res = await strapi.post('/domains', { data })
+    return { id: res.data.data.id, ...res.data.data.attributes }
+  },
+
+  async updateDomain(externalId: string, data: any) {
+    // Исключаем поля, которые не должны обновляться
+    const { id: _, externalId: __, createdAt: ___, updatedAt: ____, publishedAt: _____, ...updateData } = data
+    const res = await strapi.put(`/domains/${externalId}`, { data: updateData })
+    return { id: res.data.data.id, ...res.data.data.attributes }
+  },
+
+  async deleteDomain(externalId: string) {
+    await strapi.delete(`/domains/${externalId}`)
+  },
+
+  // VPS Серверы
+  async getVPSServers() {
+    const res = await strapi.get('/vps-servers?pagination[pageSize]=100')
+    return (res.data.data || []).map((item: any) => ({
+      id: item.id,
+      externalId: item.attributes?.externalId || item.externalId,
+      name: item.attributes?.name || item.name,
+      ip: item.attributes?.ip || item.ip,
+      hostname: item.attributes?.hostname || item.hostname,
+      provider: item.attributes?.provider || item.provider,
+      sshUser: item.attributes?.sshUser || item.sshUser,
+      sshPort: item.attributes?.sshPort || item.sshPort,
+      sshKeyPath: item.attributes?.sshKeyPath || item.sshKeyPath,
+      status: item.attributes?.status || item.status,
+      specs: item.attributes?.specs || item.specs,
+      sites: item.attributes?.sites || item.sites,
+      createdAt: item.attributes?.createdAt || item.createdAt,
+      updatedAt: item.attributes?.updatedAt || item.updatedAt,
+      publishedAt: item.attributes?.publishedAt || item.publishedAt,
+    }))
+  },
+
+  async createVPSServer(data: any) {
+    const res = await strapi.post('/vps-servers', { data })
+    return { id: res.data.data.id, ...res.data.data.attributes }
+  },
+
+  async updateVPSServer(externalId: string, data: any) {
+    // Исключаем поля, которые не должны обновляться
+    const { id: _, externalId: __, createdAt: ___, updatedAt: ____, publishedAt: _____, ...updateData } = data
+    const res = await strapi.put(`/vps-servers/${externalId}`, { data: updateData })
+    return { id: res.data.data.id, ...res.data.data.attributes }
+  },
+
+  async deleteVPSServer(externalId: string) {
+    await strapi.delete(`/vps-servers/${externalId}`)
+  },
 } 
