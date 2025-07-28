@@ -695,7 +695,19 @@ export interface ApiPbnSitePbnSite extends Struct.CollectionTypeSchema {
       ['draft', 'building', 'deployed', 'error', 'maintenance']
     >;
     template: Schema.Attribute.Enumeration<
-      ['blog', 'news', 'review', 'casino-premium', 'casino-standard']
+      [
+        'blog',
+        'news',
+        'review',
+        'casino-premium',
+        'casino-standard',
+        'casino-blog',
+        'slots-review',
+        'gaming-news',
+        'sports-betting',
+        'poker-platform',
+        'premium-casino',
+      ]
     >;
     timezone: Schema.Attribute.String & Schema.Attribute.DefaultTo<'UTC'>;
     updatedAt: Schema.Attribute.DateTime;

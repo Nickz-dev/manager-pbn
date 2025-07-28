@@ -27,7 +27,13 @@
         "news",
         "review",
         "casino-premium",
-        "casino-standard"
+        "casino-standard",
+        "casino-blog",
+        "slots-review",
+        "gaming-news",
+        "sports-betting",
+        "poker-platform",
+        "premium-casino"
       ]
     },
     "statuspbn": {
