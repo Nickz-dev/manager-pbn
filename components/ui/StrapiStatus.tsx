@@ -16,7 +16,7 @@ export default function StrapiStatus() {
 
   if (isLoading) {
     return (
-      <div className="fixed top-4 right-4 bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+      <div className="fixed top-4 right-4 bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs z-50">
         Загрузка...
       </div>
     )
@@ -25,7 +25,7 @@ export default function StrapiStatus() {
   const isLocal = environment === 'ЛОКАЛЬНАЯ'
 
   return (
-    <div className="fixed top-4 right-4 flex flex-col gap-2">
+    <div className="fixed top-4 right-4 flex flex-col gap-2 z-50">
       {/* Основной индикатор */}
       <div className={`px-3 py-1 rounded-full text-xs font-medium ${
         isLocal 
