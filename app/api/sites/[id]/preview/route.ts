@@ -72,25 +72,30 @@ export async function POST(
       }, { status: 400 })
     }
 
-    // Находим свободный порт (начиная с 4321)
-    const findFreePort = async (startPort: number): Promise<number> => {
-      const net = await import('net')
-      return new Promise((resolve, reject) => {
-        const server = net.createServer()
-        server.listen(startPort, () => {
-          const port = (server.address() as any).port
-          server.close(() => resolve(port))
-        })
-        server.on('error', () => {
-          resolve(findFreePort(startPort + 1))
-        })
+    // Используем фиксированный порт 4322 для превью
+    const port = 4322
+
+    // Проверяем, что порт свободен
+    const net = await import('net')
+    const isPortAvailable = await new Promise<boolean>((resolve) => {
+      const server = net.createServer()
+      server.listen(port, () => {
+        server.close(() => resolve(true))
       })
+      server.on('error', () => {
+        resolve(false)
+      })
+    })
+
+    if (!isPortAvailable) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Preview port 4322 is already in use. Please try again in a moment.' 
+      }, { status: 409 })
     }
 
-    const port = await findFreePort(4321)
-
-    // Запускаем preview сервер
-    const previewProcess = spawn('npm', ['run', 'preview', '--', '--port', port.toString()], {
+    // Запускаем preview сервер с фиксированным портом
+    const previewProcess = spawn('npm', ['run', 'preview', '--', '--port', '4322', '--host', '0.0.0.0'], {
       cwd: templatePath,
       stdio: 'pipe',
       shell: true
