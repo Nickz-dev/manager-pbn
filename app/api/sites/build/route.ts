@@ -235,24 +235,81 @@ async function writeAstroData(data: any, siteId: string, template: string) {
 async function buildAstroTemplate(siteId: string, template: string) {
   const templateDir = path.join(process.cwd(), 'templates', getTemplateDirectory(template))
   
-  // Переходим в директорию шаблона
-  process.chdir(templateDir)
+  // Сохраняем текущую директорию
+  const originalCwd = process.cwd()
   
   try {
-    // Устанавливаем зависимости если нужно
+    // Переходим в директорию шаблона
+    process.chdir(templateDir)
+    
+    console.log(`🔨 Building template: ${template} in ${templateDir}`)
+    
     const { execSync } = require('child_process')
     
-    // Проверяем есть ли node_modules
-    try {
-      await fs.access(path.join(templateDir, 'node_modules'))
-    } catch {
+    // Проверяем есть ли node_modules и package.json
+    const hasNodeModules = fs.existsSync(path.join(templateDir, 'node_modules'))
+    const hasPackageJson = fs.existsSync(path.join(templateDir, 'package.json'))
+    
+    if (!hasPackageJson) {
+      throw new Error(`package.json not found in ${templateDir}`)
+    }
+    
+    if (!hasNodeModules) {
       console.log('📦 Installing dependencies...')
-      execSync('npm install', { stdio: 'inherit' })
+      try {
+        // Устанавливаем зависимости с правильными флагами для Linux
+        execSync('npm install --platform=linux --arch=x64', { 
+          stdio: 'inherit',
+          cwd: templateDir,
+          timeout: 300000 // 5 минут
+        })
+        
+        // Принудительно устанавливаем rollup зависимости
+        console.log('🔧 Installing rollup dependencies...')
+        execSync('npm install @rollup/rollup-linux-x64-gnu', { 
+          stdio: 'inherit',
+          cwd: templateDir,
+          timeout: 60000 // 1 минута
+        })
+        
+        // Пересобираем зависимости
+        console.log('🔨 Rebuilding dependencies...')
+        execSync('npm rebuild', { 
+          stdio: 'inherit',
+          cwd: templateDir,
+          timeout: 120000 // 2 минуты
+        })
+        
+      } catch (installError) {
+        console.error('❌ Failed to install dependencies:', installError)
+        throw new Error(`Dependency installation failed: ${installError.message}`)
+      }
+    }
+    
+    // Проверяем, что astro доступен
+    try {
+      execSync('npx astro --version', { 
+        stdio: 'pipe',
+        cwd: templateDir,
+        timeout: 10000
+      })
+    } catch (astroError) {
+      console.error('❌ Astro not available:', astroError)
+      throw new Error('Astro is not properly installed')
     }
     
     // Запускаем билд
     console.log('🔨 Building Astro template...')
-    execSync('npm run build', { stdio: 'inherit' })
+    try {
+      execSync('npm run build', { 
+        stdio: 'inherit',
+        cwd: templateDir,
+        timeout: 300000 // 5 минут
+      })
+    } catch (buildError) {
+      console.error('❌ Build failed:', buildError)
+      throw new Error(`Build failed: ${buildError.message}`)
+    }
     
     // Проверяем результат сборки
     const distDir = path.join(templateDir, 'dist')
@@ -260,12 +317,13 @@ async function buildAstroTemplate(siteId: string, template: string) {
     
     console.log(`✅ Astro build completed for site ${siteId}`)
     return buildResult
+    
   } catch (error) {
     console.error('Build error:', error)
-    throw new Error(`Astro build failed: ${error}`)
+    throw new Error(`Astro build failed: ${error.message}`)
   } finally {
-    // Возвращаемся в корневую директорию
-    process.chdir(process.cwd())
+    // Возвращаемся в исходную директорию
+    process.chdir(originalCwd)
   }
 }
 
