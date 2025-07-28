@@ -10,7 +10,14 @@ const getStrapiUrl = () => {
   }
   
   // По умолчанию используем VPS
-  return process.env.VPS_ADDRESS || 'http://185.232.205.247:1337'
+  const vpsAddress = process.env.VPS_ADDRESS || '185.232.205.247'
+  
+  // Убеждаемся, что URL содержит протокол
+  if (vpsAddress.startsWith('http://') || vpsAddress.startsWith('https://')) {
+    return vpsAddress
+  } else {
+    return `http://${vpsAddress}:1337`
+  }
 }
 
 const strapiUrl = getStrapiUrl()

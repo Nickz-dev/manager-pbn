@@ -27,7 +27,7 @@ console.log(`   VPS_ADDRESS: ${vpsAddress || 'не найдено'}`);
 const vpsSettings = {
   'USE_LOCAL_STRAPI': 'false',
   'NEXT_PUBLIC_USE_LOCAL_STRAPI': 'false',
-  'VPS_ADDRESS': '185.232.205.247'
+  'VPS_ADDRESS': '185.232.205.247'  // Без протокола, он добавится автоматически
 };
 
 let updated = false;
@@ -59,7 +59,7 @@ if (updated) {
 console.log('\n📋 Новые настройки:');
 console.log('   USE_LOCAL_STRAPI=false');
 console.log('   NEXT_PUBLIC_USE_LOCAL_STRAPI=false');
-console.log('   VPS_ADDRESS=185.232.205.247');
+console.log('   VPS_ADDRESS=185.232.205.247 (без протокола)');
 
 console.log('\n🚀 Следующие шаги:');
 console.log('1. Перезапустите Strapi:');
@@ -75,4 +75,7 @@ console.log('3. Проверьте компонент StrapiStatus на стра
 console.log('\n🔗 Проверьте доступность:');
 console.log('   - Strapi: http://185.232.205.247:1337');
 console.log('   - Next.js: http://185.232.205.247:3000');
-console.log('   - Strapi Admin: http://185.232.205.247:1337/admin'); 
+console.log('   - Strapi Admin: http://185.232.205.247:1337/admin');
+
+console.log('\n💡 Теперь URL будет формироваться правильно:');
+console.log('   VPS_ADDRESS=185.232.205.247 → http://185.232.205.247:1337'); 
