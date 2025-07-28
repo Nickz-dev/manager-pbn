@@ -1,4 +1,4 @@
-const fs = require('fs');
+const fs = require('fs'); 
 const path = require('path');
 
 console.log('🔧 Исправление конфигурации Tailwind CSS во всех шаблонах...\n');
