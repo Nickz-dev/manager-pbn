@@ -124,18 +124,18 @@ export default function ContentGeneratePage() {
     
     setIsGenerating(true)
     try {
-      // Улучшенный промпт с более четкими инструкциями
-      const lengthWords = {
-        short: '800-1200',
-        medium: '1500-2500', 
-        long: '4000-8000'
-      }
+             // Улучшенный промпт с более четкими инструкциями
+       const lengthWords = {
+         short: '800',
+         medium: '2000', 
+         long: '8000'
+       }
       
       let enhancedPrompt = ''
       
-      if (sourceUrl && sourceUrl.trim()) {
-        // Рерайт по URL
-        enhancedPrompt = `Проанализируй статью по ссылке: ${sourceUrl}
+             if (sourceUrl && sourceUrl.trim()) {
+         // Рерайт по URL
+         enhancedPrompt = `Проанализируй статью по ссылке: ${sourceUrl}
 
 Создай качественный рерайт этой статьи с требованиями:
 - Тон: ${tone}
@@ -146,7 +146,8 @@ export default function ContentGeneratePage() {
 - Структура: введение, основная часть, заключение
 - Стиль: информативный, но увлекательный
 
-Верни ответ ТОЛЬКО в формате JSON без дополнительного текста:
+ВАЖНО: Верни ответ ТОЛЬКО в формате JSON без дополнительного текста, комментариев или markdown разметки:
+
 {
   "title": "Новый заголовок статьи",
   "excerpt": "Краткое описание 2-3 предложения",
@@ -154,9 +155,9 @@ export default function ContentGeneratePage() {
   "meta_title": "SEO заголовок до 60 символов",
   "meta_description": "SEO описание до 160 символов"
 }`
-      } else if (generatedContent && generatedContent.trim()) {
-        // Рерайт существующей статьи
-        enhancedPrompt = `Создай качественный рерайт этой статьи:
+             } else if (generatedContent && generatedContent.trim()) {
+         // Рерайт существующей статьи
+         enhancedPrompt = `Создай качественный рерайт этой статьи:
 
 Оригинальный заголовок: ${generatedTitle}
 Оригинальное содержание: ${generatedContent}
@@ -171,7 +172,8 @@ export default function ContentGeneratePage() {
 - Стиль: информативный, но увлекательный
 - Избегай дублирования оригинальных фраз
 
-Верни ответ ТОЛЬКО в формате JSON без дополнительного текста:
+ВАЖНО: Верни ответ ТОЛЬКО в формате JSON без дополнительного текста, комментариев или markdown разметки:
+
 {
   "title": "Новый заголовок статьи",
   "excerpt": "Краткое описание 2-3 предложения",
@@ -179,9 +181,9 @@ export default function ContentGeneratePage() {
   "meta_title": "SEO заголовок до 60 символов",
   "meta_description": "SEO описание до 160 символов"
 }`
-      } else {
-        // Обычная генерация по теме
-        enhancedPrompt = `Создай качественную ${contentType} на тему: "${prompt}". 
+             } else {
+         // Обычная генерация по теме
+         enhancedPrompt = `Создай качественную ${contentType} на тему: "${prompt}". 
 
 Требования:
 - Тон: ${tone}
@@ -191,7 +193,8 @@ export default function ContentGeneratePage() {
 - Структура: введение, основная часть, заключение
 - Стиль: информативный, но увлекательный
 
-Верни ответ ТОЛЬКО в формате JSON без дополнительного текста:
+ВАЖНО: Верни ответ ТОЛЬКО в формате JSON без дополнительного текста, комментариев или markdown разметки:
+
 {
   "title": "Заголовок статьи",
   "excerpt": "Краткое описание 2-3 предложения",
@@ -211,34 +214,41 @@ export default function ContentGeneratePage() {
         }),
       })
 
-      const data = await response.json()
-      if (response.ok) {
-        try {
-          // Очищаем ответ от возможных лишних символов
-          let cleanText = data.generatedText.trim()
-          
-          // Убираем возможные префиксы типа "```json" и "```"
-          cleanText = cleanText.replace(/^```json\s*/, '').replace(/```\s*$/, '')
-          
-          // Пытаемся распарсить JSON ответ
-          const parsedContent = JSON.parse(cleanText)
-          
-          // Проверяем и устанавливаем значения
-          setGeneratedTitle(parsedContent.title || '')
-          setGeneratedExcerpt(parsedContent.excerpt || '')
-          setGeneratedContent(parsedContent.content || '')
-          setGeneratedMetaTitle(parsedContent.meta_title || parsedContent.title || '')
-          setGeneratedMetaDescription(parsedContent.meta_description || parsedContent.excerpt || '')
-          
-        } catch (parseError) {
-          console.error('JSON parse error:', parseError)
-          // Если не удалось распарсить JSON, показываем ошибку
-          setGeneratedContent(`Ошибка парсинга ответа AI. Полученный текст:\n\n${data.generatedText}`)
-          setGeneratedTitle('')
-          setGeneratedExcerpt('')
-          setGeneratedMetaTitle('')
-          setGeneratedMetaDescription('')
-        }
+             const data = await response.json()
+       if (response.ok) {
+         try {
+           // Очищаем ответ от возможных лишних символов
+           let cleanText = data.generatedText.trim()
+           
+           // Убираем возможные префиксы типа "```json" и "```"
+           cleanText = cleanText.replace(/^```json\s*/, '').replace(/```\s*$/, '')
+           
+           // Ищем JSON объект в тексте (может быть обернут в markdown)
+           const jsonMatch = cleanText.match(/\{[\s\S]*\}/)
+           if (jsonMatch) {
+             cleanText = jsonMatch[0]
+           }
+           
+           // Пытаемся распарсить JSON ответ
+           const parsedContent = JSON.parse(cleanText)
+           
+           // Проверяем и устанавливаем значения
+           setGeneratedTitle(parsedContent.title || '')
+           setGeneratedExcerpt(parsedContent.excerpt || '')
+           setGeneratedContent(parsedContent.content || '')
+           setGeneratedMetaTitle(parsedContent.meta_title || parsedContent.title || '')
+           setGeneratedMetaDescription(parsedContent.meta_description || parsedContent.excerpt || '')
+           
+         } catch (parseError) {
+           console.error('JSON parse error:', parseError)
+           console.error('Raw AI response:', data.generatedText)
+           // Если не удалось распарсить JSON, показываем ошибку с более подробной информацией
+           setGeneratedContent(`Ошибка парсинга ответа AI. Полученный текст:\n\n${data.generatedText}\n\nПопробуйте перегенерировать контент.`)
+           setGeneratedTitle('')
+           setGeneratedExcerpt('')
+           setGeneratedMetaTitle('')
+           setGeneratedMetaDescription('')
+         }
       } else {
         console.error('Generation failed:', data.error)
         setGeneratedContent('Ошибка генерации: ' + data.error)
@@ -533,20 +543,20 @@ export default function ContentGeneratePage() {
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Длина
-                  </label>
-                  <select 
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                    value={length}
-                    onChange={(e) => setLength(e.target.value)}
-                  >
-                    <option value="short">Короткая (~500 слов)</option>
-                    <option value="medium">Средняя (~1000 слов)</option>
-                    <option value="long">Длинная (~2000 слов)</option>
-                  </select>
-                </div>
+                                 <div>
+                   <label className="block text-sm font-medium text-gray-700 mb-2">
+                     Длина
+                   </label>
+                   <select 
+                     className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                     value={length}
+                     onChange={(e) => setLength(e.target.value)}
+                   >
+                     <option value="short">Короткая (~800 слов)</option>
+                     <option value="medium">Средняя (~2000 слов)</option>
+                     <option value="long">Длинная (~8000 слов)</option>
+                   </select>
+                 </div>
               </div>
 
               {/* Generate Button */}
