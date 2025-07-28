@@ -181,7 +181,7 @@ export default function ContentGeneratePage() {
   "meta_title": "SEO заголовок до 60 символов",
   "meta_description": "SEO описание до 160 символов"
 }`
-                    } else {
+                           } else {
          // Обычная генерация по теме
          enhancedPrompt = `Создай качественную ${contentType} на тему: "${prompt}". 
 
@@ -192,8 +192,9 @@ export default function ContentGeneratePage() {
 - Тематика: казино/азартные игры/спортивные ставки
 - Структура: введение, основная часть, заключение
 - Стиль: информативный, но увлекательный
+- Ограничь контент до 3-4 параграфов для лучшей читаемости
 
-ВАЖНО: Верни ответ ТОЛЬКО в формате JSON без дополнительного текста, комментариев или markdown разметки. Убедись, что JSON полный и валидный:
+ВАЖНО: Верни ответ ТОЛЬКО в формате JSON без дополнительного текста, комментариев или markdown разметки. Убедись, что JSON полный и валидный. Ограничь длину контента:
 
 {
   "title": "Заголовок статьи",
@@ -223,20 +224,25 @@ export default function ContentGeneratePage() {
            // Убираем возможные префиксы типа "```json" и "```"
            cleanText = cleanText.replace(/^```json\s*/, '').replace(/```\s*$/, '')
            
-           // Ищем JSON объект в тексте (может быть обернут в markdown)
-           const jsonMatch = cleanText.match(/\{[\s\S]*\}/)
-           if (jsonMatch) {
-             cleanText = jsonMatch[0]
-           }
-           
-           // Проверяем, не обрезан ли JSON (нет закрывающей скобки)
-           if (!cleanText.endsWith('}')) {
-             // Ищем последнюю закрывающую скобку
-             const lastBraceIndex = cleanText.lastIndexOf('}')
-             if (lastBraceIndex > 0) {
-               cleanText = cleanText.substring(0, lastBraceIndex + 1)
-             }
-           }
+                       // Ищем JSON объект в тексте (может быть обернут в markdown)
+            const jsonMatch = cleanText.match(/\{[\s\S]*\}/)
+            if (jsonMatch) {
+              cleanText = jsonMatch[0]
+            }
+            
+            // Проверяем, не обрезан ли JSON (нет закрывающей скобки)
+            if (!cleanText.endsWith('}')) {
+              // Ищем последнюю закрывающую скобку
+              const lastBraceIndex = cleanText.lastIndexOf('}')
+              if (lastBraceIndex > 0) {
+                cleanText = cleanText.substring(0, lastBraceIndex + 1)
+              } else {
+                // Если нет закрывающей скобки, пытаемся добавить недостающие поля
+                if (cleanText.includes('"title"') && !cleanText.includes('"meta_description"')) {
+                  cleanText += ',"meta_title":"","meta_description":""}'
+                }
+              }
+            }
            
            // Пытаемся распарсить JSON ответ
            const parsedContent = JSON.parse(cleanText)
@@ -252,25 +258,37 @@ export default function ContentGeneratePage() {
            console.error('JSON parse error:', parseError)
            console.error('Raw AI response:', data.generatedText)
            
-           // Попробуем извлечь хотя бы заголовок и контент из обрезанного JSON
-           try {
-             const titleMatch = data.generatedText.match(/"title":\s*"([^"]+)"/)
-             const contentMatch = data.generatedText.match(/"content":\s*"([^"]*)/)
-             const excerptMatch = data.generatedText.match(/"excerpt":\s*"([^"]+)"/)
-             
-             if (titleMatch || contentMatch) {
-               setGeneratedTitle(titleMatch ? titleMatch[1] : '')
-               setGeneratedExcerpt(excerptMatch ? excerptMatch[1] : '')
-               setGeneratedContent(contentMatch ? contentMatch[1] + '...' : '')
-               setGeneratedMetaTitle(titleMatch ? titleMatch[1] : '')
-               setGeneratedMetaDescription(excerptMatch ? excerptMatch[1] : '')
-               
-               console.log('Extracted partial content from malformed JSON')
-               return
-             }
-           } catch (extractError) {
-             console.error('Failed to extract partial content:', extractError)
-           }
+                       // Попробуем извлечь хотя бы заголовок и контент из обрезанного JSON
+            try {
+              const titleMatch = data.generatedText.match(/"title":\s*"([^"]+)"/)
+              const excerptMatch = data.generatedText.match(/"excerpt":\s*"([^"]+)"/)
+              
+              // Улучшенный regex для контента - ищем от "content": до конца строки или до следующей кавычки
+              const contentMatch = data.generatedText.match(/"content":\s*"([^"]*(?:<[^>]*>[^"]*)*)/)
+              
+              if (titleMatch || contentMatch) {
+                setGeneratedTitle(titleMatch ? titleMatch[1] : '')
+                setGeneratedExcerpt(excerptMatch ? excerptMatch[1] : '')
+                
+                // Обрабатываем контент более аккуратно
+                let extractedContent = ''
+                if (contentMatch) {
+                  extractedContent = contentMatch[1]
+                  // Если контент обрезан, добавляем многоточие
+                  if (!extractedContent.endsWith('</p>') && !extractedContent.endsWith('</h2>')) {
+                    extractedContent += '...'
+                  }
+                }
+                setGeneratedContent(extractedContent)
+                setGeneratedMetaTitle(titleMatch ? titleMatch[1] : '')
+                setGeneratedMetaDescription(excerptMatch ? excerptMatch[1] : '')
+                
+                console.log('Extracted partial content from malformed JSON')
+                return
+              }
+            } catch (extractError) {
+              console.error('Failed to extract partial content:', extractError)
+            }
            
            // Если не удалось распарсить JSON, показываем ошибку с более подробной информацией
            setGeneratedContent(`Ошибка парсинга ответа AI. Полученный текст:\n\n${data.generatedText}\n\nПопробуйте перегенерировать контент.`)
