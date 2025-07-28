@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { strapiAPI } from '@/lib/strapi-client'
 import { promises as fs } from 'fs'
+import fsSync from 'fs'
 import path from 'path'
 import axios from 'axios'
 
@@ -247,8 +248,8 @@ async function buildAstroTemplate(siteId: string, template: string) {
     const { execSync } = require('child_process')
     
     // Проверяем есть ли node_modules и package.json
-    const hasNodeModules = fs.existsSync(path.join(templateDir, 'node_modules'))
-    const hasPackageJson = fs.existsSync(path.join(templateDir, 'package.json'))
+    const hasNodeModules = fsSync.existsSync(path.join(templateDir, 'node_modules'))
+    const hasPackageJson = fsSync.existsSync(path.join(templateDir, 'package.json'))
     
     if (!hasPackageJson) {
       throw new Error(`package.json not found in ${templateDir}`)
