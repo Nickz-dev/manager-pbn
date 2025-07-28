@@ -2,7 +2,7 @@ User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://casino-blog.ru/sitemap.xml
+Sitemap: https://casino.com/sitemap.xml
 
 # Disallow admin areas
 Disallow: /admin/

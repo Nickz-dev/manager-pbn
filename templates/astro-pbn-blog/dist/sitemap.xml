@@ -1,15 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://casino-blog.ru</loc>
-    <lastmod>2025-07-28T00:59:30.938Z</lastmod>
+    <loc>https://casino.com</loc>
+    <lastmod>2025-07-28T12:21:28.667Z</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   
   <url>
-    <loc>https://casino-blog.ru/articles/best-casinos-2024-1753280007870</loc>
-    <lastmod>2025-07-26T22:18:04.269Z</lastmod>
+    <loc>https://casino.com/articles/sports-betting-guide-1753280213028</loc>
+    <lastmod>2025-07-26T22:16:35.066Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://casino.com/articles/sports-betting-guide-1753280166070</loc>
+    <lastmod>2025-07-27T13:03:53.324Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>

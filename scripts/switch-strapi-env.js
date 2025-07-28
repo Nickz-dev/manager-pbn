@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-console.log('🔄 Переключение окружения Strapi...');
+console.log('🔄 Универсальное переключение окружения...');
 
 const envPath = path.join(__dirname, '../.env');
 const currentEnv = process.env.USE_LOCAL_STRAPI || 'false';
@@ -18,28 +18,41 @@ let envContent = fs.readFileSync(envPath, 'utf8');
 const newValue = currentEnv === 'true' ? 'false' : 'true';
 const newEnvName = newValue === 'true' ? 'ЛОКАЛЬНАЯ' : 'VPS';
 
-// Обновляем или добавляем переменную
-if (envContent.includes('USE_LOCAL_STRAPI=')) {
-  envContent = envContent.replace(
-    /USE_LOCAL_STRAPI=.*/,
-    `USE_LOCAL_STRAPI=${newValue}`
-  );
-} else {
-  envContent += `\n# Strapi Environment\nUSE_LOCAL_STRAPI=${newValue}\n`;
-}
+// Обновляем или добавляем переменные
+const envVars = [
+  `USE_LOCAL_STRAPI=${newValue}`,
+  `NEXT_PUBLIC_USE_LOCAL_STRAPI=${newValue}`
+];
+
+envVars.forEach(envVar => {
+  const [key] = envVar.split('=');
+  const regex = new RegExp(`^${key}=.*`, 'm');
+  
+  if (envContent.match(regex)) {
+    envContent = envContent.replace(regex, envVar);
+  } else {
+    envContent += `\n# Environment Switch\n${envVar}\n`;
+  }
+});
 
 // Записываем обновленный файл
 fs.writeFileSync(envPath, envContent);
 
-console.log(`✅ Переключено на ${newEnvName} базу данных`);
+console.log(`✅ Переключено на ${newEnvName} окружение`);
 console.log(`🔗 Strapi URL: ${newValue === 'true' ? 'http://localhost:1337' : 'http://185.232.205.247:1337'}`);
+console.log(`🔗 Preview URL: ${newValue === 'true' ? 'http://localhost:4321' : 'http://185.232.205.247:4321'}`);
 
 if (newValue === 'true') {
-  console.log('\n📋 Для запуска локального Strapi:');
+  console.log('\n📋 Для локальной разработки:');
   console.log('   cd strapi');
   console.log('   npm run develop');
+  console.log('   # В другом терминале:');
+  console.log('   npm run dev');
 } else {
-  console.log('\n📋 Убедитесь, что VPS Strapi запущен');
+  console.log('\n📋 Для VPS окружения:');
+  console.log('   Убедитесь, что VPS Strapi запущен');
+  console.log('   npm run dev');
 }
 
-console.log('\n🔄 Перезапустите Next.js сервер для применения изменений'); 
+console.log('\n🔄 Перезапустите Next.js сервер для применения изменений');
+console.log('🎯 Теперь все компоненты (Strapi, Preview, Build) будут использовать выбранное окружение'); 
