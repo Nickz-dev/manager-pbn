@@ -3,19 +3,14 @@ import siteData from '../data/site-data.json';
 
 const { site, articles, categories, authors } = siteData;
 
-// Простая логика получения статей - без сложных фильтров
-const allArticles = articles || [];
-const latestArticles = allArticles
-  .filter(article => article && article.title && article.slug)
-  .sort((a, b) => {
-    const dateA = a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
-    const dateB = b.publishedAt ? new Date(b.publishedAt).getTime() : 0;
-    return dateB - dateA;
-  })
-  .slice(0, 9);
+// Получаем последние статьи
+const latestArticles = articles
+  .filter(article => article.publishedAt)
+  .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+  .slice(0, 8);
 
 // Получаем популярные категории
-const popularCategories = (categories || []).slice(0, 5);
+const popularCategories = categories.slice(0, 4);
 
 // Генерируем структурированные данные
 const structuredData = {
@@ -28,11 +23,6 @@ const structuredData = {
     "@type": "Organization",
     "name": site.name,
     "url": `https://${site.domain}`
-  },
-  "potentialAction": {
-    "@type": "SearchAction",
-    "target": `https://${site.domain}/search?q={search_term_string}`,
-    "query-input": "required name=search_term_string"
   }
 };
 
@@ -89,14 +79,11 @@ const ogData = {
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
   <link rel="manifest" href="/site.webmanifest">
   
-  <!-- Tailwind CSS (local build) -->
-  <link rel="stylesheet" href="/src/styles/globals.css">
-  
   <!-- Preload critical resources -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap"></noscript>
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"></noscript>
   
   <!-- Google Analytics -->
   {site.analytics?.googleAnalytics && (
@@ -114,248 +101,489 @@ const ogData = {
   
   <!-- Structured Data -->
   <script type="application/ld+json" set:html={JSON.stringify(structuredData)}></script>
+  
+  <style>
+    :root {
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-accent: #334155;
+      --text-primary: #ffffff;
+      --text-secondary: #e2e8f0;
+      --text-muted: #94a3b8;
+      --accent-primary: #10b981;
+      --accent-secondary: #059669;
+      --accent-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      --accent-gold: #fbbf24;
+      --shadow-glow: 0 0 20px rgba(16, 185, 129, 0.3);
+      --border-glow: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    
+    * {
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+      color: var(--text-primary);
+      margin: 0;
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      font-size: 16px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      position: relative;
+    }
+    
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: 
+        radial-gradient(circle at 20% 80%, rgba(16, 185, 129, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(251, 191, 36, 0.1) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: -1;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+    
+    .header {
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(20px);
+      border-bottom: var(--border-glow);
+      padding: 2rem 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow-glow);
+    }
+    
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    
+    .header h1 {
+      margin: 0;
+      font-size: 2.5rem;
+      font-weight: 700;
+      font-family: 'Inter', sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--accent-gold);
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    
+    .header p {
+      font-size: 1.125rem;
+      color: var(--text-secondary);
+      margin: 0;
+      max-width: 600px;
+    }
     
     .main {
-      padding: 3rem 0;
+      padding: 4rem 0;
+      flex: 1;
+    }
+    
+    .hero-section {
+      text-align: center;
+      margin-bottom: 5rem;
+    }
+    
+    .hero-title {
+      font-size: 4rem;
+      font-weight: 800;
+      font-family: 'Inter', sans-serif;
+      margin: 0 0 1.5rem 0;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.1;
+    }
+    
+    .hero-subtitle {
+      font-size: 1.5rem;
+      color: var(--text-secondary);
+      margin-bottom: 3rem;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
     }
     
     .section-title {
-      font-size: 2rem;
+      font-size: 3rem;
       font-weight: 700;
+      font-family: 'Inter', sans-serif;
+      margin-bottom: 3rem;
       text-align: center;
-      margin-bottom: 2rem;
       color: var(--text-primary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      position: relative;
     }
     
     .section-title::after {
       content: '';
-      display: block;
-      width: 60px;
-      height: 3px;
-      background: linear-gradient(90deg, var(--primary-color) 0%, var(--accent-color) 100%);
-      margin: 1rem auto 0;
+      position: absolute;
+      bottom: -15px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 120px;
+      height: 4px;
+      background: var(--accent-gradient);
+      border-radius: 2px;
     }
     
-    .masonry-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 2rem;
+    /* LIST DESIGN WITH SIDE IMAGES */
+    .articles-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
       margin-bottom: 4rem;
     }
     
-    .masonry-item {
-      break-inside: avoid;
-    }
-    
-    .article-card-masonry {
-      background: white;
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: var(--shadow-md);
-      transition: all 0.3s ease;
-      position: relative;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-    }
-    
-    .article-card-masonry:hover {
-      transform: translateY(-4px);
-      box-shadow: var(--shadow-xl);
-    }
-    
-    .featured-badge {
-      position: absolute;
-      top: 1rem;
-      left: 1rem;
-      background: var(--primary-color);
-      color: white;
-      padding: 0.25rem 0.75rem;
+    .article-card-list {
+      background: rgba(30, 41, 59, 0.8);
+      backdrop-filter: blur(10px);
       border-radius: 20px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      z-index: 10;
+      overflow: hidden;
+      box-shadow: var(--shadow-glow);
+      transition: all 0.3s ease;
+      border: var(--border-glow);
+      display: flex;
+      min-height: 200px;
+      position: relative;
     }
     
-    .article-image-masonry {
+    .article-card-list::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: var(--accent-gradient);
+      border-radius: 20px 20px 0 0;
+    }
+    
+    .article-card-list:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 35px rgba(16, 185, 129, 0.4);
+    }
+    
+    .article-image-side {
+      flex: 0 0 300px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .article-image-side img {
       width: 100%;
-      height: 200px;
+      height: 100%;
       object-fit: cover;
-      display: block;
+      transition: transform 0.3s ease;
     }
     
-    .article-image-placeholder-masonry {
+    .article-card-list:hover .article-image-side img {
+      transform: scale(1.05);
+    }
+    
+    .article-image-placeholder-side {
       width: 100%;
-      height: 200px;
-      background: linear-gradient(135deg, var(--bg-accent) 0%, var(--bg-secondary) 100%);
+      height: 100%;
+      background: var(--accent-gradient);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 2rem;
-      color: var(--text-muted);
+      color: white;
+      font-size: 1.5rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
     }
     
-    .article-content-masonry {
-      padding: 1.5rem;
+    .article-content-list {
       flex: 1;
+      padding: 2rem;
       display: flex;
       flex-direction: column;
+      justify-content: space-between;
     }
     
-    .article-title-masonry {
-      font-size: 1.25rem;
-      font-weight: 700;
-      margin-bottom: 0.75rem;
+    .article-title-list {
+      font-family: 'Inter', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
       color: var(--text-primary);
       line-height: 1.3;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     
-    .article-excerpt-masonry {
+    .article-excerpt-list {
       color: var(--text-secondary);
-      margin-bottom: 1rem;
-      line-height: 1.5;
-      flex: 1;
+      margin-bottom: 1.5rem;
+      line-height: 1.7;
+      font-size: 1rem;
+      flex-grow: 1;
     }
     
-    .article-meta-masonry {
+    .article-meta-list {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-top: auto;
       padding-top: 1rem;
       border-top: 1px solid var(--border-color);
+      font-size: 0.875rem;
+      color: var(--text-muted);
     }
     
-    .article-author-masonry {
+    .article-author-list {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.75rem;
     }
     
-    .author-avatar-masonry {
+    .author-avatar-list {
       width: 32px;
       height: 32px;
       border-radius: 50%;
-      background: var(--primary-color);
-      color: white;
+      background: var(--accent-gradient);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: 600;
+      color: white;
       font-size: 0.875rem;
+      font-weight: 600;
     }
     
-    .article-date-masonry {
-      color: var(--text-muted);
+    .read-more-link {
+      color: var(--accent-primary);
+      text-decoration: none;
+      font-weight: 600;
       font-size: 0.875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      transition: color 0.3s ease;
+    }
+    
+    .read-more-link:hover {
+      color: var(--accent-gold);
     }
     
     .categories-section {
-      margin-top: 4rem;
+      margin-bottom: 4rem;
     }
     
     .categories-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 1.5rem;
+      gap: 2rem;
     }
     
     .category-card {
-      background: white;
-      border: 2px solid transparent;
-      border-image: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%) 1;
-      border-radius: 12px;
-      padding: 2rem;
+      background: rgba(30, 41, 59, 0.8);
+      backdrop-filter: blur(10px);
+      padding: 3rem 2rem;
+      border-radius: 20px;
       text-align: center;
+      box-shadow: var(--shadow-glow);
       transition: all 0.3s ease;
-      cursor: pointer;
+      border: var(--border-glow);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .category-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: var(--accent-gradient);
+      border-radius: 20px 20px 0 0;
     }
     
     .category-card:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-lg);
+      transform: translateY(-5px);
+      box-shadow: 0 15px 35px rgba(16, 185, 129, 0.4);
     }
     
     .category-card h3 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      margin-bottom: 0.5rem;
+      font-family: 'Inter', sans-serif;
+      font-size: 1.75rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
       color: var(--text-primary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     
     .category-card p {
       color: var(--text-secondary);
-      line-height: 1.5;
+      font-size: 1rem;
+      line-height: 1.6;
     }
     
-    .no-articles {
-      text-align: center;
-      padding: 4rem 0;
+    .footer {
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(20px);
+      border-top: var(--border-glow);
+      padding: 3rem 0;
+      margin-top: auto;
+      box-shadow: var(--shadow-glow);
     }
     
-    .no-articles h2 {
-      font-size: 2rem;
-      color: var(--text-primary);
+    .footer-content {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 2rem;
+    }
+    
+    .footer-section h3 {
+      font-family: 'Inter', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
       margin-bottom: 1rem;
+      color: var(--text-primary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     
-    .no-articles p {
+    .footer-section ul {
+      list-style: none;
+      padding: 0;
+    }
+    
+    .footer-section li {
+      margin-bottom: 0.5rem;
+    }
+    
+    .footer-section a {
       color: var(--text-secondary);
-      font-size: 1.1rem;
+      text-decoration: none;
+      transition: color 0.3s ease;
     }
     
+    .footer-section a:hover {
+      color: var(--accent-gold);
+    }
+    
+    .footer-bottom {
+      margin-top: 2rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border-color);
+      text-align: center;
+      color: var(--text-muted);
+    }
+    
+    /* Responsive Design */
     @media (max-width: 768px) {
-      .header-content h1 {
-        font-size: 2rem;
+      .container {
+        padding: 0 1rem;
+      }
+      
+      .hero-title {
+        font-size: 2.5rem;
+      }
+      
+      .hero-subtitle {
+        font-size: 1.25rem;
       }
       
       .section-title {
-        font-size: 1.75rem;
+        font-size: 2rem;
       }
       
-      .masonry-grid {
-        grid-template-columns: 1fr;
-        gap: 1.5rem;
+      .article-card-list {
+        flex-direction: column;
+        min-height: auto;
+      }
+      
+      .article-image-side {
+        flex: none;
+        height: 200px;
+      }
+      
+      .article-content-list {
+        padding: 1.5rem;
+      }
+      
+      .article-title-list {
+        font-size: 1.25rem;
       }
       
       .categories-grid {
         grid-template-columns: 1fr;
       }
+      
+      .footer-content {
+        grid-template-columns: 1fr;
+      }
     }
     
     @media (max-width: 480px) {
-      .container {
-        padding: 0 0.75rem;
+      .hero-title {
+        font-size: 2rem;
       }
       
-      .header {
-        padding: 2rem 0;
-      }
-      
-      .main {
-        padding: 2rem 0;
-      }
-      
-      .article-content-masonry {
+      .article-content-list {
         padding: 1rem;
       }
       
       .category-card {
-        padding: 1.5rem 1rem;
+        padding: 2rem 1.5rem;
       }
-    }
-    
-    /* Loading states */
-    .loading {
-      opacity: 0.7;
-      pointer-events: none;
     }
     
     /* Focus styles for accessibility */
     a:focus,
     button:focus {
-      outline: 2px solid var(--primary-color);
+      outline: 2px solid var(--accent-gold);
       outline-offset: 2px;
+    }
+    
+    /* Animations */
+    @keyframes slideInUp {
+      from {
+        opacity: 0;
+        transform: translateY(40px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .hero-section,
+    .articles-list,
+    .categories-section {
+      animation: slideInUp 0.8s ease-out;
+    }
+    
+    .article-card-list,
+    .category-card {
+      animation: slideInUp 0.8s ease-out;
+      animation-delay: calc(var(--card-index, 0) * 0.1s);
     }
   </style>
 </head>
@@ -371,56 +599,64 @@ const ogData = {
 
   <main class="main">
     <div class="container">
+      <section class="hero-section">
+        <h1 class="hero-title">Latest Gaming News</h1>
+        <p class="hero-subtitle">Get the latest updates, reviews, and insights from the gaming world</p>
+      </section>
+
       {latestArticles.length > 0 ? (
         <>
-          <h2 class="section-title">Latest Gaming News</h2>
-          <div class="masonry-grid">
+          <h2 class="section-title">Latest Articles</h2>
+          <div class="articles-list">
             {latestArticles.map((article, index) => (
-              <div class="masonry-item">
-                <article class="article-card-masonry">
-                  <a href={`/articles/${article.slug}`} style="text-decoration: none; color: inherit;">
-                    {index === 0 && (
-                      <div class="featured-badge">Featured</div>
-                    )}
+              <article class="article-card-list" style={`--card-index: ${index}`}>
+                <a href={`/articles/${article.slug}`} style="text-decoration: none; color: inherit; display: flex; width: 100%;">
+                  <div class="article-image-side">
                     {article.featured_image ? (
                       <img 
                         src={article.featured_image} 
                         alt={article.title}
-                        class="article-image-masonry"
                         loading="lazy"
                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
                       />
                     ) : null}
                     {!article.featured_image && (
-                      <div class="article-image-placeholder-masonry">
-                        🎮 No Image
+                      <div class="article-image-placeholder-side">
+                        🎮 Featured Image
                       </div>
                     )}
-                    <div class="article-content-masonry">
-                      <h3 class="article-title-masonry">{article.title}</h3>
+                  </div>
+                  <div class="article-content-list">
+                    <div>
+                      <h3 class="article-title-list">{article.title}</h3>
                       {article.excerpt && (
-                        <p class="article-excerpt-masonry">{article.excerpt}</p>
+                        <p class="article-excerpt-list">{article.excerpt}</p>
                       )}
-                      <div class="article-meta-masonry">
-                        <div class="article-author-masonry">
-                          <div class="author-avatar-masonry">
-                            {(article.author?.name || 'A').charAt(0).toUpperCase()}
-                          </div>
-                          <span>{article.author?.name || 'Anonymous'}</span>
+                    </div>
+                    <div class="article-meta-list">
+                      <div class="article-author-list">
+                        <div class="author-avatar-list">
+                          {(article.author?.name || 'A').charAt(0).toUpperCase()}
                         </div>
-                        <span class="article-date-masonry">
-                          {article.publishedAt ? new Date(article.publishedAt).toLocaleDateString() : 'No date'}
+                        <span>{article.author?.name || 'Anonymous'}</span>
+                      </div>
+                      <div style="display: flex; align-items: center; gap: 1rem;">
+                        <span>
+                          {new Date(article.publishedAt).toLocaleDateString()}
+                        </span>
+                        <span class="read-more-link">
+                          Read More →
                         </span>
                       </div>
                     </div>
-                  </a>
-                </article>
-              </div>
+                  </div>
+                </a>
+              </article>
             ))}
           </div>
         </>
       ) : (
-        <div class="no-articles">
+        <div style="text-align: center; padding: 4rem 0;">
           <h2>No articles available</h2>
           <p>Check back soon for new content!</p>
         </div>
@@ -430,11 +666,11 @@ const ogData = {
         <div class="categories-section">
           <h2 class="section-title">Popular Categories</h2>
           <div class="categories-grid">
-            {popularCategories.map((category) => (
+            {popularCategories.map((category, index) => (
               <a href={`/categories/${category.slug}`} style="text-decoration: none; color: inherit;">
-                <div class="category-card">
+                <div class="category-card" style={`--card-index: ${index}`}>
                   <h3>{category.name}</h3>
-                  <p>Latest news in {category.name.toLowerCase()}.</p>
+                  <p>Latest news and updates in {category.name.toLowerCase()} gaming</p>
                 </div>
               </a>
             ))}
@@ -443,5 +679,35 @@ const ogData = {
       )}
     </div>
   </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-section">
+          <h3>About {site.name}</h3>
+          <p>{site.description}</p>
+        </div>
+        <div class="footer-section">
+          <h3>Latest Articles</h3>
+          <ul>
+            {latestArticles.slice(0, 5).map(article => (
+              <li><a href={`/articles/${article.slug}`}>{article.title}</a></li>
+            ))}
+          </ul>
+        </div>
+        <div class="footer-section">
+          <h3>Categories</h3>
+          <ul>
+            {popularCategories.map(category => (
+              <li><a href={`/categories/${category.slug}`}>{category.name}</a></li>
+            ))}
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; {new Date().getFullYear()} {site.name}. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
 </body>
 </html> 
