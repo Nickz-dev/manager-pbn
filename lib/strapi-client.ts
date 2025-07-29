@@ -246,6 +246,7 @@ export const strapiAPI = {
       siteName: item.siteName || item.name, // Добавляем siteName для совместимости
       domain: item.domain,
       template: item.template,
+      type: item.type, // Добавляем поле type
       statuspbn: item.statuspbn,
       description: item.description,
       config: item.config,
@@ -278,6 +279,7 @@ export const strapiAPI = {
           siteName: res.data.data.siteName || res.data.data.name,
           domain: res.data.data.domain,
           template: res.data.data.template,
+          type: res.data.data.type, // Добавляем поле type
           statuspbn: res.data.data.statuspbn,
           description: res.data.data.description,
           config: res.data.data.config,
@@ -305,6 +307,7 @@ export const strapiAPI = {
           siteName: res.data.data[0].siteName || res.data.data[0].name,
           domain: res.data.data[0].domain,
           template: res.data.data[0].template,
+          type: res.data.data[0].type, // Добавляем поле type
           statuspbn: res.data.data[0].statuspbn,
           description: res.data.data[0].description,
           config: res.data.data[0].config,
@@ -346,8 +349,30 @@ export const strapiAPI = {
       throw new Error(`Site with id ${id} not found`)
     }
     
+    console.log('🔧 Updating site with documentId:', site.documentId)
+    console.log('🔧 Update data:', JSON.stringify(data, null, 2))
+    
     const res = await strapi.put(`/pbn-sites/${site.documentId}`, { data })
-    return { id: res.data.data.id, ...res.data.data.attributes }
+    
+    // Возвращаем обновленные данные в правильном формате
+    const updatedSite = res.data.data
+    return {
+      id: updatedSite.id,
+      documentId: updatedSite.attributes?.documentId || updatedSite.documentId,
+      name: updatedSite.attributes?.name || updatedSite.name,
+      siteName: updatedSite.attributes?.siteName || updatedSite.attributes?.name || updatedSite.siteName || updatedSite.name,
+      domain: updatedSite.attributes?.domain || updatedSite.domain,
+      template: updatedSite.attributes?.template || updatedSite.template,
+      statuspbn: updatedSite.attributes?.statuspbn || updatedSite.statuspbn,
+      description: updatedSite.attributes?.description || updatedSite.description,
+      config: updatedSite.attributes?.config || updatedSite.config,
+      selectedArticles: updatedSite.attributes?.selectedArticles || updatedSite.selectedArticles,
+      url: updatedSite.attributes?.url || updatedSite.url,
+      status: updatedSite.attributes?.status || updatedSite.status,
+      createdAt: updatedSite.attributes?.createdAt || updatedSite.createdAt,
+      updatedAt: updatedSite.attributes?.updatedAt || updatedSite.updatedAt,
+      publishedAt: updatedSite.attributes?.publishedAt || updatedSite.publishedAt,
+    }
   },
 
   async deletePbnSite(id: string) {

@@ -259,6 +259,12 @@ export default function GenerateSitePage() {
     if (!siteId || !sitePreview?.template) return
     
     try {
+      console.log('🎯 Starting preview for site:', {
+        siteId,
+        siteName: sitePreview.name,
+        template: sitePreview.template
+      })
+      
       setPreviewStatus(prev => ({ ...prev, loading: true }))
       
       const response = await fetch(`/api/sites/${siteId}/preview`, {
@@ -270,6 +276,7 @@ export default function GenerateSitePage() {
       })
 
       const data = await response.json()
+      console.log('🎯 Preview response:', data)
 
       if (data.success) {
         setPreviewStatus({
@@ -279,6 +286,7 @@ export default function GenerateSitePage() {
           loading: false
         })
         
+        console.log('🎯 Opening preview URL:', data.url)
         // Открываем сайт в новой вкладке
         window.open(data.url, '_blank')
         

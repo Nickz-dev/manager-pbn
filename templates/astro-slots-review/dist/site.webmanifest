@@ -1,7 +1,7 @@
 {
-  "name": "test",
-  "short_name": "test",
-  "description": "test",
+  "name": "тут название",
+  "short_name": "тут",
+  "description": "тут описание",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

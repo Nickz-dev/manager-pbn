@@ -3,7 +3,6 @@ import siteData from '../../data/site-data.json';
 
 export async function getStaticPaths() {
   const { categories } = siteData;
-  
   return categories.map(category => ({
     params: { slug: category.slug },
     props: { category }
@@ -13,12 +12,10 @@ export async function getStaticPaths() {
 const { category } = Astro.props;
 const { site, articles, categories } = siteData;
 
-// Получаем статьи для данной категории
-const categoryArticles = articles.filter(article => 
+const categoryArticles = articles.filter(article =>
   article.categories?.some(cat => cat.slug === category.slug)
 );
 
-// Получаем другие категории для навигации
 const otherCategories = categories.filter(cat => cat.slug !== category.slug).slice(0, 5);
 
 // Генерируем структурированные данные
@@ -58,19 +55,18 @@ const ogData = {
   image: site.og_image || `/images/default-og.jpg`
 };
 ---
-
 <!DOCTYPE html>
 <html lang={site.config?.language || 'en'}>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#10b981">
+  <meta name="theme-color" content="#8b5cf6">
   
   <!-- Primary Meta Tags -->
   <title>{ogData.title}</title>
   <meta name="title" content={ogData.title}>
   <meta name="description" content={ogData.description}>
-  <meta name="keywords" content={`${category.name}, gaming news, ${site.keywords?.join(', ') || ''}`}>
+  <meta name="keywords" content={`${category.name}, slots review, ${site.keywords?.join(', ') || ''}`}>
   <meta name="author" content={site.name}>
   <meta name="robots" content="index, follow">
   <meta name="language" content={site.config?.language || 'en'}>
@@ -104,8 +100,8 @@ const ogData = {
   <!-- Preload critical resources -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap"></noscript>
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"></noscript>
   
   <!-- Google Analytics -->
   {site.analytics?.googleAnalytics && (
@@ -126,17 +122,17 @@ const ogData = {
   
   <style>
     :root {
-      --primary-color: #10b981;
-      --primary-hover: #059669;
-      --accent-color: #3b82f6;
-      --accent-hover: #2563eb;
-      --bg-primary: #ffffff;
-      --bg-secondary: #f8fafc;
-      --bg-accent: #f1f5f9;
-      --text-primary: #1e293b;
-      --text-secondary: #475569;
-      --text-muted: #64748b;
-      --border-color: #e2e8f0;
+      --primary-color: #8b5cf6;
+      --primary-hover: #7c3aed;
+      --accent-color: #f59e0b;
+      --accent-hover: #d97706;
+      --bg-primary: #0f0f23;
+      --bg-secondary: #1a1a2e;
+      --bg-accent: #16213e;
+      --text-primary: #ffffff;
+      --text-secondary: #e2e8f0;
+      --text-muted: #94a3b8;
+      --border-color: #2d3748;
       --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
       --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
       --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
@@ -150,231 +146,236 @@ const ogData = {
     }
     
     body {
-      font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: var(--bg-primary);
       color: var(--text-primary);
       line-height: 1.6;
+      overflow-x: hidden;
     }
     
     .container {
-      max-width: 1400px;
+      max-width: 1200px;
       margin: 0 auto;
       padding: 0 1rem;
     }
     
     .header {
       background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
-      color: white;
-      padding: 1.5rem 0;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      box-shadow: var(--shadow-lg);
-    }
-    
-    .header-content {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 1rem;
-    }
-    
-    .header h1 {
-      margin: 0;
-      font-size: 1.75rem;
-      font-weight: 900;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    
-    .header a {
-      color: white;
-      text-decoration: none;
-      font-weight: 500;
-      transition: all 0.3s ease;
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      border: 1px solid rgba(255,255,255,0.2);
-    }
-    
-    .header a:hover {
-      background: rgba(255,255,255,0.1);
-      border-color: rgba(255,255,255,0.4);
-    }
-    
-    .main {
       padding: 3rem 0;
-      flex: 1;
-    }
-    
-    .category-header {
-      margin-bottom: 4rem;
-      text-align: center;
       position: relative;
-    }
-    
-    .category-title {
-      font-size: 3.5rem;
-      font-weight: 900;
-      margin: 0 0 2rem;
-      color: var(--text-primary);
-      line-height: 1.1;
-      position: relative;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    
-    .category-title::after {
-      content: '';
-      position: absolute;
-      bottom: -15px;
-      left: 50%;
-      transform: translate(-50%);
-      width: 120px;
-      height: 4px;
-      background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
-      border-radius: 2px;
-    }
-    
-    .category-description {
-      font-size: 1.25rem;
-      color: var(--text-secondary);
-      max-width: 600px;
-      margin: 0 auto;
-    }
-    
-    .articles-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 2rem;
-      margin-bottom: 4rem;
-    }
-    
-    .article-card {
-      background: var(--bg-secondary);
-      border-radius: 20px;
       overflow: hidden;
-      box-shadow: var(--shadow-lg);
-      transition: all 0.3s ease;
-      border: 1px solid var(--border-color);
-      position: relative;
     }
     
-    .article-card::before {
+    .header::before {
       content: '';
       position: absolute;
       top: 0;
       left: 0;
       right: 0;
+      bottom: 0;
+      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="50" cy="10" r="0.5" fill="rgba(255,255,255,0.1)"/><circle cx="10" cy="60" r="0.5" fill="rgba(255,255,255,0.1)"/><circle cx="90" cy="40" r="0.5" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+      opacity: 0.3;
+    }
+    
+    .header-content {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+    }
+    
+    .header h1 {
+      font-size: 3rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    
+    .header p {
+      font-size: 1.25rem;
+      opacity: 0.9;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    
+    .main {
+      padding: 4rem 0;
+    }
+    
+    .section-title {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 3rem;
+      text-align: center;
+      background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      position: relative;
+    }
+    
+    .section-title::after {
+      content: '';
+      position: absolute;
+      bottom: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80px;
       height: 4px;
       background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+      border-radius: 2px;
     }
     
-    .article-card:hover {
-      transform: translateY(-5px);
+    /* HORIZONTAL CARDS DESIGN */
+    .articles-list {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      margin-bottom: 4rem;
+    }
+    
+    .article-card-horizontal {
+      background: var(--bg-secondary);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: var(--shadow-lg);
+      transition: all 0.4s ease;
+      border: 1px solid var(--border-color);
+      display: flex;
+      min-height: 300px;
+    }
+    
+    .article-card-horizontal:hover {
+      transform: translateY(-8px);
       box-shadow: var(--shadow-xl);
+      border-color: var(--primary-color);
     }
     
-    .article-image {
+    .article-image-section {
+      flex: 0 0 400px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .article-image-large {
       width: 100%;
-      height: 200px;
+      height: 100%;
       object-fit: cover;
-      transition: transform 0.3s ease;
+      transition: transform 0.4s ease;
     }
     
-    .article-card:hover .article-image {
-      transform: scale(1.05);
+    .article-card-horizontal:hover .article-image-large {
+      transform: scale(1.1);
     }
     
-    .article-content {
-      padding: 1.5rem;
+    .article-image-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(245, 158, 11, 0.3));
+      opacity: 0;
+      transition: opacity 0.3s ease;
     }
     
-    .article-title {
-      font-size: 1.25rem;
+    .article-card-horizontal:hover .article-image-overlay {
+      opacity: 1;
+    }
+    
+    .article-image-placeholder-large {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, var(--bg-accent) 0%, var(--border-color) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 1.5rem;
+      font-weight: 500;
+    }
+    
+    .article-content-horizontal {
+      flex: 1;
+      padding: 2.5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    
+    .article-title-horizontal {
+      font-size: 1.75rem;
       font-weight: 700;
-      margin: 0 0 0.75rem;
+      margin-bottom: 1rem;
       color: var(--text-primary);
-      line-height: 1.4;
+      line-height: 1.3;
+      background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
     
-    .article-excerpt {
-      font-size: 0.875rem;
+    .article-excerpt-horizontal {
       color: var(--text-secondary);
       line-height: 1.6;
+      margin-bottom: 1.5rem;
       display: -webkit-box;
       -webkit-line-clamp: 3;
       -webkit-box-orient: vertical;
       overflow: hidden;
     }
     
-    .article-meta {
+    .article-meta-horizontal {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-top: 1rem;
-      padding-top: 1rem;
-      border-top: 1px solid var(--border-color);
-      font-size: 0.875rem;
-      color: var(--text-muted);
+      margin-top: auto;
     }
     
-    .article-author {
+    .article-author-horizontal {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.75rem;
     }
     
-    .author-avatar {
-      width: 24px;
-      height: 24px;
+    .author-avatar-large {
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
       background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
       display: flex;
       align-items: center;
       justify-content: center;
       color: white;
-      font-size: 0.75rem;
+      font-size: 1rem;
       font-weight: 600;
     }
     
-    .no-articles {
-      text-align: center;
-      padding: 4rem 0;
-      color: var(--text-secondary);
+    .read-more-btn {
+      color: var(--primary-color);
+      font-weight: 600;
+      transition: color 0.3s ease;
     }
     
-    .no-articles h2 {
-      font-size: 2rem;
-      margin-bottom: 1rem;
-      color: var(--text-primary);
+    .article-card-horizontal:hover .read-more-btn {
+      color: var(--accent-color);
     }
     
-    .other-categories {
+    .categories-section {
       margin-top: 4rem;
-      padding-top: 3rem;
-      border-top: 1px solid var(--border-color);
-    }
-    
-    .other-categories h2 {
-      font-size: 2rem;
-      font-weight: 700;
-      margin-bottom: 2rem;
-      text-align: center;
-      color: var(--text-primary);
     }
     
     .categories-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 1.5rem;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 2rem;
     }
     
     .category-card {
       background: var(--bg-secondary);
       padding: 2rem 1.5rem;
-      border-radius: 12px;
+      border-radius: 16px;
       text-align: center;
-      box-shadow: var(--shadow-sm);
+      box-shadow: var(--shadow-md);
       transition: all 0.3s ease;
       border: 1px solid var(--border-color);
       position: relative;
@@ -392,76 +393,127 @@ const ogData = {
     }
     
     .category-card:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-md);
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+      border-color: var(--primary-color);
     }
     
     .category-card h3 {
-      font-size: 1.25rem;
+      font-size: 1.5rem;
       font-weight: 600;
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.75rem;
       color: var(--text-primary);
     }
     
     .category-card p {
       color: var(--text-secondary);
-      font-size: 0.875rem;
+      line-height: 1.6;
     }
     
     .footer {
       background: var(--bg-secondary);
       border-top: 1px solid var(--border-color);
-      padding: 2rem 0;
-      margin-top: auto;
-      box-shadow: var(--shadow-sm);
+      padding: 3rem 0;
+      margin-top: 4rem;
     }
     
     .footer-content {
-      text-align: center;
-      color: var(--text-muted);
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 2rem;
     }
     
-    .footer a {
-      color: var(--primary-color);
+    .footer-section h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: var(--text-primary);
+    }
+    
+    .footer-section ul {
+      list-style: none;
+    }
+    
+    .footer-section li {
+      margin-bottom: 0.5rem;
+    }
+    
+    .footer-section a {
+      color: var(--text-secondary);
       text-decoration: none;
       transition: color 0.3s ease;
-      font-weight: 500;
     }
     
-    .footer a:hover {
-      color: var(--primary-hover);
+    .footer-section a:hover {
+      color: var(--primary-color);
+    }
+    
+    .footer-bottom {
+      text-align: center;
+      padding-top: 2rem;
+      margin-top: 2rem;
+      border-top: 1px solid var(--border-color);
+      color: var(--text-muted);
     }
     
     /* Responsive Design */
     @media (max-width: 768px) {
-      .container {
-        padding: 0 1rem;
+      .header h1 {
+        font-size: 2rem;
       }
       
-      .category-title {
-        font-size: 2.5rem;
-      }
-      
-      .category-description {
+      .header p {
         font-size: 1rem;
       }
       
-      .articles-grid {
-        grid-template-columns: 1fr;
+      .section-title {
+        font-size: 2rem;
+      }
+      
+      .article-card-horizontal {
+        flex-direction: column;
+        min-height: auto;
+      }
+      
+      .article-image-section {
+        flex: none;
+        height: 250px;
+      }
+      
+      .article-content-horizontal {
+        padding: 1.5rem;
+      }
+      
+      .article-title-horizontal {
+        font-size: 1.5rem;
       }
       
       .categories-grid {
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: 1rem;
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+      
+      .footer-content {
+        grid-template-columns: 1fr;
+        text-align: center;
+        gap: 1.5rem;
       }
     }
     
     @media (max-width: 480px) {
-      .category-title {
-        font-size: 2rem;
+      .container {
+        padding: 0 0.75rem;
       }
       
-      .article-content {
+      .header {
+        padding: 2rem 0;
+      }
+      
+      .main {
+        padding: 2rem 0;
+      }
+      
+      .article-content-horizontal {
         padding: 1rem;
       }
       
@@ -470,34 +522,17 @@ const ogData = {
       }
     }
     
+    /* Loading states */
+    .loading {
+      opacity: 0.7;
+      pointer-events: none;
+    }
+    
     /* Focus styles for accessibility */
     a:focus,
     button:focus {
       outline: 2px solid var(--primary-color);
       outline-offset: 2px;
-    }
-    
-    /* Animations */
-    @keyframes slideInUp {
-      0% {
-        opacity: 0;
-        transform: translateY(40px);
-      }
-      100% {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-    
-    .category-header,
-    .articles-grid,
-    .other-categories {
-      animation: slideInUp 0.8s ease-out;
-    }
-    
-    .article-card {
-      animation: slideInUp 0.8s ease-out;
-      animation-delay: calc(var(--card-index, 0) * 0.1s);
     }
   </style>
 </head>
@@ -505,78 +540,81 @@ const ogData = {
   <header class="header">
     <div class="container">
       <div class="header-content">
-        <h1><a href="/">🎮 {site.name}</a></h1>
-        <a href="/">← Back to Home</a>
+        <h1>🎰 {category.name}</h1>
+        <p>Latest {category.name.toLowerCase()} reviews and articles</p>
       </div>
     </div>
   </header>
 
   <main class="main">
     <div class="container">
-      <div class="category-header">
-        <h1 class="category-title">📰 {category.name}</h1>
-        <p class="category-description">
-          Latest {category.name.toLowerCase()} news and articles from the gaming world
-        </p>
-      </div>
-
       {categoryArticles.length > 0 ? (
-        <div class="articles-grid">
-          {categoryArticles.map((article, index) => (
-            <article class="article-card" style={`--card-index: ${index}`}>
-              <a href={`/articles/${article.slug}`} style="text-decoration: none; color: inherit;">
-                {article.featured_image ? (
-                  <img 
-                    src={article.featured_image} 
-                    alt={article.title}
-                    class="article-image"
-                    loading="lazy"
-                    onerror="this.style.display='none';"
-                  />
-                ) : (
-                  <div class="article-image" style="background: linear-gradient(135deg, var(--primary-color), var(--accent-color)); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; font-weight: 700;">
-                    🎮
-                  </div>
-                )}
-                <div class="article-content">
-                  <h2 class="article-title">{article.title}</h2>
-                  {article.excerpt && (
-                    <p class="article-excerpt">{article.excerpt}</p>
-                  )}
-                  <div class="article-meta">
-                    <div class="article-author">
-                      <div class="author-avatar">
-                        {(article.author?.name || 'A').charAt(0).toUpperCase()}
+        <>
+          <h2 class="section-title">{category.name} Reviews</h2>
+          <div class="articles-list">
+            {categoryArticles.map(article => (
+              <article class="article-card-horizontal">
+                <a href={`/articles/${article.slug}`} style="text-decoration: none; color: inherit; display: flex; width: 100%;">
+                  <div class="article-image-section">
+                    {article.featured_image ? (
+                      <>
+                        <img 
+                          src={article.featured_image} 
+                          alt={article.title}
+                          class="article-image-large"
+                          loading="lazy"
+                          onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                        />
+                        <div class="article-image-overlay"></div>
+                      </>
+                    ) : (
+                      <div class="article-image-placeholder-large">
+                        🎰 No Image
                       </div>
-                      <span>{article.author?.name || 'Anonymous'}</span>
-                    </div>
-                    <span>
-                      {new Date(article.publishedAt).toLocaleDateString()}
-                    </span>
+                    )}
                   </div>
-                </div>
-              </a>
-            </article>
-          ))}
-        </div>
+                  <div class="article-content-horizontal">
+                    <div>
+                      <h3 class="article-title-horizontal">{article.title}</h3>
+                      {article.excerpt && (
+                        <p class="article-excerpt-horizontal">{article.excerpt}</p>
+                      )}
+                    </div>
+                    <div class="article-meta-horizontal">
+                      <div class="article-author-horizontal">
+                        <div class="author-avatar-large">
+                          {(article.author?.name || 'A').charAt(0).toUpperCase()}
+                        </div>
+                        <span>{article.author?.name || 'Anonymous'}</span>
+                      </div>
+                      <span class="read-more-btn">
+                        Read More →
+                      </span>
+                    </div>
+                  </div>
+                </a>
+              </article>
+            ))}
+          </div>
+        </>
       ) : (
-        <div class="no-articles">
+        <div style="text-align: center; padding: 4rem 0;">
           <h2>No articles in this category yet</h2>
           <p>Check back soon for new {category.name.toLowerCase()} content!</p>
         </div>
       )}
 
       {otherCategories.length > 0 && (
-        <div class="other-categories">
-          <h2>Other Categories</h2>
+        <div class="categories-section">
+          <h2 class="section-title">Other Categories</h2>
           <div class="categories-grid">
             {otherCategories.map(cat => (
-              <div class="category-card">
-                <a href={`/categories/${cat.slug}`} style="text-decoration: none; color: inherit;">
+              <a href={`/categories/${cat.slug}`} style="text-decoration: none; color: inherit;">
+                <div class="category-card">
                   <h3>{cat.name}</h3>
-                  <p>Explore {cat.name.toLowerCase()} content</p>
-                </a>
-              </div>
+                  <p>Explore the latest content in {cat.name.toLowerCase()}</p>
+                </div>
+              </a>
             ))}
           </div>
         </div>
@@ -587,12 +625,29 @@ const ogData = {
   <footer class="footer">
     <div class="container">
       <div class="footer-content">
+        <div class="footer-section">
+          <h3>About {site.name}</h3>
+          <p>{site.description}</p>
+        </div>
+        <div class="footer-section">
+          <h3>Latest Articles</h3>
+          <ul>
+            {categoryArticles.slice(0, 5).map(article => (
+              <li><a href={`/articles/${article.slug}`}>{article.title}</a></li>
+            ))}
+          </ul>
+        </div>
+        <div class="footer-section">
+          <h3>Categories</h3>
+          <ul>
+            {otherCategories.map(category => (
+              <li><a href={`/categories/${category.slug}`}>{category.name}</a></li>
+            ))}
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
         <p>&copy; {new Date().getFullYear()} {site.name}. All rights reserved.</p>
-        <p>
-          <a href="/">Home</a> • 
-          <a href="/categories">All Categories</a> • 
-          <a href="/about">About</a>
-        </p>
       </div>
     </div>
   </footer>

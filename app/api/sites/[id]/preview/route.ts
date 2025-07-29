@@ -32,6 +32,12 @@ export async function POST(
     const body = await request.json()
     const { template } = body
 
+    console.log('🎯 Preview request:', {
+      siteId: id,
+      template,
+      body
+    })
+
     if (!template) {
       return NextResponse.json({ 
         success: false, 
@@ -44,6 +50,7 @@ export async function POST(
       const existing = activePreviews.get(id)!
       const elapsed = Date.now() - (existing.timer as any)._idleStart
       const timeLeft = Math.max(0, Math.ceil((60000 - elapsed) / 1000))
+      console.log('🎯 Preview already running for site:', id)
       return NextResponse.json({
         success: true,
         message: 'Preview already running',
@@ -55,6 +62,13 @@ export async function POST(
     // Определяем путь к шаблону с учетом маппинга
     const templateDir = getTemplateDirectory(template)
     const templatePath = path.join(process.cwd(), 'templates', templateDir)
+    
+    console.log('🎯 Template mapping:', {
+      template,
+      templateDir,
+      templatePath,
+      exists: fs.existsSync(templatePath)
+    })
     
     if (!fs.existsSync(templatePath)) {
       return NextResponse.json({ 
@@ -98,7 +112,7 @@ export async function POST(
         // Ждем немного для освобождения порта
         await new Promise(resolve => setTimeout(resolve, 1000))
       } catch (error) {
-        console.log('Не удалось освободить порт 4322:', error.message)
+        console.log('Не удалось освободить порт 4322:', error instanceof Error ? error.message : String(error))
       }
     }
 

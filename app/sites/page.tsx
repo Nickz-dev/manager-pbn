@@ -57,8 +57,15 @@ export default function SitesPage() {
   }
 
   const handleEdit = (site: Site) => {
+    console.log('🔧 Editing site:', site)
     setSelectedSite(site)
     setEditForm({
+      name: site.name,
+      domain: site.domain,
+      template: site.template,
+      statuspbn: site.statuspbn
+    })
+    console.log('🔧 Set edit form:', {
       name: site.name,
       domain: site.domain,
       template: site.template,
@@ -77,6 +84,10 @@ export default function SitesPage() {
     
     try {
       setActionLoading(true)
+      
+      console.log('🔧 Updating site:', selectedSite.documentId)
+      console.log('🔧 Edit form data:', editForm)
+      
       const response = await fetch(`/api/sites/${selectedSite.documentId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -85,10 +96,12 @@ export default function SitesPage() {
       
       const data = await response.json()
       
+      console.log('🔧 Update response:', data)
+      
       if (data.success) {
         setShowEditModal(false)
         setSelectedSite(null)
-        fetchSites() // Обновляем список
+        await fetchSites() // Обновляем список
         alert('Сайт успешно обновлен!')
       } else {
         alert('Ошибка при обновлении сайта: ' + data.error)
@@ -246,7 +259,7 @@ export default function SitesPage() {
           />
           <StatsCard
             title="PBN сайты"
-            value={sites.filter(s => s.template.includes('casino') || s.template === 'blog').length}
+            value={sites.filter(s => s.template !== 'astro-casino-blog').length}
             icon={
               <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center">
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -333,12 +346,12 @@ export default function SitesPage() {
                         <div className="flex items-center">
                           <div className="flex-shrink-0 w-10 h-10">
                             <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                              site.template.includes('casino') || site.template === 'blog'
-                                ? 'bg-gradient-to-r from-purple-500 to-pink-600' 
-                                : 'bg-gradient-to-r from-emerald-500 to-teal-600'
+                              site.template === 'astro-casino-blog'
+                                ? 'bg-gradient-to-r from-emerald-500 to-teal-600' 
+                                : 'bg-gradient-to-r from-purple-500 to-pink-600'
                             }`}>
                               <span className="text-white font-semibold text-sm">
-                                {site.template.includes('casino') || site.template === 'blog' ? 'P' : 'B'}
+                                {site.template === 'astro-casino-blog' ? 'B' : 'P'}
                               </span>
                             </div>
                           </div>
@@ -349,13 +362,13 @@ export default function SitesPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        site.template.includes('casino') || site.template === 'blog'
-                          ? 'bg-purple-100 text-purple-800' 
-                          : 'bg-emerald-100 text-emerald-800'
-                      }`}>
-                        {site.template.includes('casino') || site.template === 'blog' ? 'PBN' : 'Brand'}
-                      </span>
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          site.template === 'astro-casino-blog'
+                            ? 'bg-emerald-100 text-emerald-800' 
+                            : 'bg-purple-100 text-purple-800'
+                        }`}>
+                          {site.template === 'astro-casino-blog' ? 'Brand' : 'PBN'}
+                        </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <StatusBadge status={site.statuspbn} />

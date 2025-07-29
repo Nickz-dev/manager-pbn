@@ -8,8 +8,8 @@ import axios from 'axios'
 // Helper function to map template names to directory names
 function getTemplateDirectory(template: string): string {
   const templateMap: { [key: string]: string } = {
-    'casino-blog': 'astro-pbn-blog',
-    'casino-standard': 'astro-pbn-blog',
+    'casino-blog': 'astro-casino-blog',
+    'casino-standard': 'astro-casino-blog',
     'casino-premium': 'casino/premium',
     'slots-review': 'astro-slots-review',
     'gaming-news': 'astro-gaming-news',
@@ -18,7 +18,7 @@ function getTemplateDirectory(template: string): string {
     'poker-platform': 'astro-poker-platform'
   }
   
-  return templateMap[template] || 'astro-pbn-blog' // fallback to default
+  return templateMap[template] || 'astro-casino-blog' // fallback to default
 }
 
 // Функция для генерации слага из заголовка
@@ -94,7 +94,8 @@ export async function POST(request: NextRequest) {
       success: true,
       message: 'Build completed successfully',
       siteId,
-      buildUrl: `http://localhost:4321/sites/${siteId}`, // URL для предпросмотра (будет обновлен в UI)
+      buildUrl: `/sites/preview/${siteId}`, // URL для предпросмотра
+      previewUrl: `/sites/preview/${siteId}`, // Дублируем для совместимости
       imagesDownloaded: imageStats.downloaded,
       totalImages: imageStats.total,
       articleCount: articlesWithSlugs.length,

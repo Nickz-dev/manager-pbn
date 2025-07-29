@@ -1,7 +1,7 @@
 {
-  "name": "Sports Betting Hub",
-  "short_name": "Sports",
-  "description": "Лучшие ставки на спорт и аналитика",
+  "name": "тут название",
+  "short_name": "тут",
+  "description": "тут описание",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -38,6 +38,6 @@
     "news",
     "blog"
   ],
-  "lang": "ru",
+  "lang": "en",
   "dir": "ltr"
 }

@@ -2,7 +2,7 @@ User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://testtest.com/sitemap.xml
+Sitemap: https://ai.com/sitemap.xml
 
 # Disallow admin areas
 Disallow: /admin/

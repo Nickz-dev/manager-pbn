@@ -1,7 +1,7 @@
 {
-  "name": "Poker Platform",
-  "short_name": "Poker",
-  "description": "Лучшая платформа для покера онлайн",
+  "name": "тут название",
+  "short_name": "тут",
+  "description": "тут описание",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -38,6 +38,6 @@
     "news",
     "blog"
   ],
-  "lang": "ru",
+  "lang": "en",
   "dir": "ltr"
 }

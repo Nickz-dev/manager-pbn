@@ -3,7 +3,6 @@ import siteData from '../../data/site-data.json';
 
 export async function getStaticPaths() {
   const { categories } = siteData;
-  
   return categories.map(category => ({
     params: { slug: category.slug },
     props: { category }
@@ -13,12 +12,10 @@ export async function getStaticPaths() {
 const { category } = Astro.props;
 const { site, articles, categories } = siteData;
 
-// Получаем статьи для данной категории
-const categoryArticles = articles.filter(article => 
+const categoryArticles = articles.filter(article =>
   article.categories?.some(cat => cat.slug === category.slug)
 );
 
-// Получаем другие категории для навигации
 const otherCategories = categories.filter(cat => cat.slug !== category.slug).slice(0, 5);
 
 // Генерируем структурированные данные
@@ -58,7 +55,6 @@ const ogData = {
   image: site.og_image || `/images/default-og.jpg`
 };
 ---
-
 <!DOCTYPE html>
 <html lang={site.config?.language || 'en'}>
 <head>
@@ -207,39 +203,28 @@ const ogData = {
       flex: 1;
     }
     
-    .category-header {
-      margin-bottom: 4rem;
+    .section-title {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 3rem;
       text-align: center;
+      background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
       position: relative;
     }
     
-    .category-title {
-      font-size: 3.5rem;
-      font-weight: 900;
-      margin: 0 0 2rem;
-      color: var(--text-primary);
-      line-height: 1.1;
-      position: relative;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    
-    .category-title::after {
+    .section-title::after {
       content: '';
       position: absolute;
-      bottom: -15px;
+      bottom: -10px;
       left: 50%;
-      transform: translate(-50%);
-      width: 120px;
+      transform: translateX(-50%);
+      width: 80px;
       height: 4px;
       background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
       border-radius: 2px;
-    }
-    
-    .category-description {
-      font-size: 1.25rem;
-      color: var(--text-secondary);
-      max-width: 600px;
-      margin: 0 auto;
     }
     
     .articles-grid {
@@ -349,18 +334,8 @@ const ogData = {
       color: var(--text-primary);
     }
     
-    .other-categories {
+    .categories-section {
       margin-top: 4rem;
-      padding-top: 3rem;
-      border-top: 1px solid var(--border-color);
-    }
-    
-    .other-categories h2 {
-      font-size: 2rem;
-      font-weight: 700;
-      margin-bottom: 2rem;
-      text-align: center;
-      color: var(--text-primary);
     }
     
     .categories-grid {
@@ -438,12 +413,8 @@ const ogData = {
         padding: 0 1rem;
       }
       
-      .category-title {
-        font-size: 2.5rem;
-      }
-      
-      .category-description {
-        font-size: 1rem;
+      .section-title {
+        font-size: 2rem;
       }
       
       .articles-grid {
@@ -457,8 +428,8 @@ const ogData = {
     }
     
     @media (max-width: 480px) {
-      .category-title {
-        font-size: 2rem;
+      .section-title {
+        font-size: 1.5rem;
       }
       
       .article-content {
@@ -476,29 +447,6 @@ const ogData = {
       outline: 2px solid var(--primary-color);
       outline-offset: 2px;
     }
-    
-    /* Animations */
-    @keyframes slideInUp {
-      0% {
-        opacity: 0;
-        transform: translateY(40px);
-      }
-      100% {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-    
-    .category-header,
-    .articles-grid,
-    .other-categories {
-      animation: slideInUp 0.8s ease-out;
-    }
-    
-    .article-card {
-      animation: slideInUp 0.8s ease-out;
-      animation-delay: calc(var(--card-index, 0) * 0.1s);
-    }
   </style>
 </head>
 <body>
@@ -513,17 +461,12 @@ const ogData = {
 
   <main class="main">
     <div class="container">
-      <div class="category-header">
-        <h1 class="category-title">📰 {category.name}</h1>
-        <p class="category-description">
-          Latest {category.name.toLowerCase()} news and articles from the gaming world
-        </p>
-      </div>
-
+      <h2 class="section-title">📰 {category.name}</h2>
+      
       {categoryArticles.length > 0 ? (
         <div class="articles-grid">
-          {categoryArticles.map((article, index) => (
-            <article class="article-card" style={`--card-index: ${index}`}>
+          {categoryArticles.map(article => (
+            <article class="article-card">
               <a href={`/articles/${article.slug}`} style="text-decoration: none; color: inherit;">
                 {article.featured_image ? (
                   <img 
@@ -539,7 +482,7 @@ const ogData = {
                   </div>
                 )}
                 <div class="article-content">
-                  <h2 class="article-title">{article.title}</h2>
+                  <h3 class="article-title">{article.title}</h3>
                   {article.excerpt && (
                     <p class="article-excerpt">{article.excerpt}</p>
                   )}
@@ -567,16 +510,16 @@ const ogData = {
       )}
 
       {otherCategories.length > 0 && (
-        <div class="other-categories">
-          <h2>Other Categories</h2>
+        <div class="categories-section">
+          <h2 class="section-title">Other Categories</h2>
           <div class="categories-grid">
             {otherCategories.map(cat => (
-              <div class="category-card">
-                <a href={`/categories/${cat.slug}`} style="text-decoration: none; color: inherit;">
+              <a href={`/categories/${cat.slug}`} style="text-decoration: none; color: inherit;">
+                <div class="category-card">
                   <h3>{cat.name}</h3>
                   <p>Explore {cat.name.toLowerCase()} content</p>
-                </a>
-              </div>
+                </div>
+              </a>
             ))}
           </div>
         </div>

@@ -7,9 +7,9 @@ const { site, articles, categories, authors } = siteData;
 const latestArticles = articles
   .filter(article => article.publishedAt)
   .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
-  .slice(0, 6);
+  .slice(0, 9);
 
-// Получаем популярные категории (только из статей на сайте)
+// Получаем популярные категории
 const popularCategories = categories.slice(0, 5);
 
 // Генерируем структурированные данные
@@ -23,11 +23,6 @@ const structuredData = {
     "@type": "Organization",
     "name": site.name,
     "url": `https://${site.domain}`
-  },
-  "potentialAction": {
-    "@type": "SearchAction",
-    "target": `https://${site.domain}/search?q={search_term_string}`,
-    "query-input": "required name=search_term_string"
   }
 };
 
@@ -84,11 +79,14 @@ const ogData = {
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
   <link rel="manifest" href="/site.webmanifest">
   
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
   <!-- Preload critical resources -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"></noscript>
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;900&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;900&display=swap"></noscript>
   
   <!-- Google Analytics -->
   {site.analytics?.googleAnalytics && (
@@ -120,16 +118,6 @@ const ogData = {
       --text-secondary: #e2e8f0;
       --text-muted: #94a3b8;
       --border-color: #2d3748;
-      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-      --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    }
-    
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
     }
     
     body {
@@ -139,451 +127,59 @@ const ogData = {
       line-height: 1.6;
       overflow-x: hidden;
     }
-    
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 1rem;
-    }
-    
-    .header {
-      background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
-      padding: 3rem 0;
-      position: relative;
-      overflow: hidden;
-    }
-    
-    .header::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="50" cy="10" r="0.5" fill="rgba(255,255,255,0.1)"/><circle cx="10" cy="60" r="0.5" fill="rgba(255,255,255,0.1)"/><circle cx="90" cy="40" r="0.5" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
-      opacity: 0.3;
-    }
-    
-    .header-content {
-      position: relative;
-      z-index: 1;
-      text-align: center;
-    }
-    
-    .header h1 {
-      font-size: 3rem;
-      font-weight: 700;
-      margin-bottom: 1rem;
-      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    }
-    
-    .header p {
-      font-size: 1.25rem;
-      opacity: 0.9;
-      max-width: 600px;
-      margin: 0 auto;
-    }
-    
-    .main {
-      padding: 4rem 0;
-    }
-    
-    .section-title {
-      font-size: 2.5rem;
-      font-weight: 700;
-      margin-bottom: 3rem;
-      text-align: center;
-      background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      position: relative;
-    }
-    
-    .section-title::after {
-      content: '';
-      position: absolute;
-      bottom: -10px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 80px;
-      height: 4px;
-      background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
-      border-radius: 2px;
-    }
-    
-    /* HORIZONTAL CARDS DESIGN */
-    .articles-list {
-      display: flex;
-      flex-direction: column;
-      gap: 2rem;
-      margin-bottom: 4rem;
-    }
-    
-    .article-card-horizontal {
-      background: var(--bg-secondary);
-      border-radius: 20px;
-      overflow: hidden;
-      box-shadow: var(--shadow-lg);
-      transition: all 0.4s ease;
-      border: 1px solid var(--border-color);
-      display: flex;
-      min-height: 300px;
-    }
-    
-    .article-card-horizontal:hover {
-      transform: translateY(-8px);
-      box-shadow: var(--shadow-xl);
-      border-color: var(--primary-color);
-    }
-    
-    .article-image-section {
-      flex: 0 0 400px;
-      position: relative;
-      overflow: hidden;
-    }
-    
-    .article-image-large {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transition: transform 0.4s ease;
-    }
-    
-    .article-card-horizontal:hover .article-image-large {
-      transform: scale(1.1);
-    }
-    
-    .article-image-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(245, 158, 11, 0.3));
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-    
-    .article-card-horizontal:hover .article-image-overlay {
-      opacity: 1;
-    }
-    
-    .article-image-placeholder-large {
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(135deg, var(--bg-accent) 0%, var(--border-color) 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--text-muted);
-      font-size: 1.5rem;
-      font-weight: 500;
-    }
-    
-    .article-content-horizontal {
-      flex: 1;
-      padding: 2.5rem;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-    
-    .article-title-horizontal {
-      font-size: 1.75rem;
-      font-weight: 700;
-      margin-bottom: 1rem;
-      color: var(--text-primary);
-      line-height: 1.3;
-      background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    
-    .article-excerpt-horizontal {
-      color: var(--text-secondary);
-      margin-bottom: 1.5rem;
-      line-height: 1.7;
-      font-size: 1.1rem;
-      flex-grow: 1;
-    }
-    
-    .article-meta-horizontal {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-top: 1.5rem;
-      border-top: 1px solid var(--border-color);
-    }
-    
-    .article-author-horizontal {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
-    
-    .author-avatar-large {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-size: 1rem;
-      font-weight: 600;
-    }
-    
-    .read-more-btn {
-      background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
-      color: white;
-      padding: 0.75rem 1.5rem;
-      border-radius: 25px;
-      text-decoration: none;
-      font-weight: 600;
-      transition: all 0.3s ease;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    
-    .read-more-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-lg);
-    }
-    
-    .categories-section {
-      margin-bottom: 4rem;
-    }
-    
-    .categories-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 2rem;
-    }
-    
-    .category-card {
-      background: var(--bg-secondary);
-      padding: 2.5rem 2rem;
-      border-radius: 16px;
-      text-align: center;
-      box-shadow: var(--shadow-md);
-      transition: all 0.3s ease;
-      border: 1px solid var(--border-color);
-      position: relative;
-      overflow: hidden;
-    }
-    
-    .category-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 4px;
-      background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
-    }
-    
-    .category-card:hover {
-      transform: translateY(-4px);
-      box-shadow: var(--shadow-xl);
-      border-color: var(--primary-color);
-    }
-    
-    .category-card h3 {
-      font-size: 1.5rem;
-      font-weight: 600;
-      margin-bottom: 1rem;
-      color: var(--text-primary);
-    }
-    
-    .category-card p {
-      color: var(--text-secondary);
-      line-height: 1.6;
-    }
-    
-    .footer {
-      background: var(--bg-secondary);
-      border-top: 1px solid var(--border-color);
-      padding: 3rem 0;
-      margin-top: 4rem;
-    }
-    
-    .footer-content {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 2rem;
-    }
-    
-    .footer-section h3 {
-      font-size: 1.25rem;
-      font-weight: 600;
-      margin-bottom: 1rem;
-      color: var(--text-primary);
-    }
-    
-    .footer-section ul {
-      list-style: none;
-    }
-    
-    .footer-section li {
-      margin-bottom: 0.5rem;
-    }
-    
-    .footer-section a {
-      color: var(--text-secondary);
-      text-decoration: none;
-      transition: color 0.3s ease;
-    }
-    
-    .footer-section a:hover {
-      color: var(--primary-color);
-    }
-    
-    .footer-bottom {
-      text-align: center;
-      padding-top: 2rem;
-      margin-top: 2rem;
-      border-top: 1px solid var(--border-color);
-      color: var(--text-muted);
-    }
-    
-    /* Responsive Design */
-    @media (max-width: 768px) {
-      .header h1 {
-        font-size: 2rem;
-      }
-      
-      .header p {
-        font-size: 1rem;
-      }
-      
-      .section-title {
-        font-size: 2rem;
-      }
-      
-      .article-card-horizontal {
-        flex-direction: column;
-        min-height: auto;
-      }
-      
-      .article-image-section {
-        flex: none;
-        height: 250px;
-      }
-      
-      .article-content-horizontal {
-        padding: 1.5rem;
-      }
-      
-      .article-title-horizontal {
-        font-size: 1.5rem;
-      }
-      
-      .categories-grid {
-        grid-template-columns: 1fr;
-        gap: 1.5rem;
-      }
-      
-      .footer-content {
-        grid-template-columns: 1fr;
-        text-align: center;
-        gap: 1.5rem;
-      }
-    }
-    
-    @media (max-width: 480px) {
-      .container {
-        padding: 0 0.75rem;
-      }
-      
-      .header {
-        padding: 2rem 0;
-      }
-      
-      .main {
-        padding: 2rem 0;
-      }
-      
-      .article-content-horizontal {
-        padding: 1rem;
-      }
-      
-      .category-card {
-        padding: 1.5rem 1rem;
-      }
-    }
-    
-    /* Loading states */
-    .loading {
-      opacity: 0.7;
-      pointer-events: none;
-    }
-    
-    /* Focus styles for accessibility */
-    a:focus,
-    button:focus {
-      outline: 2px solid var(--primary-color);
-      outline-offset: 2px;
-    }
   </style>
 </head>
 <body>
-  <header class="header">
-    <div class="container">
-      <div class="header-content">
-        <h1>{site.name}</h1>
-        <p>{site.description}</p>
-      </div>
+  <header class="bg-gradient-to-r from-purple-500 to-orange-500 text-white py-16">
+    <div class="container mx-auto px-4 text-center">
+      <h1 class="text-5xl font-bold mb-4">🎰 {site.name}</h1>
+      <p class="text-xl opacity-90 max-w-2xl mx-auto">{site.description}</p>
     </div>
   </header>
 
-  <main class="main">
-    <div class="container">
+  <main class="py-16">
+    <div class="container mx-auto px-4">
       {latestArticles.length > 0 ? (
         <>
-          <h2 class="section-title">Latest Reviews</h2>
-          <div class="articles-list">
-            {latestArticles.map(article => (
-              <article class="article-card-horizontal">
-                <a href={`/articles/${article.slug}`} style="text-decoration: none; color: inherit; display: flex; width: 100%;">
-                  <div class="article-image-section">
+          <h2 class="text-4xl font-bold text-center mb-12">Latest Slot Reviews</h2>
+          <div class="space-y-8 mb-16">
+            {latestArticles.map((article, index) => (
+              <article class="bg-gray-800 rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
+                <a href={`/articles/${article.slug}`} class="block">
+                  {index === 0 && (
+                    <div class="absolute top-4 right-4 bg-gradient-to-r from-purple-500 to-orange-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                      Featured
+                    </div>
+                  )}
+                  <div class="flex flex-col md:flex-row">
                     {article.featured_image ? (
-                      <>
-                        <img 
-                          src={article.featured_image} 
-                          alt={article.title}
-                          class="article-image-large"
-                          loading="lazy"
-                          onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
-                        />
-                        <div class="article-image-overlay"></div>
-                      </>
+                      <img 
+                        src={article.featured_image} 
+                        alt={article.title} 
+                        class="w-full md:w-80 h-48 md:h-auto object-cover"
+                        loading="lazy"
+                      />
                     ) : (
-                      <div class="article-image-placeholder-large">
+                      <div class="w-full md:w-80 h-48 md:h-auto bg-gradient-to-br from-gray-700 to-gray-600 flex items-center justify-center text-gray-400 text-xl">
                         🎰 No Image
                       </div>
                     )}
-                  </div>
-                  <div class="article-content-horizontal">
-                    <div>
-                      <h3 class="article-title-horizontal">{article.title}</h3>
+                    <div class="p-6 flex-1">
+                      <h3 class="text-xl font-bold mb-3 text-white">{article.title}</h3>
                       {article.excerpt && (
-                        <p class="article-excerpt-horizontal">{article.excerpt}</p>
+                        <p class="text-gray-300 mb-4">{article.excerpt}</p>
                       )}
-                    </div>
-                    <div class="article-meta-horizontal">
-                      <div class="article-author-horizontal">
-                        <div class="author-avatar-large">
-                          {(article.author?.name || 'A').charAt(0).toUpperCase()}
+                      <div class="flex justify-between items-center text-sm text-gray-400">
+                        <div class="flex items-center gap-2">
+                          <div class="w-6 h-6 bg-gradient-to-r from-purple-500 to-orange-500 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                            {(article.author?.name || 'A').charAt(0).toUpperCase()}
+                          </div>
+                          <span>{article.author?.name || 'Anonymous'}</span>
                         </div>
-                        <span>{article.author?.name || 'Anonymous'}</span>
+                        <span>
+                          {article.publishedAt ? new Date(article.publishedAt).toLocaleDateString() : 'No date'}
+                        </span>
                       </div>
-                      <span class="read-more-btn">
-                        Read More →
-                      </span>
                     </div>
                   </div>
                 </a>
@@ -592,21 +188,23 @@ const ogData = {
           </div>
         </>
       ) : (
-        <div style="text-align: center; padding: 4rem 0;">
-          <h2>No articles available</h2>
-          <p>Check back soon for new content!</p>
+        <div class="text-center py-16">
+          <h2 class="text-3xl font-bold mb-4">No articles available</h2>
+          <p class="text-gray-400">Check back soon for new content!</p>
         </div>
       )}
 
       {popularCategories.length > 0 && (
-        <div class="categories-section">
-          <h2 class="section-title">Popular Categories</h2>
-          <div class="categories-grid">
-            {popularCategories.map(category => (
-              <div class="category-card">
-                <h3>{category.name}</h3>
-                <p>Explore the latest content in {category.name.toLowerCase()}</p>
-              </div>
+        <div class="mb-16">
+          <h2 class="text-4xl font-bold text-center mb-12">Popular Categories</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {popularCategories.map((category) => (
+              <a href={`/categories/${category.slug}`} class="block">
+                <div class="bg-gray-800 rounded-lg shadow-md p-6 text-center hover:shadow-lg transition-shadow duration-300">
+                  <h3 class="text-xl font-semibold mb-2 text-white">{category.name}</h3>
+                  <p class="text-gray-400">Explore the latest content in {category.name.toLowerCase()}</p>
+                </div>
+              </a>
             ))}
           </div>
         </div>
@@ -614,31 +212,28 @@ const ogData = {
     </div>
   </main>
 
-  <footer class="footer">
-    <div class="container">
-      <div class="footer-content">
-        <div class="footer-section">
-          <h3>About {site.name}</h3>
-          <p>{site.description}</p>
+  <footer class="bg-gray-800 border-t border-gray-700 py-12">
+    <div class="container mx-auto px-4">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div>
+          <h3 class="text-xl font-semibold mb-4 text-white">About {site.name}</h3>
+          <p class="text-gray-400">{site.description}</p>
         </div>
-        <div class="footer-section">
-          <h3>Latest Articles</h3>
-          <ul>
-            {latestArticles.slice(0, 5).map(article => (
-              <li><a href={`/articles/${article.slug}`}>{article.title}</a></li>
+        <div>
+          <h3 class="text-xl font-semibold mb-4 text-white">Categories</h3>
+          <ul class="space-y-2">
+            {popularCategories.map((category) => (
+              <li><a href={`/categories/${category.slug}`} class="text-gray-400 hover:text-purple-400 transition-colors">{category.name}</a></li>
             ))}
           </ul>
         </div>
-        <div class="footer-section">
-          <h3>Categories</h3>
-          <ul>
-            {popularCategories.map(category => (
-              <li><a href={`/categories/${category.slug}`}>{category.name}</a></li>
-            ))}
-          </ul>
+        <div>
+          <h3 class="text-xl font-semibold mb-4 text-white">Contact</h3>
+          <p class="text-gray-400">Email: info@{site.domain}</p>
+          <p class="text-gray-400">Follow us on social media</p>
         </div>
       </div>
-      <div class="footer-bottom">
+      <div class="text-center mt-8 pt-8 border-t border-gray-700 text-gray-500">
         <p>&copy; {new Date().getFullYear()} {site.name}. All rights reserved.</p>
       </div>
     </div>

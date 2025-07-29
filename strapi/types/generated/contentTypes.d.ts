@@ -700,7 +700,6 @@ export interface ApiPbnSitePbnSite extends Struct.CollectionTypeSchema {
         'news',
         'review',
         'casino-premium',
-        'casino-standard',
         'casino-blog',
         'slots-review',
         'gaming-news',

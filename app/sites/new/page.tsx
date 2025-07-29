@@ -107,14 +107,56 @@ export default function NewSitePage() {
 
   // Синхронизация шаблона при изменении типа сайта
   useEffect(() => {
+    console.log('🔄 Site type changed to:', siteType)
     if (siteType === 'pbn') {
-      setSelectedTemplate('casino-blog')
-      updateFormData('template', 'casino-blog')
+      const defaultTemplate = 'casino-blog'
+      console.log('🔄 Setting PBN template to:', defaultTemplate)
+      setSelectedTemplate(defaultTemplate)
+      updateFormData('template', defaultTemplate)
     } else {
-      setSelectedTemplate('premium-casino')
-      updateFormData('template', 'premium-casino')
+      const defaultTemplate = 'premium-casino'
+      console.log('🔄 Setting BRAND template to:', defaultTemplate)
+      setSelectedTemplate(defaultTemplate)
+      updateFormData('template', defaultTemplate)
     }
   }, [siteType])
+
+  // Определяем тип сайта на основе выбранного шаблона
+  const getSiteTypeFromTemplate = (template: string) => {
+    // Принудительно задаем BRAND только для astro-casino-blog, остальные - PBN
+    if (template === 'astro-casino-blog') {
+      return 'brand'
+    } else {
+      return 'pbn' // Все остальные шаблоны - PBN
+    }
+  }
+
+  // Обновляем тип сайта при изменении шаблона
+  useEffect(() => {
+    if (formData.template) {
+      const newSiteType = getSiteTypeFromTemplate(formData.template)
+      console.log('🔄 Template changed to:', formData.template, 'Site type determined:', newSiteType)
+      if (newSiteType !== siteType) {
+        console.log('🔄 Updating site type from', siteType, 'to', newSiteType)
+        setSiteType(newSiteType)
+      }
+    }
+  }, [formData.template])
+
+  // Обновляем selectedTemplate при изменении formData.template
+  useEffect(() => {
+    console.log('🔄 FormData template changed to:', formData.template)
+    setSelectedTemplate(formData.template)
+  }, [formData.template])
+
+  // Добавляем эффект для логирования изменений
+  useEffect(() => {
+    console.log('🔄 Current state:', {
+      siteType,
+      selectedTemplate,
+      formDataTemplate: formData.template
+    })
+  }, [siteType, selectedTemplate, formData.template])
 
   // Фильтрация статей по категории, автору и сайту
   const filteredArticles = articles.filter(article => {
@@ -147,10 +189,13 @@ export default function NewSitePage() {
     setIsLoading(true)
     
     try {
+      // Определяем тип сайта на основе выбранного шаблона
+      const determinedSiteType = getSiteTypeFromTemplate(formData.template)
+      
       // Map form data to API format
       const siteData = {
-        type: `${siteType}-${formData.template}` as any,
-        template: formData.template, // Добавляем явное поле template
+        type: determinedSiteType, // Используем только базовый тип (pbn/brand)
+        template: formData.template,
         domain: formData.domain,
         siteName: formData.name || formData.title,
         description: formData.description,
@@ -184,24 +229,33 @@ export default function NewSitePage() {
       }
 
       console.log('🚀 Creating site with data:', {
+        originalSiteType: siteType,
+        determinedSiteType,
         template: formData.template,
         selectedTemplate,
-        siteType,
-        type: siteData.type
+        type: siteData.type,
+        fullSiteData: siteData
       })
 
-             const response = await fetch('/api/sites', {
-         method: 'POST',
-         headers: {
-           'Content-Type': 'application/json',
-         },
-         body: JSON.stringify(siteData)
-       })
+      const response = await fetch('/api/sites', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(siteData)
+      })
 
       const result = await response.json()
 
-                   if (response.ok) {
+      if (response.ok) {
         const siteId = result.site.id
+        
+        console.log('✅ Site created successfully:', {
+          siteId,
+          determinedSiteType,
+          template: formData.template,
+          type: siteData.type
+        })
         
         // Перенаправляем на промежуточную страницу для предварительного просмотра и сборки
         window.location.href = `/sites/generate?siteId=${siteId}`
