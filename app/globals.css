@@ -60,4 +60,29 @@
   .status-pending {
     @apply bg-yellow-100 text-yellow-800;
   }
+  
+  /* Custom Slider Styles */
+  .slider {
+    @apply appearance-none bg-gray-200 rounded-lg outline-none;
+  }
+  
+  .slider::-webkit-slider-thumb {
+    @apply appearance-none w-5 h-5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full cursor-pointer shadow-lg hover:shadow-xl transition-all duration-200;
+  }
+  
+  .slider::-moz-range-thumb {
+    @apply appearance-none w-5 h-5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full cursor-pointer border-0 shadow-lg hover:shadow-xl transition-all duration-200;
+  }
+  
+  .slider::-webkit-slider-track {
+    @apply bg-gradient-to-r from-purple-200 to-pink-200 rounded-lg h-2;
+  }
+  
+  .slider::-moz-range-track {
+    @apply bg-gradient-to-r from-purple-200 to-pink-200 rounded-lg h-2 border-0;
+  }
+  
+  .slider:focus {
+    @apply outline-none ring-2 ring-purple-500 ring-opacity-50;
+  }
 } 

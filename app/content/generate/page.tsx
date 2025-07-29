@@ -46,6 +46,12 @@ export default function ContentGeneratePage() {
   const [generatedMetaTitle, setGeneratedMetaTitle] = useState('')
   const [generatedMetaDescription, setGeneratedMetaDescription] = useState('')
   
+  // AI Model Parameters
+  const [temperature, setTemperature] = useState(0.7)
+  const [maxTokens, setMaxTokens] = useState(4000)
+  const [topP, setTopP] = useState(0.9)
+  const [storeLogs, setStoreLogs] = useState(true)
+  
   // Data from Strapi
   const [authors, setAuthors] = useState<Author[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -119,23 +125,89 @@ export default function ContentGeneratePage() {
     loadData()
   }, [])
 
+  // Улучшенная функция парсинга JSON
+  const parseAIResponse = (rawText: string) => {
+    try {
+      // Очищаем текст от возможных префиксов и суффиксов
+      let cleanText = rawText.trim()
+      
+      // Убираем markdown блоки
+      cleanText = cleanText.replace(/^```json\s*/, '').replace(/```\s*$/, '')
+      cleanText = cleanText.replace(/^```\s*/, '').replace(/```\s*$/, '')
+      
+      // Ищем JSON объект в тексте
+      const jsonMatch = cleanText.match(/\{[\s\S]*\}/)
+      if (jsonMatch) {
+        cleanText = jsonMatch[0]
+      }
+      
+      // Проверяем завершенность JSON
+      if (!cleanText.endsWith('}')) {
+        // Ищем последнюю закрывающую скобку
+        const lastBraceIndex = cleanText.lastIndexOf('}')
+        if (lastBraceIndex > 0) {
+          cleanText = cleanText.substring(0, lastBraceIndex + 1)
+        } else {
+          // Если нет закрывающей скобки, пытаемся завершить JSON
+          if (cleanText.includes('"title"') && !cleanText.includes('"meta_description"')) {
+            cleanText += ',"meta_title":"","meta_description":""}'
+          } else if (cleanText.includes('"title"')) {
+            cleanText += '}'
+          }
+        }
+      }
+      
+      // Пытаемся распарсить JSON
+      const parsed = JSON.parse(cleanText)
+      
+      // Проверяем обязательные поля
+      if (!parsed.title && !parsed.content) {
+        throw new Error('Missing required fields')
+      }
+      
+      return {
+        title: parsed.title || '',
+        excerpt: parsed.excerpt || '',
+        content: parsed.content || '',
+        meta_title: parsed.meta_title || parsed.title || '',
+        meta_description: parsed.meta_description || parsed.excerpt || ''
+      }
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError)
+      
+      // Fallback: извлекаем данные с помощью regex
+      const titleMatch = rawText.match(/"title":\s*"([^"]+)"/)
+      const excerptMatch = rawText.match(/"excerpt":\s*"([^"]+)"/)
+      const contentMatch = rawText.match(/"content":\s*"([^"]*(?:<[^>]*>[^"]*)*)/)
+      const metaTitleMatch = rawText.match(/"meta_title":\s*"([^"]+)"/)
+      const metaDescMatch = rawText.match(/"meta_description":\s*"([^"]+)"/)
+      
+      return {
+        title: titleMatch ? titleMatch[1] : '',
+        excerpt: excerptMatch ? excerptMatch[1] : '',
+        content: contentMatch ? contentMatch[1] + (contentMatch[1].endsWith('</p>') ? '' : '...') : '',
+        meta_title: metaTitleMatch ? metaTitleMatch[1] : (titleMatch ? titleMatch[1] : ''),
+        meta_description: metaDescMatch ? metaDescMatch[1] : (excerptMatch ? excerptMatch[1] : '')
+      }
+    }
+  }
+
   const handleGenerate = async () => {
-    if (!prompt.trim()) return
+    if (!prompt.trim() && !sourceUrl.trim() && !generatedContent.trim()) return
     
     setIsGenerating(true)
     try {
-             // Улучшенный промпт с более четкими инструкциями
-       const lengthWords = {
-         short: '800',
-         medium: '2000', 
-         long: '8000'
-       }
+      const lengthWords = {
+        short: '800',
+        medium: '2000', 
+        long: '8000'
+      }
       
       let enhancedPrompt = ''
       
-                    if (sourceUrl && sourceUrl.trim()) {
-         // Рерайт по URL
-         enhancedPrompt = `Проанализируй статью по ссылке: ${sourceUrl}
+      if (sourceUrl && sourceUrl.trim()) {
+        // Рерайт по URL
+        enhancedPrompt = `Проанализируй статью по ссылке: ${sourceUrl}
 
 Создай качественный рерайт этой статьи с требованиями:
 - Тон: ${tone}
@@ -155,9 +227,9 @@ export default function ContentGeneratePage() {
   "meta_title": "SEO заголовок до 60 символов",
   "meta_description": "SEO описание до 160 символов"
 }`
-                    } else if (generatedContent && generatedContent.trim()) {
-         // Рерайт существующей статьи
-         enhancedPrompt = `Создай качественный рерайт этой статьи:
+      } else if (generatedContent && generatedContent.trim()) {
+        // Рерайт существующей статьи
+        enhancedPrompt = `Создай качественный рерайт этой статьи:
 
 Оригинальный заголовок: ${generatedTitle}
 Оригинальное содержание: ${generatedContent}
@@ -181,9 +253,9 @@ export default function ContentGeneratePage() {
   "meta_title": "SEO заголовок до 60 символов",
   "meta_description": "SEO описание до 160 символов"
 }`
-                           } else {
-         // Обычная генерация по теме
-         enhancedPrompt = `Создай качественную ${contentType} на тему: "${prompt}". 
+      } else {
+        // Обычная генерация по теме
+        enhancedPrompt = `Создай качественную ${contentType} на тему: "${prompt}". 
 
 Требования:
 - Тон: ${tone}
@@ -211,92 +283,24 @@ export default function ContentGeneratePage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          prompt: enhancedPrompt
+          prompt: enhancedPrompt,
+          temperature: temperature,
+          max_tokens: maxTokens,
+          top_p: topP,
+          store_logs: storeLogs
         }),
       })
 
-             const data = await response.json()
-       if (response.ok) {
-         try {
-           // Очищаем ответ от возможных лишних символов
-           let cleanText = data.generatedText.trim()
-           
-           // Убираем возможные префиксы типа "```json" и "```"
-           cleanText = cleanText.replace(/^```json\s*/, '').replace(/```\s*$/, '')
-           
-                       // Ищем JSON объект в тексте (может быть обернут в markdown)
-            const jsonMatch = cleanText.match(/\{[\s\S]*\}/)
-            if (jsonMatch) {
-              cleanText = jsonMatch[0]
-            }
-            
-            // Проверяем, не обрезан ли JSON (нет закрывающей скобки)
-            if (!cleanText.endsWith('}')) {
-              // Ищем последнюю закрывающую скобку
-              const lastBraceIndex = cleanText.lastIndexOf('}')
-              if (lastBraceIndex > 0) {
-                cleanText = cleanText.substring(0, lastBraceIndex + 1)
-              } else {
-                // Если нет закрывающей скобки, пытаемся добавить недостающие поля
-                if (cleanText.includes('"title"') && !cleanText.includes('"meta_description"')) {
-                  cleanText += ',"meta_title":"","meta_description":""}'
-                }
-              }
-            }
-           
-           // Пытаемся распарсить JSON ответ
-           const parsedContent = JSON.parse(cleanText)
-           
-           // Проверяем и устанавливаем значения
-           setGeneratedTitle(parsedContent.title || '')
-           setGeneratedExcerpt(parsedContent.excerpt || '')
-           setGeneratedContent(parsedContent.content || '')
-           setGeneratedMetaTitle(parsedContent.meta_title || parsedContent.title || '')
-           setGeneratedMetaDescription(parsedContent.meta_description || parsedContent.excerpt || '')
-           
-         } catch (parseError) {
-           console.error('JSON parse error:', parseError)
-           console.error('Raw AI response:', data.generatedText)
-           
-                       // Попробуем извлечь хотя бы заголовок и контент из обрезанного JSON
-            try {
-              const titleMatch = data.generatedText.match(/"title":\s*"([^"]+)"/)
-              const excerptMatch = data.generatedText.match(/"excerpt":\s*"([^"]+)"/)
-              
-              // Улучшенный regex для контента - ищем от "content": до конца строки или до следующей кавычки
-              const contentMatch = data.generatedText.match(/"content":\s*"([^"]*(?:<[^>]*>[^"]*)*)/)
-              
-              if (titleMatch || contentMatch) {
-                setGeneratedTitle(titleMatch ? titleMatch[1] : '')
-                setGeneratedExcerpt(excerptMatch ? excerptMatch[1] : '')
-                
-                // Обрабатываем контент более аккуратно
-                let extractedContent = ''
-                if (contentMatch) {
-                  extractedContent = contentMatch[1]
-                  // Если контент обрезан, добавляем многоточие
-                  if (!extractedContent.endsWith('</p>') && !extractedContent.endsWith('</h2>')) {
-                    extractedContent += '...'
-                  }
-                }
-                setGeneratedContent(extractedContent)
-                setGeneratedMetaTitle(titleMatch ? titleMatch[1] : '')
-                setGeneratedMetaDescription(excerptMatch ? excerptMatch[1] : '')
-                
-                console.log('Extracted partial content from malformed JSON')
-                return
-              }
-            } catch (extractError) {
-              console.error('Failed to extract partial content:', extractError)
-            }
-           
-           // Если не удалось распарсить JSON, показываем ошибку с более подробной информацией
-           setGeneratedContent(`Ошибка парсинга ответа AI. Полученный текст:\n\n${data.generatedText}\n\nПопробуйте перегенерировать контент.`)
-           setGeneratedTitle('')
-           setGeneratedExcerpt('')
-           setGeneratedMetaTitle('')
-           setGeneratedMetaDescription('')
-         }
+      const data = await response.json()
+      if (response.ok) {
+        const parsedContent = parseAIResponse(data.generatedText)
+        
+        setGeneratedTitle(parsedContent.title)
+        setGeneratedExcerpt(parsedContent.excerpt)
+        setGeneratedContent(parsedContent.content)
+        setGeneratedMetaTitle(parsedContent.meta_title)
+        setGeneratedMetaDescription(parsedContent.meta_description)
+        
       } else {
         console.error('Generation failed:', data.error)
         setGeneratedContent('Ошибка генерации: ' + data.error)
@@ -373,7 +377,7 @@ export default function ContentGeneratePage() {
   }
 
   const handleRegenerate = () => {
-    if (prompt.trim()) {
+    if (prompt.trim() || sourceUrl.trim() || generatedContent.trim()) {
       handleGenerate()
     }
   }
@@ -516,47 +520,47 @@ export default function ContentGeneratePage() {
                 </select>
               </div>
 
-                             {/* Title */}
-               <div>
-                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                   Заголовок статьи
-                 </label>
-                 <input
-                   type="text"
-                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                   value={generatedTitle}
-                   onChange={(e) => setGeneratedTitle(e.target.value)}
-                   placeholder="Введите заголовок статьи"
-                 />
-               </div>
+              {/* Title */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Заголовок статьи
+                </label>
+                <input
+                  type="text"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  value={generatedTitle}
+                  onChange={(e) => setGeneratedTitle(e.target.value)}
+                  placeholder="Введите заголовок статьи"
+                />
+              </div>
 
-               {/* Source URL for rewriting */}
-               <div>
-                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                   URL статьи для рерайта (опционально)
-                 </label>
-                 <input
-                   type="url"
-                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                   value={sourceUrl}
-                   onChange={(e) => setSourceUrl(e.target.value)}
-                   placeholder="https://example.com/article (для рерайта существующей статьи)"
-                 />
-               </div>
+              {/* Source URL for rewriting */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  URL статьи для рерайта (опционально)
+                </label>
+                <input
+                  type="url"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  value={sourceUrl}
+                  onChange={(e) => setSourceUrl(e.target.value)}
+                  placeholder="https://example.com/article (для рерайта существующей статьи)"
+                />
+              </div>
 
-               {/* Main Topic/Prompt */}
-               <div>
-                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                   Тема контента
-                 </label>
-                 <textarea
-                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                   rows={4}
-                   value={prompt}
-                   onChange={(e) => setPrompt(e.target.value)}
-                   placeholder="Опишите тему для генерации контента (например: 'Лучшие онлайн слоты с высоким RTP в 2024 году') или оставьте пустым для рерайта по URL"
-                 />
-               </div>
+              {/* Main Topic/Prompt */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Тема контента
+                </label>
+                <textarea
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  rows={4}
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  placeholder="Опишите тему для генерации контента (например: 'Лучшие онлайн слоты с высоким RTP в 2024 году') или оставьте пустым для рерайта по URL"
+                />
+              </div>
 
               {/* Settings Row */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -591,20 +595,113 @@ export default function ContentGeneratePage() {
                   </select>
                 </div>
 
-                                 <div>
-                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                     Длина
-                   </label>
-                   <select 
-                     className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                     value={length}
-                     onChange={(e) => setLength(e.target.value)}
-                   >
-                     <option value="short">Короткая (~800 слов)</option>
-                     <option value="medium">Средняя (~2000 слов)</option>
-                     <option value="long">Длинная (~8000 слов)</option>
-                   </select>
-                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Длина
+                  </label>
+                  <select 
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    value={length}
+                    onChange={(e) => setLength(e.target.value)}
+                  >
+                    <option value="short">Короткая (~800 слов)</option>
+                    <option value="medium">Средняя (~2000 слов)</option>
+                    <option value="long">Длинная (~8000 слов)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* AI Model Parameters */}
+              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                <h4 className="text-sm font-medium text-gray-900 mb-4">Параметры AI модели</h4>
+                
+                <div className="space-y-4">
+                  {/* Temperature */}
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Temperature (креативность)
+                      </label>
+                      <span className="text-sm text-gray-500">{temperature}</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="2"
+                      step="0.1"
+                      value={temperature}
+                      onChange={(e) => setTemperature(parseFloat(e.target.value))}
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                    />
+                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <span>Консервативный</span>
+                      <span>Сбалансированный</span>
+                      <span>Креативный</span>
+                    </div>
+                  </div>
+
+                  {/* Max Tokens */}
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Max Tokens (максимум символов)
+                      </label>
+                      <span className="text-sm text-gray-500">{maxTokens}</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="1000"
+                      max="8000"
+                      step="500"
+                      value={maxTokens}
+                      onChange={(e) => setMaxTokens(parseInt(e.target.value))}
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                    />
+                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <span>Короткий</span>
+                      <span>Средний</span>
+                      <span>Длинный</span>
+                    </div>
+                  </div>
+
+                  {/* Top P */}
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Top P (разнообразие)
+                      </label>
+                      <span className="text-sm text-gray-500">{topP}</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0.1"
+                      max="1"
+                      step="0.1"
+                      value={topP}
+                      onChange={(e) => setTopP(parseFloat(e.target.value))}
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                    />
+                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <span>Фокус</span>
+                      <span>Сбалансированный</span>
+                      <span>Разнообразие</span>
+                    </div>
+                  </div>
+
+                  {/* Store Logs */}
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="storeLogs"
+                      checked={storeLogs}
+                      onChange={(e) => setStoreLogs(e.target.checked)}
+                      className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                    />
+                    <label htmlFor="storeLogs" className="ml-2 text-sm text-gray-700">
+                      Сохранять логи генерации
+                    </label>
+                  </div>
+                </div>
               </div>
 
               {/* Generate Button */}
@@ -745,7 +842,7 @@ export default function ContentGeneratePage() {
                   </button>
                   <button 
                     onClick={handleRegenerate}
-                    disabled={isGenerating || !prompt.trim()}
+                    disabled={isGenerating || (!prompt.trim() && !sourceUrl.trim() && !generatedContent.trim())}
                     className="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isGenerating ? (

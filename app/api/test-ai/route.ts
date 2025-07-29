@@ -18,7 +18,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { prompt } = await request.json()
+    const { 
+      prompt, 
+      temperature = 0.7, 
+      max_tokens = 4000, 
+      top_p = 0.9, 
+      store_logs = true 
+    } = await request.json()
     
     if (!prompt) {
       return NextResponse.json(
@@ -27,24 +33,47 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Test OpenAI API call
+    // Log generation parameters if store_logs is enabled
+    if (store_logs) {
+      console.log('📊 AI Generation Parameters:', {
+        temperature,
+        max_tokens,
+        top_p,
+        prompt_length: prompt.length
+      })
+    }
+
+    // Test OpenAI API call with configurable parameters
     const completion = await openai.chat.completions.create({
       model: 'gpt-4',
       messages: [
         {
           role: 'system',
-          content: 'Ты опытный SEO-копирайтер, специализирующийся на создании контента для сайтов про онлайн казино и азартные игры. Пиши на русском языке.'
+          content: 'Ты опытный SEO-копирайтер, специализирующийся на создании контента для сайтов про онлайн казино и азартные игры. Пиши на русском языке. Всегда возвращай ответ в формате JSON без дополнительного текста или комментариев.'
         },
         {
           role: 'user',
           content: prompt
         }
       ],
-      max_tokens: 500,
-      temperature: 0.7
+      max_tokens: Math.min(max_tokens, 8000), // Ограничиваем максимум
+      temperature: Math.max(0, Math.min(temperature, 2)), // Ограничиваем от 0 до 2
+      top_p: Math.max(0.1, Math.min(top_p, 1)), // Ограничиваем от 0.1 до 1
+      presence_penalty: 0.1, // Небольшой штраф за повторения
+      frequency_penalty: 0.1 // Небольшой штраф за частые слова
     })
 
     const generatedText = completion.choices[0]?.message?.content
+
+    // Log usage statistics if store_logs is enabled
+    if (store_logs) {
+      console.log('📈 AI Generation Stats:', {
+        prompt_tokens: completion.usage?.prompt_tokens,
+        completion_tokens: completion.usage?.completion_tokens,
+        total_tokens: completion.usage?.total_tokens,
+        model: completion.model
+      })
+    }
 
     console.log('✅ OpenAI API test successful')
 
@@ -52,7 +81,13 @@ export async function POST(request: NextRequest) {
       success: true,
       generatedText,
       usage: completion.usage,
-      model: completion.model
+      model: completion.model,
+      parameters: {
+        temperature,
+        max_tokens,
+        top_p,
+        store_logs
+      }
     })
 
   } catch (error: any) {

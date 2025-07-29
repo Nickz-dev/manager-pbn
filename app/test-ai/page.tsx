@@ -7,6 +7,12 @@ export default function TestAIPage() {
   const [result, setResult] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  
+  // AI Model Parameters
+  const [temperature, setTemperature] = useState(0.7)
+  const [maxTokens, setMaxTokens] = useState(4000)
+  const [topP, setTopP] = useState(0.9)
+  const [storeLogs, setStoreLogs] = useState(true)
 
   const testAI = async () => {
     setLoading(true)
@@ -19,7 +25,13 @@ export default function TestAIPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ 
+          prompt,
+          temperature,
+          max_tokens: maxTokens,
+          top_p: topP,
+          store_logs: storeLogs
+        }),
       })
 
       const data = await response.json()
@@ -28,6 +40,7 @@ export default function TestAIPage() {
         setResult(data.generatedText)
         console.log('Usage:', data.usage)
         console.log('Model:', data.model)
+        console.log('Parameters:', data.parameters)
       } else {
         setError(data.error || 'Произошла ошибка')
       }
@@ -56,6 +69,99 @@ export default function TestAIPage() {
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="Введите ваш промпт..."
               />
+            </div>
+
+            {/* AI Model Parameters */}
+            <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+              <h4 className="text-sm font-medium text-gray-900 mb-4">Параметры AI модели</h4>
+              
+              <div className="space-y-4">
+                {/* Temperature */}
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Temperature (креативность)
+                    </label>
+                    <span className="text-sm text-gray-500">{temperature}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="2"
+                    step="0.1"
+                    value={temperature}
+                    onChange={(e) => setTemperature(parseFloat(e.target.value))}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                  />
+                  <div className="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>Консервативный</span>
+                    <span>Сбалансированный</span>
+                    <span>Креативный</span>
+                  </div>
+                </div>
+
+                {/* Max Tokens */}
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Max Tokens (максимум символов)
+                    </label>
+                    <span className="text-sm text-gray-500">{maxTokens}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="1000"
+                    max="8000"
+                    step="500"
+                    value={maxTokens}
+                    onChange={(e) => setMaxTokens(parseInt(e.target.value))}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                  />
+                  <div className="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>Короткий</span>
+                    <span>Средний</span>
+                    <span>Длинный</span>
+                  </div>
+                </div>
+
+                {/* Top P */}
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Top P (разнообразие)
+                    </label>
+                    <span className="text-sm text-gray-500">{topP}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.1"
+                    max="1"
+                    step="0.1"
+                    value={topP}
+                    onChange={(e) => setTopP(parseFloat(e.target.value))}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                  />
+                  <div className="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>Фокус</span>
+                    <span>Сбалансированный</span>
+                    <span>Разнообразие</span>
+                  </div>
+                </div>
+
+                {/* Store Logs */}
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="storeLogs"
+                    checked={storeLogs}
+                    onChange={(e) => setStoreLogs(e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <label htmlFor="storeLogs" className="ml-2 text-sm text-gray-700">
+                    Сохранять логи генерации
+                  </label>
+                </div>
+              </div>
             </div>
 
             <button
@@ -96,8 +202,10 @@ export default function TestAIPage() {
           <div className="text-sm text-gray-600 space-y-2">
             <p><strong>API Key:</strong> {process.env.NEXT_PUBLIC_OPENAI_API_KEY ? '✅ Настроен' : '❌ Не настроен'}</p>
             <p><strong>Модель:</strong> GPT-4</p>
-            <p><strong>Max tokens:</strong> 500</p>
-            <p><strong>Temperature:</strong> 0.7</p>
+            <p><strong>Max tokens:</strong> {maxTokens}</p>
+            <p><strong>Temperature:</strong> {temperature}</p>
+            <p><strong>Top P:</strong> {topP}</p>
+            <p><strong>Store Logs:</strong> {storeLogs ? '✅ Включено' : '❌ Выключено'}</p>
           </div>
         </div>
       </div>
