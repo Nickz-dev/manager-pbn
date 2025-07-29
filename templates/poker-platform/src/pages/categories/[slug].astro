@@ -16,14 +16,14 @@ const categoryArticles = articles.filter(article =>
   article.categories?.some(cat => cat.slug === category.slug)
 );
 
-const otherCategories = categories.filter(cat => cat.slug !== category.slug).slice(0, 5);
+const otherCategories = categories.filter(cat => cat.slug !== category.slug).slice(0, 4);
 
 // Генерируем структурированные данные
 const structuredData = {
   "@context": "https://schema.org",
   "@type": "CollectionPage",
   "name": `${category.name} - ${site.name}`,
-  "description": `Latest ${category.name.toLowerCase()} news and articles`,
+  "description": `Latest ${category.name.toLowerCase()} poker strategies and articles`,
   "url": `https://${site.domain}/categories/${category.slug}`,
   "mainEntity": {
     "@type": "ItemList",
@@ -48,25 +48,26 @@ const structuredData = {
 // Генерируем Open Graph данные
 const ogData = {
   title: `${category.name} - ${site.name}`,
-  description: `Latest ${category.name.toLowerCase()} news and articles`,
+  description: `Latest ${category.name.toLowerCase()} poker strategies and articles`,
   url: `https://${site.domain}/categories/${category.slug}`,
   type: 'website',
   site_name: site.name,
   image: site.og_image || `/images/default-og.jpg`
 };
 ---
+
 <!DOCTYPE html>
 <html lang={site.config?.language || 'en'}>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#1e40af">
+  <meta name="theme-color" content="#6366f1">
   
   <!-- Primary Meta Tags -->
   <title>{ogData.title}</title>
   <meta name="title" content={ogData.title}>
   <meta name="description" content={ogData.description}>
-  <meta name="keywords" content={`${category.name}, poker platform, ${site.keywords?.join(', ') || ''}`}>
+  <meta name="keywords" content={`${category.name}, poker strategies, ${site.keywords?.join(', ') || ''}`}>
   <meta name="author" content={site.name}>
   <meta name="robots" content="index, follow">
   <meta name="language" content={site.config?.language || 'en'}>
@@ -100,8 +101,8 @@ const ogData = {
   <!-- Preload critical resources -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap"></noscript>
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap"></noscript>
   
   <!-- Google Analytics -->
   {site.analytics?.googleAnalytics && (
@@ -122,122 +123,176 @@ const ogData = {
   
   <style>
     :root {
-      --primary-color: #6366f1;
-      --primary-hover: #4f46e5;
-      --accent-color: #ec4899;
-      --accent-hover: #db2777;
-      --bg-primary: #0a0a0a;
-      --bg-secondary: #1a1a1a;
-      --bg-accent: #2a2a2a;
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-accent: #334155;
       --text-primary: #ffffff;
-      --text-secondary: #e5e7eb;
-      --text-muted: #9ca3af;
-      --border-color: #374151;
-      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-      --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      --text-secondary: #e2e8f0;
+      --text-muted: #94a3b8;
+      --accent-primary: #6366f1;
+      --accent-secondary: #4f46e5;
+      --accent-gradient: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+      --accent-gold: #fbbf24;
+      --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.3);
+      --border-glow: 1px solid rgba(99, 102, 241, 0.3);
     }
     
     * {
-      margin: 0;
-      padding: 0;
       box-sizing: border-box;
     }
     
     body {
-      font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: var(--bg-primary);
+      font-family: 'Montserrat', system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
       color: var(--text-primary);
+      margin: 0;
       line-height: 1.6;
-      overflow-x: hidden;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      font-size: 16px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      position: relative;
+    }
+    
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: 
+        radial-gradient(circle at 20% 80%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(251, 191, 36, 0.1) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: -1;
     }
     
     .container {
       max-width: 1200px;
       margin: 0 auto;
-      padding: 0 1rem;
+      padding: 0 1.5rem;
     }
     
     .header {
-      background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
-      padding: 4rem 0;
-      position: relative;
-      overflow: hidden;
-    }
-    
-    .header::before {
-      content: '';
-      position: absolute;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(20px);
+      border-bottom: var(--border-glow);
+      padding: 2rem 0;
+      position: sticky;
       top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="hexagons" width="20" height="20" patternUnits="userSpaceOnUse"><polygon points="10,1 19,5.5 19,14.5 10,19 1,14.5 1,5.5" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23hexagons)"/></svg>');
-      opacity: 0.3;
+      z-index: 100;
+      box-shadow: var(--shadow-glow);
     }
     
     .header-content {
-      position: relative;
-      z-index: 1;
-      text-align: center;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
     }
     
     .header h1 {
-      font-size: 3.5rem;
-      font-weight: 800;
-      margin-bottom: 1rem;
-      color: white;
+      margin: 0;
+      font-size: 2.5rem;
+      font-weight: 700;
+      font-family: 'Montserrat', sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--accent-gold);
       text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-      letter-spacing: -1px;
     }
     
-    .header p {
-      font-size: 1.25rem;
-      color: rgba(255, 255, 255, 0.9);
-      max-width: 600px;
-      margin: 0 auto;
-      font-weight: 500;
+    .header a {
+      color: var(--accent-gold);
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      border: 1px solid transparent;
+    }
+    
+    .header a:hover {
+      border-color: var(--accent-gold);
+      box-shadow: 0 0 15px rgba(251, 191, 36, 0.3);
     }
     
     .main {
       padding: 4rem 0;
+      flex: 1;
+    }
+    
+    .category-header {
+      text-align: center;
+      margin-bottom: 4rem;
+    }
+    
+    .category-title {
+      font-size: 3.5rem;
+      font-weight: 800;
+      font-family: 'Montserrat', sans-serif;
+      margin: 0 0 1.5rem 0;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.1;
+    }
+    
+    .category-description {
+      font-size: 1.25rem;
+      color: var(--text-secondary);
+      margin-bottom: 2rem;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
     }
     
     .section-title {
       font-size: 2.5rem;
       font-weight: 700;
+      font-family: 'Montserrat', sans-serif;
       margin-bottom: 3rem;
       text-align: center;
       color: var(--text-primary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      position: relative;
     }
     
     .section-title::after {
       content: '';
       position: absolute;
-      bottom: -10px;
+      bottom: -15px;
       left: 50%;
       transform: translateX(-50%);
-      width: 80px;
+      width: 120px;
       height: 4px;
-      background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+      background: var(--accent-gradient);
       border-radius: 2px;
     }
     
     .articles-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
       gap: 2rem;
-      margin-bottom: 4rem;
+      margin-bottom: 5rem;
     }
     
     .article-card {
-      background: var(--bg-secondary);
+      background: rgba(30, 41, 59, 0.8);
+      backdrop-filter: blur(10px);
       border-radius: 20px;
       overflow: hidden;
-      box-shadow: var(--shadow-lg);
+      box-shadow: var(--shadow-glow);
       transition: all 0.3s ease;
-      border: 1px solid var(--border-color);
+      border: var(--border-glow);
       position: relative;
     }
     
@@ -248,17 +303,18 @@ const ogData = {
       left: 0;
       right: 0;
       height: 4px;
-      background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+      background: var(--accent-gradient);
+      border-radius: 20px 20px 0 0;
     }
     
     .article-card:hover {
       transform: translateY(-5px);
-      box-shadow: var(--shadow-xl);
+      box-shadow: 0 15px 35px rgba(99, 102, 241, 0.4);
     }
     
     .article-image {
       width: 100%;
-      height: 200px;
+      height: 250px;
       object-fit: cover;
       transition: transform 0.3s ease;
     }
@@ -267,33 +323,46 @@ const ogData = {
       transform: scale(1.05);
     }
     
+    .article-image-placeholder {
+      width: 100%;
+      height: 250px;
+      background: var(--accent-gradient);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1.5rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
     .article-content {
-      padding: 1.5rem;
+      padding: 2rem;
     }
     
     .article-title {
-      font-size: 1.25rem;
-      font-weight: 700;
-      margin: 0 0 0.75rem;
+      font-size: 1.5rem;
+      font-weight: 600;
+      font-family: 'Montserrat', sans-serif;
+      margin: 0 0 1rem 0;
       color: var(--text-primary);
-      line-height: 1.4;
+      line-height: 1.3;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     
     .article-excerpt {
-      font-size: 0.875rem;
       color: var(--text-secondary);
-      line-height: 1.6;
-      display: -webkit-box;
-      -webkit-line-clamp: 3;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
+      margin-bottom: 1.5rem;
+      line-height: 1.7;
+      font-size: 1rem;
     }
     
     .article-meta {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-top: 1rem;
       padding-top: 1rem;
       border-top: 1px solid var(--border-color);
       font-size: 0.875rem;
@@ -303,19 +372,19 @@ const ogData = {
     .article-author {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.75rem;
     }
     
     .author-avatar {
-      width: 24px;
-      height: 24px;
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
-      background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+      background: var(--accent-gradient);
       display: flex;
       align-items: center;
       justify-content: center;
       color: white;
-      font-size: 0.75rem;
+      font-size: 0.875rem;
       font-weight: 600;
     }
     
@@ -337,18 +406,19 @@ const ogData = {
     
     .categories-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 1.5rem;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 2rem;
     }
     
     .category-card {
-      background: var(--bg-secondary);
-      padding: 2rem 1.5rem;
-      border-radius: 12px;
+      background: rgba(30, 41, 59, 0.8);
+      backdrop-filter: blur(10px);
+      padding: 3rem 2rem;
+      border-radius: 20px;
       text-align: center;
-      box-shadow: var(--shadow-sm);
+      box-shadow: var(--shadow-glow);
       transition: all 0.3s ease;
-      border: 1px solid var(--border-color);
+      border: var(--border-glow);
       position: relative;
       overflow: hidden;
     }
@@ -360,32 +430,38 @@ const ogData = {
       left: 0;
       right: 0;
       height: 4px;
-      background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+      background: var(--accent-gradient);
+      border-radius: 20px 20px 0 0;
     }
     
     .category-card:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-md);
+      transform: translateY(-5px);
+      box-shadow: 0 15px 35px rgba(99, 102, 241, 0.4);
     }
     
     .category-card h3 {
-      font-size: 1.25rem;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 1.75rem;
       font-weight: 600;
-      margin-bottom: 0.5rem;
+      margin-bottom: 1rem;
       color: var(--text-primary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     
     .category-card p {
       color: var(--text-secondary);
-      font-size: 0.875rem;
+      font-size: 1rem;
+      line-height: 1.6;
     }
     
     .footer {
-      background: var(--bg-secondary);
-      border-top: 1px solid var(--border-color);
-      padding: 2rem 0;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(20px);
+      border-top: var(--border-glow);
+      padding: 3rem 0;
       margin-top: auto;
-      box-shadow: var(--shadow-sm);
+      box-shadow: var(--shadow-glow);
     }
     
     .footer-content {
@@ -394,20 +470,28 @@ const ogData = {
     }
     
     .footer a {
-      color: var(--primary-color);
+      color: var(--accent-gold);
       text-decoration: none;
       transition: color 0.3s ease;
-      font-weight: 500;
+      font-weight: 600;
     }
     
     .footer a:hover {
-      color: var(--primary-hover);
+      color: var(--text-primary);
     }
     
     /* Responsive Design */
     @media (max-width: 768px) {
       .container {
         padding: 0 1rem;
+      }
+      
+      .category-title {
+        font-size: 2.5rem;
+      }
+      
+      .category-description {
+        font-size: 1.125rem;
       }
       
       .section-title {
@@ -419,30 +503,53 @@ const ogData = {
       }
       
       .categories-grid {
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: 1rem;
+        grid-template-columns: 1fr;
       }
     }
     
     @media (max-width: 480px) {
-      .section-title {
-        font-size: 1.5rem;
+      .category-title {
+        font-size: 2rem;
       }
       
       .article-content {
-        padding: 1rem;
+        padding: 1.5rem;
       }
       
       .category-card {
-        padding: 1.5rem 1rem;
+        padding: 2rem 1.5rem;
       }
     }
     
     /* Focus styles for accessibility */
     a:focus,
     button:focus {
-      outline: 2px solid var(--primary-color);
+      outline: 2px solid var(--accent-gold);
       outline-offset: 2px;
+    }
+    
+    /* Animations */
+    @keyframes slideInUp {
+      from {
+        opacity: 0;
+        transform: translateY(40px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .category-header,
+    .articles-grid,
+    .categories-section {
+      animation: slideInUp 0.8s ease-out;
+    }
+    
+    .article-card,
+    .category-card {
+      animation: slideInUp 0.8s ease-out;
+      animation-delay: calc(var(--card-index, 0) * 0.1s);
     }
   </style>
 </head>
@@ -451,54 +558,59 @@ const ogData = {
     <div class="container">
       <div class="header-content">
         <h1><a href="/">♠️ {site.name}</a></h1>
-        <p>Discover the latest {category.name.toLowerCase()} news and strategies.</p>
+        <a href="/">← Back to Home</a>
       </div>
     </div>
   </header>
 
   <main class="main">
     <div class="container">
-      <h2 class="section-title">♠️ {category.name}</h2>
+      <section class="category-header">
+        <h1 class="category-title">♠️ {category.name}</h1>
+        <p class="category-description">Discover the latest {category.name.toLowerCase()} poker strategies and expert insights.</p>
+      </section>
       
       {categoryArticles.length > 0 ? (
-        <div class="articles-grid">
-          {categoryArticles.map(article => (
-            <article class="article-card">
-              <a href={`/articles/${article.slug}`} style="text-decoration: none; color: inherit;">
-                {article.featured_image ? (
-                  <img 
-                    src={article.featured_image} 
-                    alt={article.title}
-                    class="article-image"
-                    loading="lazy"
-                    onerror="this.style.display='none';"
-                  />
-                ) : (
-                  <div class="article-image" style="background: linear-gradient(135deg, var(--primary-color), var(--accent-color)); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; font-weight: 700;">
-                    ♠️
-                  </div>
-                )}
-                <div class="article-content">
-                  <h3 class="article-title">{article.title}</h3>
-                  {article.excerpt && (
-                    <p class="article-excerpt">{article.excerpt}</p>
-                  )}
-                  <div class="article-meta">
-                    <div class="article-author">
-                      <div class="author-avatar">
-                        {(article.author?.name || 'A').charAt(0).toUpperCase()}
-                      </div>
-                      <span>{article.author?.name || 'Anonymous'}</span>
+        <>
+          <h2 class="section-title">Latest {category.name} Articles</h2>
+          <div class="articles-grid">
+            {categoryArticles.map((article, index) => (
+              <article class="article-card" style={`--card-index: ${index}`}>
+                <a href={`/articles/${article.slug}`} style="text-decoration: none; color: inherit;">
+                  {article.featured_image ? (
+                    <img 
+                      src={article.featured_image} 
+                      alt={article.title}
+                      class="article-image"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div class="article-image-placeholder">
+                      ♠️ Featured Image
                     </div>
-                    <span>
-                      {new Date(article.publishedAt).toLocaleDateString()}
-                    </span>
+                  )}
+                  <div class="article-content">
+                    <h3 class="article-title">{article.title}</h3>
+                    {article.excerpt && (
+                      <p class="article-excerpt">{article.excerpt}</p>
+                    )}
+                    <div class="article-meta">
+                      <div class="article-author">
+                        <div class="author-avatar">
+                          {(article.author?.name || 'A').charAt(0).toUpperCase()}
+                        </div>
+                        <span>{article.author?.name || 'Anonymous'}</span>
+                      </div>
+                      <span>
+                        {new Date(article.publishedAt).toLocaleDateString()}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              </a>
-            </article>
-          ))}
-        </div>
+                </a>
+              </article>
+            ))}
+          </div>
+        </>
       ) : (
         <div class="no-articles">
           <h2>No articles in this category yet</h2>
@@ -510,11 +622,11 @@ const ogData = {
         <div class="categories-section">
           <h2 class="section-title">Other Categories</h2>
           <div class="categories-grid">
-            {otherCategories.map(cat => (
+            {otherCategories.map((cat, index) => (
               <a href={`/categories/${cat.slug}`} style="text-decoration: none; color: inherit;">
-                <div class="category-card">
+                <div class="category-card" style={`--card-index: ${index}`}>
                   <h3>{cat.name}</h3>
-                  <p>Master {cat.name.toLowerCase()} strategies</p>
+                  <p>Master {cat.name.toLowerCase()} poker strategies</p>
                 </div>
               </a>
             ))}
@@ -527,7 +639,7 @@ const ogData = {
   <footer class="footer">
     <div class="container">
       <div class="footer-content">
-        <p>&copy; {new Date().getFullYear()} {site.name}. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} <a href="/">{site.name}</a>. All rights reserved.</p>
         <p>
           <a href="/">Home</a> • 
           <a href="/categories">All Categories</a> • 

@@ -9,8 +9,8 @@ const latestArticles = articles
   .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
   .slice(0, 6);
 
-// Получаем популярные категории (только из статей на сайте)
-const popularCategories = categories.slice(0, 5);
+// Получаем популярные категории
+const popularCategories = categories.slice(0, 4);
 
 // Генерируем структурированные данные
 const structuredData = {
@@ -23,11 +23,6 @@ const structuredData = {
     "@type": "Organization",
     "name": site.name,
     "url": `https://${site.domain}`
-  },
-  "potentialAction": {
-    "@type": "SearchAction",
-    "target": `https://${site.domain}/search?q={search_term_string}`,
-    "query-input": "required name=search_term_string"
   }
 };
 
@@ -84,9 +79,6 @@ const ogData = {
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
   <link rel="manifest" href="/site.webmanifest">
   
-  <!-- Tailwind CSS (local build) -->
-  <link rel="stylesheet" href="/src/styles/globals.css">
-  
   <!-- Preload critical resources -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -109,155 +101,245 @@ const ogData = {
   
   <!-- Structured Data -->
   <script type="application/ld+json" set:html={JSON.stringify(structuredData)}></script>
+  
+  <style>
+    :root {
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-accent: #334155;
+      --text-primary: #ffffff;
+      --text-secondary: #e2e8f0;
+      --text-muted: #94a3b8;
+      --accent-primary: #6366f1;
+      --accent-secondary: #4f46e5;
+      --accent-gradient: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+      --accent-gold: #fbbf24;
+      --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.3);
+      --border-glow: 1px solid rgba(99, 102, 241, 0.3);
+    }
+    
+    * {
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Montserrat', system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+      color: var(--text-primary);
+      margin: 0;
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      font-size: 16px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      position: relative;
+    }
+    
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: 
+        radial-gradient(circle at 20% 80%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(251, 191, 36, 0.1) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: -1;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+    
+    .header {
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(20px);
+      border-bottom: var(--border-glow);
+      padding: 2rem 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow-glow);
+    }
+    
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
     
     .header h1 {
-      font-size: 3.5rem;
-      font-weight: 800;
-      margin-bottom: 1rem;
-      color: white;
+      margin: 0;
+      font-size: 2.5rem;
+      font-weight: 700;
+      font-family: 'Montserrat', sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--accent-gold);
       text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-      letter-spacing: -1px;
     }
     
     .header p {
-      font-size: 1.25rem;
-      color: rgba(255, 255, 255, 0.9);
+      font-size: 1.125rem;
+      color: var(--text-secondary);
+      margin: 0;
       max-width: 600px;
-      margin: 0 auto;
-      font-weight: 500;
     }
     
     .main {
       padding: 4rem 0;
+      flex: 1;
+    }
+    
+    .hero-section {
+      text-align: center;
+      margin-bottom: 5rem;
+    }
+    
+    .hero-title {
+      font-size: 4rem;
+      font-weight: 800;
+      font-family: 'Montserrat', sans-serif;
+      margin: 0 0 1.5rem 0;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.1;
+    }
+    
+    .hero-subtitle {
+      font-size: 1.5rem;
+      color: var(--text-secondary);
+      margin-bottom: 3rem;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
     }
     
     .section-title {
-      font-size: 2.5rem;
+      font-size: 3rem;
       font-weight: 700;
+      font-family: 'Montserrat', sans-serif;
       margin-bottom: 3rem;
       text-align: center;
       color: var(--text-primary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
       position: relative;
-      letter-spacing: -0.5px;
     }
     
     .section-title::after {
       content: '';
       position: absolute;
-      bottom: -10px;
+      bottom: -15px;
       left: 50%;
       transform: translateX(-50%);
-      width: 80px;
+      width: 120px;
       height: 4px;
-      background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+      background: var(--accent-gradient);
       border-radius: 2px;
     }
     
-    /* GRADIENT CARDS DESIGN */
     .articles-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
       gap: 2rem;
-      margin-bottom: 4rem;
+      margin-bottom: 5rem;
     }
     
-    .article-card-gradient {
-      background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-accent) 100%);
+    .article-card {
+      background: rgba(30, 41, 59, 0.8);
+      backdrop-filter: blur(10px);
       border-radius: 20px;
       overflow: hidden;
-      box-shadow: var(--shadow-lg);
-      transition: all 0.4s ease;
-      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-glow);
+      transition: all 0.3s ease;
+      border: var(--border-glow);
       position: relative;
     }
     
-    .article-card-gradient::before {
+    .article-card::before {
       content: '';
       position: absolute;
       top: 0;
       left: 0;
       right: 0;
-      bottom: 0;
-      background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(236, 72, 153, 0.1));
-      opacity: 0;
-      transition: opacity 0.3s ease;
-      z-index: 1;
+      height: 4px;
+      background: var(--accent-gradient);
+      border-radius: 20px 20px 0 0;
     }
     
-    .article-card-gradient:hover {
-      transform: translateY(-8px);
-      box-shadow: var(--shadow-xl);
-      border-color: var(--primary-color);
-    }
-    
-    .article-card-gradient:hover::before {
-      opacity: 1;
-    }
-    
-    .article-image-container {
-      position: relative;
-      width: 100%;
-      height: 220px;
-      overflow: hidden;
+    .article-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 35px rgba(99, 102, 241, 0.4);
     }
     
     .article-image {
       width: 100%;
-      height: 100%;
+      height: 250px;
       object-fit: cover;
-      transition: transform 0.4s ease;
+      transition: transform 0.3s ease;
     }
     
-    .article-card-gradient:hover .article-image {
-      transform: scale(1.1);
+    .article-card:hover .article-image {
+      transform: scale(1.05);
     }
     
     .article-image-placeholder {
       width: 100%;
-      height: 100%;
-      background: linear-gradient(135deg, var(--bg-accent) 0%, var(--border-color) 100%);
+      height: 250px;
+      background: var(--accent-gradient);
       display: flex;
       align-items: center;
       justify-content: center;
-      color: var(--text-muted);
-      font-size: 1.25rem;
-      font-weight: 500;
+      color: white;
+      font-size: 1.5rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
     }
     
     .article-content {
       padding: 2rem;
-      position: relative;
-      z-index: 2;
     }
     
     .article-title {
-      font-size: 1.375rem;
-      font-weight: 700;
-      margin-bottom: 1rem;
+      font-size: 1.5rem;
+      font-weight: 600;
+      font-family: 'Montserrat', sans-serif;
+      margin: 0 0 1rem 0;
       color: var(--text-primary);
-      line-height: 1.4;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
+      line-height: 1.3;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     
     .article-excerpt {
       color: var(--text-secondary);
       margin-bottom: 1.5rem;
-      line-height: 1.6;
-      display: -webkit-box;
-      -webkit-line-clamp: 3;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
+      line-height: 1.7;
+      font-size: 1rem;
     }
     
     .article-meta {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding-top: 1.5rem;
+      padding-top: 1rem;
       border-top: 1px solid var(--border-color);
+      font-size: 0.875rem;
+      color: var(--text-muted);
     }
     
     .article-author {
@@ -267,10 +349,10 @@ const ogData = {
     }
     
     .author-avatar {
-      width: 36px;
-      height: 36px;
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
-      background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+      background: var(--accent-gradient);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -279,59 +361,25 @@ const ogData = {
       font-weight: 600;
     }
     
-    .author-info {
-      display: flex;
-      flex-direction: column;
-    }
-    
-    .author-name {
-      font-size: 0.875rem;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-    
-    .article-date {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-    }
-    
-    .read-more-btn {
-      background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
-      color: white;
-      padding: 0.5rem 1rem;
-      border-radius: 20px;
-      text-decoration: none;
-      font-weight: 600;
-      font-size: 0.875rem;
-      transition: all 0.3s ease;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    
-    .read-more-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-lg);
-    }
-    
     .categories-section {
-      margin-bottom: 4rem;
+      margin-bottom: 5rem;
     }
     
     .categories-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 1.5rem;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 2rem;
     }
     
     .category-card {
-      background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-accent) 100%);
-      padding: 2rem 1.5rem;
-      border-radius: 16px;
+      background: rgba(30, 41, 59, 0.8);
+      backdrop-filter: blur(10px);
+      padding: 3rem 2rem;
+      border-radius: 20px;
       text-align: center;
-      box-shadow: var(--shadow-md);
+      box-shadow: var(--shadow-glow);
       transition: all 0.3s ease;
-      border: 1px solid var(--border-color);
+      border: var(--border-glow);
       position: relative;
       overflow: hidden;
     }
@@ -343,32 +391,38 @@ const ogData = {
       left: 0;
       right: 0;
       height: 4px;
-      background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+      background: var(--accent-gradient);
+      border-radius: 20px 20px 0 0;
     }
     
     .category-card:hover {
-      transform: translateY(-4px);
-      box-shadow: var(--shadow-xl);
-      border-color: var(--primary-color);
+      transform: translateY(-5px);
+      box-shadow: 0 15px 35px rgba(99, 102, 241, 0.4);
     }
     
     .category-card h3 {
-      font-size: 1.25rem;
-      font-weight: 700;
-      margin-bottom: 0.5rem;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 1.75rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
       color: var(--text-primary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     
     .category-card p {
       color: var(--text-secondary);
-      font-size: 0.875rem;
+      font-size: 1rem;
+      line-height: 1.6;
     }
     
     .footer {
-      background: var(--bg-secondary);
-      border-top: 1px solid var(--border-color);
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(20px);
+      border-top: var(--border-glow);
       padding: 3rem 0;
-      margin-top: 4rem;
+      margin-top: auto;
+      box-shadow: var(--shadow-glow);
     }
     
     .footer-content {
@@ -378,14 +432,18 @@ const ogData = {
     }
     
     .footer-section h3 {
+      font-family: 'Montserrat', sans-serif;
       font-size: 1.25rem;
-      font-weight: 700;
+      font-weight: 600;
       margin-bottom: 1rem;
       color: var(--text-primary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     
     .footer-section ul {
       list-style: none;
+      padding: 0;
     }
     
     .footer-section li {
@@ -399,25 +457,29 @@ const ogData = {
     }
     
     .footer-section a:hover {
-      color: var(--primary-color);
+      color: var(--accent-gold);
     }
     
     .footer-bottom {
-      text-align: center;
-      padding-top: 2rem;
       margin-top: 2rem;
+      padding-top: 2rem;
       border-top: 1px solid var(--border-color);
+      text-align: center;
       color: var(--text-muted);
     }
     
     /* Responsive Design */
     @media (max-width: 768px) {
-      .header h1 {
+      .container {
+        padding: 0 1rem;
+      }
+      
+      .hero-title {
         font-size: 2.5rem;
       }
       
-      .header p {
-        font-size: 1rem;
+      .hero-subtitle {
+        font-size: 1.25rem;
       }
       
       .section-title {
@@ -426,62 +488,60 @@ const ogData = {
       
       .articles-grid {
         grid-template-columns: 1fr;
-        gap: 1.5rem;
+      }
+      
+      .categories-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .footer-content {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .hero-title {
+        font-size: 2rem;
       }
       
       .article-content {
         padding: 1.5rem;
       }
       
-      .article-title {
-        font-size: 1.25rem;
-      }
-      
-      .categories-grid {
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: 1rem;
-      }
-      
-      .footer-content {
-        grid-template-columns: 1fr;
-        text-align: center;
-        gap: 1.5rem;
-      }
-    }
-    
-    @media (max-width: 480px) {
-      .container {
-        padding: 0 0.75rem;
-      }
-      
-      .header {
-        padding: 2rem 0;
-      }
-      
-      .main {
-        padding: 2rem 0;
-      }
-      
-      .article-content {
-        padding: 1rem;
-      }
-      
       .category-card {
-        padding: 1.5rem 1rem;
+        padding: 2rem 1.5rem;
       }
-    }
-    
-    /* Loading states */
-    .loading {
-      opacity: 0.7;
-      pointer-events: none;
     }
     
     /* Focus styles for accessibility */
     a:focus,
     button:focus {
-      outline: 2px solid var(--primary-color);
+      outline: 2px solid var(--accent-gold);
       outline-offset: 2px;
+    }
+    
+    /* Animations */
+    @keyframes slideInUp {
+      from {
+        opacity: 0;
+        transform: translateY(40px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .hero-section,
+    .articles-grid,
+    .categories-section {
+      animation: slideInUp 0.8s ease-out;
+    }
+    
+    .article-card,
+    .category-card {
+      animation: slideInUp 0.8s ease-out;
+      animation-delay: calc(var(--card-index, 0) * 0.1s);
     }
   </style>
 </head>
@@ -489,7 +549,7 @@ const ogData = {
   <header class="header">
     <div class="container">
       <div class="header-content">
-        <h1>🃏 {site.name}</h1>
+        <h1>♠️ {site.name}</h1>
         <p>{site.description}</p>
       </div>
     </div>
@@ -497,29 +557,30 @@ const ogData = {
 
   <main class="main">
     <div class="container">
+      <section class="hero-section">
+        <h1 class="hero-title">Latest Poker Strategies</h1>
+        <p class="hero-subtitle">Get expert insights, strategies, and analysis to improve your poker game</p>
+      </section>
+
       {latestArticles.length > 0 ? (
         <>
-          <h2 class="section-title">Latest Poker Strategies</h2>
+          <h2 class="section-title">Latest Articles</h2>
           <div class="articles-grid">
-            {latestArticles.map(article => (
-              <article class="article-card-gradient">
+            {latestArticles.map((article, index) => (
+              <article class="article-card" style={`--card-index: ${index}`}>
                 <a href={`/articles/${article.slug}`} style="text-decoration: none; color: inherit;">
-                  <div class="article-image-container">
-                    {article.featured_image ? (
-                      <img 
-                        src={article.featured_image} 
-                        alt={article.title}
-                        class="article-image"
-                        loading="lazy"
-                        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
-                      />
-                    ) : null}
-                    {!article.featured_image && (
-                      <div class="article-image-placeholder">
-                        🃏 No Image
-                      </div>
-                    )}
-                  </div>
+                  {article.featured_image ? (
+                    <img 
+                      src={article.featured_image} 
+                      alt={article.title}
+                      class="article-image"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div class="article-image-placeholder">
+                      ♠️ Featured Image
+                    </div>
+                  )}
                   <div class="article-content">
                     <h3 class="article-title">{article.title}</h3>
                     {article.excerpt && (
@@ -530,15 +591,10 @@ const ogData = {
                         <div class="author-avatar">
                           {(article.author?.name || 'A').charAt(0).toUpperCase()}
                         </div>
-                        <div class="author-info">
-                          <span class="author-name">{article.author?.name || 'Anonymous'}</span>
-                          <span class="article-date">
-                            {new Date(article.publishedAt).toLocaleDateString()}
-                          </span>
-                        </div>
+                        <span>{article.author?.name || 'Anonymous'}</span>
                       </div>
-                      <span class="read-more-btn">
-                        Read →
+                      <span>
+                        {new Date(article.publishedAt).toLocaleDateString()}
                       </span>
                     </div>
                   </div>
@@ -558,11 +614,11 @@ const ogData = {
         <div class="categories-section">
           <h2 class="section-title">Popular Categories</h2>
           <div class="categories-grid">
-            {popularCategories.map(category => (
+            {popularCategories.map((category, index) => (
               <a href={`/categories/${category.slug}`} style="text-decoration: none; color: inherit;">
-                <div class="category-card">
+                <div class="category-card" style={`--card-index: ${index}`}>
                   <h3>{category.name}</h3>
-                  <p>Master {category.name.toLowerCase()} strategies</p>
+                  <p>Expert strategies and tips for {category.name.toLowerCase()} poker</p>
                 </div>
               </a>
             ))}
