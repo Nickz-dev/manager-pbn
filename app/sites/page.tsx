@@ -240,7 +240,7 @@ export default function SitesPage() {
           />
           <StatsCard
             title="PBN сайты"
-            value={sites.filter(s => s.template !== 'casino-blog').length}
+            value={sites.length}
             icon={
               <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center">
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -259,7 +259,6 @@ export default function SitesPage() {
               <select className="input-field text-sm">
                 <option>Все типы</option>
                 <option>PBN сайты</option>
-                <option>Brand сайты</option>
               </select>
               <select className="input-field text-sm">
                 <option>Все статусы</option>
@@ -327,12 +326,10 @@ export default function SitesPage() {
                         <div className="flex items-center">
                           <div className="flex-shrink-0 w-10 h-10">
                             <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                              site.template === 'casino-blog'
-                                ? 'bg-gradient-to-r from-emerald-500 to-teal-600' 
-                                : 'bg-gradient-to-r from-purple-500 to-pink-600'
+                              'bg-gradient-to-r from-purple-500 to-pink-600'
                             }`}>
                               <span className="text-white font-semibold text-sm">
-                                {site.template === 'casino-blog' ? 'B' : 'P'}
+                                P
                               </span>
                             </div>
                           </div>
@@ -344,11 +341,9 @@ export default function SitesPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          site.template === 'casino-blog'
-                            ? 'bg-emerald-100 text-emerald-800' 
-                            : 'bg-purple-100 text-purple-800'
+                          'bg-purple-100 text-purple-800'
                         }`}>
-                          {site.template === 'casino-blog' ? 'Brand' : 'PBN'}
+                          PBN
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -448,12 +443,12 @@ export default function SitesPage() {
               onChange={(e) => setEditForm({ ...editForm, template: e.target.value })}
               className="input-field w-full"
             >
-              <option value="casino-blog">Casino Blog</option>
-              <option value="slots-review">Slots Review</option>
-              <option value="gaming-news">Gaming News</option>
-              <option value="sports-betting">Sports Betting</option>
-              <option value="poker-platform">Poker Platform</option>
-              <option value="premium-casino">Premium Casino</option>
+              <option value="casino-blog">Casino Blog (PBN)</option>
+              <option value="slots-review">Slots Review (PBN)</option>
+              <option value="gaming-news">Gaming News (PBN)</option>
+              <option value="sports-betting">Sports Betting (PBN)</option>
+              <option value="poker-platform">Poker Platform (PBN)</option>
+              <option value="premium-casino">Premium Casino (PBN)</option>
             </select>
           </div>
           
