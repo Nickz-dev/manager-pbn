@@ -6,11 +6,11 @@ console.log('🔧 Улучшенное исправление зависимос
 
 // Актуализированный список шаблонов
 const templates = [
-  'astro-casino-blog',
-  'astro-slots-review', 
-  'astro-gaming-news',
-  'astro-sports-betting',
-  'astro-poker-platform'
+  'casino-blog',
+  'slots-review', 
+  'gaming-news',
+  'sports-betting',
+  'poker-platform'
 ];
 
 async function fixTemplateDeps(templateName) {

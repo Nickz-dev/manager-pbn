@@ -3,10 +3,10 @@ const path = require('path');
 
 // Список шаблонов для улучшения
 const templates = [
-  'astro-poker-platform',
-  'astro-sports-betting', 
-  'astro-gaming-news',
-  'astro-slots-review'
+  'poker-platform',
+  'sports-betting', 
+  'gaming-news',
+  'slots-review'
 ];
 
 // Функция для копирования файла
@@ -60,7 +60,7 @@ function improveTemplate(templateName) {
   console.log(`\n🚀 Улучшение шаблона: ${templateName}`);
   
   const templateDir = path.join(__dirname, '..', 'templates', templateName);
-  const sourceDir = path.join(__dirname, '..', 'templates', 'astro-pbn-blog');
+  const sourceDir = path.join(__dirname, '..', 'templates', 'casino-blog');
   
   if (!fs.existsSync(templateDir)) {
     console.log(`❌ Шаблон ${templateName} не найден`);

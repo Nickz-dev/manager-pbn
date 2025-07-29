@@ -6,11 +6,11 @@ const { generateAstroData } = require('./generate-astro-data');
 // Пути к файлам - теперь динамические
 function getAstroDir(template) {
   const templateMap = {
-    'casino-blog': 'astro-casino-blog',
-    'slots-review': 'astro-slots-review', 
-    'gaming-news': 'astro-gaming-news',
-    'sports-betting': 'astro-sports-betting',
-    'poker-platform': 'astro-poker-platform',
+    'casino-blog': 'casino-blog',
+    'slots-review': 'slots-review', 
+    'gaming-news': 'gaming-news',
+    'sports-betting': 'sports-betting',
+    'poker-platform': 'poker-platform',
     'premium-casino': 'casino/premium'
   };
   

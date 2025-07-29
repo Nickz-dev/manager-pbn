@@ -5,12 +5,11 @@ console.log('🔧 Исправление конфигурации Tailwind CSS �
 
 // Список шаблонов
 const templates = [
-  'astro-pbn-blog',
-  'astro-gaming-news', 
-  'astro-poker-platform',
-  'astro-slots-review',
-  'astro-sports-betting',
-  'casino-standard'
+  'casino-blog',
+  'gaming-news', 
+  'poker-platform',
+  'slots-review',
+  'sports-betting'
 ];
 
 // Базовая конфигурация Tailwind

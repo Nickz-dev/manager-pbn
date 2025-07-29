@@ -7,8 +7,8 @@ const STRAPI_URL = process.env.STRAPI_URL || 'http://localhost:1337';
 const STRAPI_TOKEN = process.env.STRAPI_TOKEN || '';
 
 // Пути к файлам
-const ASTRO_DATA_PATH = path.join(__dirname, '../templates/astro-pbn-blog/src/data/site-data.json');
-const ASTRO_PUBLIC_PATH = path.join(__dirname, '../templates/astro-pbn-blog/public');
+const ASTRO_DATA_PATH = path.join(__dirname, '../templates/casino-blog/src/data/site-data.json');
+const ASTRO_PUBLIC_PATH = path.join(__dirname, '../templates/casino-blog/public');
 
 // Функция для генерации слага из заголовка
 function generateSlug(title) {

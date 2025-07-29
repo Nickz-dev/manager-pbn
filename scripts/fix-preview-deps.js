@@ -4,15 +4,14 @@ const path = require('path');
 
 console.log('🔧 Исправление зависимостей превью сервера для всех шаблонов...\n');
 
-// Пути к шаблонам (все текущие)
+// Пути к шаблонам (актуальные)
 const templatesDir = path.join(__dirname, '../templates');
 const templates = [
-  'astro-pbn-blog',
-  'astro-gaming-news', 
-  'astro-poker-platform',
-  'astro-slots-review',
-  'astro-sports-betting',
-  'casino-standard'
+  'casino-blog',
+  'slots-review', 
+  'gaming-news',
+  'sports-betting',
+  'poker-platform'
 ];
 
 async function fixTemplateDeps(templateName) {

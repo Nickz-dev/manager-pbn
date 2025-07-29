@@ -5,11 +5,11 @@ console.log('🔧 Starting category pages creation script...');
 
 // Список всех Astro шаблонов
 const astroTemplates = [
-  'astro-casino-blog',
-  'astro-slots-review', 
-  'astro-gaming-news',
-  'astro-sports-betting',
-  'astro-poker-platform'
+  'casino-blog',
+  'slots-review', 
+  'gaming-news',
+  'sports-betting',
+  'poker-platform'
 ];
 
 console.log('📋 Templates to process:', astroTemplates);
