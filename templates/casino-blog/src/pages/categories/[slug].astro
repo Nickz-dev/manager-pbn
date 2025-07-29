@@ -19,7 +19,7 @@ const categoryArticles = articles.filter(article =>
 );
 
 // Получаем другие категории для навигации
-const otherCategories = categories.filter(cat => cat.slug !== category.slug).slice(0, 5);
+const otherCategories = categories.filter(cat => cat.slug !== category.slug).slice(0, 6);
 
 // Генерируем структурированные данные
 const structuredData = {
@@ -242,9 +242,36 @@ const ogData = {
       margin: 0 auto;
     }
     
+    .category-stats {
+      display: flex;
+      justify-content: center;
+      gap: 3rem;
+      margin-top: 2rem;
+      flex-wrap: wrap;
+    }
+    
+    .stat-item {
+      text-align: center;
+      color: var(--text-secondary);
+    }
+    
+    .stat-number {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--primary-color);
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+      font-size: 0.875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
     .articles-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
       gap: 2rem;
       margin-bottom: 4rem;
     }
@@ -270,13 +297,13 @@ const ogData = {
     }
     
     .article-card:hover {
-      transform: translateY(-5px);
+      transform: translateY(-8px);
       box-shadow: var(--shadow-xl);
     }
     
     .article-image {
       width: 100%;
-      height: 200px;
+      height: 220px;
       object-fit: cover;
       transition: transform 0.3s ease;
     }
@@ -305,15 +332,13 @@ const ogData = {
       -webkit-line-clamp: 3;
       -webkit-box-orient: vertical;
       overflow: hidden;
+      margin-bottom: 1rem;
     }
     
     .article-meta {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-top: 1rem;
-      padding-top: 1rem;
-      border-top: 1px solid var(--border-color);
       font-size: 0.875rem;
       color: var(--text-muted);
     }
@@ -365,16 +390,16 @@ const ogData = {
     
     .categories-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
       gap: 1.5rem;
     }
     
     .category-card {
       background: var(--bg-secondary);
       padding: 2rem 1.5rem;
-      border-radius: 12px;
+      border-radius: 16px;
       text-align: center;
-      box-shadow: var(--shadow-sm);
+      box-shadow: var(--shadow-md);
       transition: all 0.3s ease;
       border: 1px solid var(--border-color);
       position: relative;
@@ -392,20 +417,21 @@ const ogData = {
     }
     
     .category-card:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-md);
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
     }
     
     .category-card h3 {
       font-size: 1.25rem;
       font-weight: 600;
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.75rem;
       color: var(--text-primary);
     }
     
     .category-card p {
       color: var(--text-secondary);
       font-size: 0.875rem;
+      line-height: 1.5;
     }
     
     .footer {
@@ -446,12 +472,20 @@ const ogData = {
         font-size: 1rem;
       }
       
+      .category-stats {
+        gap: 2rem;
+      }
+      
+      .stat-number {
+        font-size: 1.5rem;
+      }
+      
       .articles-grid {
         grid-template-columns: 1fr;
       }
       
       .categories-grid {
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
         gap: 1rem;
       }
     }
@@ -467,6 +501,11 @@ const ogData = {
       
       .category-card {
         padding: 1.5rem 1rem;
+      }
+      
+      .category-stats {
+        flex-direction: column;
+        gap: 1.5rem;
       }
     }
     
@@ -518,6 +557,17 @@ const ogData = {
         <p class="category-description">
           Latest {category.name.toLowerCase()} news and articles from the gaming world
         </p>
+        
+        <div class="category-stats">
+          <div class="stat-item">
+            <span class="stat-number">{categoryArticles.length}</span>
+            <span class="stat-label">Articles</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number">{categories.length}</span>
+            <span class="stat-label">Categories</span>
+          </div>
+        </div>
       </div>
 
       {categoryArticles.length > 0 ? (
