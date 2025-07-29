@@ -22,19 +22,18 @@ export async function GET(
     }
     
     // Определяем путь к папке dist
-    const getTemplateDirectory = (template: string) => {
+    // Helper function to map template names to directory names
+    function getTemplateDirectory(template: string): string {
       const templateMap: { [key: string]: string } = {
-        'blog': 'astro-pbn-blog',
-        'casino-standard': 'astro-pbn-blog',
-        'casino-premium': 'casino/premium',
-        'gaming-news': 'astro-gaming-news',
-        'poker-platform': 'astro-poker-platform',
-        'slots-review': 'astro-slots-review',
-        'sports-betting': 'astro-sports-betting'
+        'casino-blog': 'casino-blog',
+        'slots-review': 'slots-review',
+        'gaming-news': 'gaming-news',
+        'sports-betting': 'sports-betting',
+        'poker-platform': 'poker-platform',
+        'premium-casino': 'premium-casino'
       }
       
-      const templateDir = templateMap[template] || 'astro-pbn-blog'
-      return path.join(process.cwd(), 'templates', templateDir)
+      return templateMap[template] || 'casino-blog'
     }
     
     const templateDir = getTemplateDirectory(site.template)

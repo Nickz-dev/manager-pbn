@@ -8,17 +8,15 @@ import axios from 'axios'
 // Helper function to map template names to directory names
 function getTemplateDirectory(template: string): string {
   const templateMap: { [key: string]: string } = {
-    'casino-blog': 'astro-casino-blog',
-    'casino-standard': 'astro-casino-blog',
-    'casino-premium': 'casino/premium',
-    'slots-review': 'astro-slots-review',
-    'gaming-news': 'astro-gaming-news',
-    'premium-casino': 'casino/premium',
-    'sports-betting': 'astro-sports-betting',
-    'poker-platform': 'astro-poker-platform'
+    'casino-blog': 'casino-blog',
+    'slots-review': 'slots-review',
+    'gaming-news': 'gaming-news',
+    'sports-betting': 'sports-betting',
+    'poker-platform': 'poker-platform',
+    'premium-casino': 'premium-casino'
   }
   
-  return templateMap[template] || 'astro-casino-blog' // fallback to default
+  return templateMap[template] || 'casino-blog' // fallback to default
 }
 
 // Функция для генерации слага из заголовка

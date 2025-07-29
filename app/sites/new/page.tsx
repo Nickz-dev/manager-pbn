@@ -1,12 +1,13 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { PageHeader } from '@/components/ui/PageHeader'
 
 export default function NewSitePage() {
   const [siteType, setSiteType] = useState<'pbn' | 'brand'>('pbn')
   const [selectedTemplate, setSelectedTemplate] = useState<string>('casino-blog')
+  const [isInitialized, setIsInitialized] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     domain: '',
@@ -22,8 +23,6 @@ export default function NewSitePage() {
   })
 
   const [isLoading, setIsLoading] = useState(false)
-
-  // Восстановленные состояния для статей и категорий
   const [selectedArticles, setSelectedArticles] = useState<string[]>([])
   const [articles, setArticles] = useState<any[]>([])
   const [selectedCategory, setSelectedCategory] = useState<string>('')
@@ -32,38 +31,49 @@ export default function NewSitePage() {
   const [authors, setAuthors] = useState<any[]>([])
   const [selectedSite, setSelectedSite] = useState<string>('')
   const [pbnSites, setPbnSites] = useState<any[]>([])
-  
-  // Состояния для доменов и VPS серверов (временно отключены)
-  // TODO: Включить обратно после исправления сборки и превью
-  const [domains, setDomains] = useState<any[]>([])
-  const [vpsServers, setVpsServers] = useState<any[]>([])
 
-  // Загрузка данных
+  const updateFormData = useCallback((field: string, value: any) => {
+    setFormData(prev => {
+      if (prev[field as keyof typeof prev] === value) {
+        return prev
+      }
+      return { ...prev, [field]: value }
+    })
+  }, [])
+
+  // Определяем тип сайта на основе выбранного шаблона
+  const getSiteTypeFromTemplate = useCallback((template: string) => {
+    // Все шаблоны являются PBN сайтами
+    return 'pbn'
+  }, [])
+
+  // Маппинг шаблонов для соответствия enum в Strapi
+  const mapTemplateToStrapi = useCallback((template: string) => {
+    const templateMap: { [key: string]: string } = {
+      'casino-blog': 'casino-blog',
+      'slots-review': 'slots-review', 
+      'gaming-news': 'gaming-news',
+      'sports-betting': 'sports-betting',
+      'poker-platform': 'poker-platform',
+      'premium-casino': 'premium-casino'
+    }
+    console.log('🔧 Mapping template:', template, '->', templateMap[template] || 'blog')
+    return templateMap[template] || 'blog'
+  }, [])
+
+  // Инициализация при первом рендере
   useEffect(() => {
-    // Временно отключаем загрузку доменов и VPS для ручного заполнения
-    // TODO: Включить обратно после исправления сборки и превью
-    /*
-    fetch('/api/infrastructure/domains')
-      .then(res => res.json())
-      .then(data => {
-        if (data && Array.isArray(data.domains)) {
-          setDomains(data.domains)
-        }
-      })
-      .catch(() => setDomains([]))
-    
-    fetch('/api/infrastructure/vps')
-      .then(res => res.json())
-      .then(data => {
-        if (data && Array.isArray(data.vpsServers)) {
-          setVpsServers(data.vpsServers)
-        }
-      })
-      .catch(() => setVpsServers([]))
-    */
-    
+    if (!isInitialized) {
+      const initialTemplate = 'casino-blog'
+      setSelectedTemplate(initialTemplate)
+      updateFormData('template', initialTemplate)
+      setIsInitialized(true)
+    }
+  }, [isInitialized, updateFormData])
+
+  // Загрузка данных только при изменении типа сайта
+  useEffect(() => {
     if (siteType === 'pbn') {
-      // Всегда загружаем статьи, фильтрация происходит в компоненте
       fetch('/api/content/articles')
         .then(res => res.json())
         .then(data => {
@@ -81,6 +91,7 @@ export default function NewSitePage() {
           }
         })
         .catch(() => setCategories([]))
+      
       fetch('/api/content/authors')
         .then(res => res.json())
         .then(data => {
@@ -89,6 +100,7 @@ export default function NewSitePage() {
           }
         })
         .catch(() => setAuthors([]))
+      
       fetch('/api/sites')
         .then(res => res.json())
         .then(data => {
@@ -105,104 +117,63 @@ export default function NewSitePage() {
     }
   }, [siteType])
 
-  // Синхронизация шаблона при изменении типа сайта
+  // Обновляем тип сайта при изменении шаблона (только после инициализации)
   useEffect(() => {
-    console.log('🔄 Site type changed to:', siteType)
-    if (siteType === 'pbn') {
-      const defaultTemplate = 'casino-blog'
-      console.log('🔄 Setting PBN template to:', defaultTemplate)
-      setSelectedTemplate(defaultTemplate)
-      updateFormData('template', defaultTemplate)
-    } else {
-      const defaultTemplate = 'premium-casino'
-      console.log('🔄 Setting BRAND template to:', defaultTemplate)
-      setSelectedTemplate(defaultTemplate)
-      updateFormData('template', defaultTemplate)
-    }
-  }, [siteType])
-
-  // Определяем тип сайта на основе выбранного шаблона
-  const getSiteTypeFromTemplate = (template: string) => {
-    // Принудительно задаем BRAND только для astro-casino-blog, остальные - PBN
-    if (template === 'astro-casino-blog') {
-      return 'brand'
-    } else {
-      return 'pbn' // Все остальные шаблоны - PBN
-    }
-  }
-
-  // Обновляем тип сайта при изменении шаблона
-  useEffect(() => {
-    if (formData.template) {
+    if (isInitialized && formData.template && formData.template !== selectedTemplate) {
       const newSiteType = getSiteTypeFromTemplate(formData.template)
-      console.log('🔄 Template changed to:', formData.template, 'Site type determined:', newSiteType)
       if (newSiteType !== siteType) {
-        console.log('🔄 Updating site type from', siteType, 'to', newSiteType)
         setSiteType(newSiteType)
       }
     }
-  }, [formData.template])
+  }, [formData.template, isInitialized, selectedTemplate, siteType, getSiteTypeFromTemplate])
 
   // Обновляем selectedTemplate при изменении formData.template
   useEffect(() => {
-    console.log('🔄 FormData template changed to:', formData.template)
-    setSelectedTemplate(formData.template)
-  }, [formData.template])
+    if (isInitialized && formData.template !== selectedTemplate) {
+      setSelectedTemplate(formData.template)
+    }
+  }, [formData.template, selectedTemplate, isInitialized])
 
-  // Добавляем эффект для логирования изменений
-  useEffect(() => {
-    console.log('🔄 Current state:', {
-      siteType,
-      selectedTemplate,
-      formDataTemplate: formData.template
-    })
-  }, [siteType, selectedTemplate, formData.template])
-
-  // Фильтрация статей по категории, автору и сайту
-  const filteredArticles = articles.filter(article => {
-    // Фильтр по категории
-    if (selectedCategory && selectedCategory !== '') {
-      const hasCategory = Array.isArray(article.content_categories) &&
-        article.content_categories.some((cat: any) => String(cat.documentId) === String(selectedCategory));
-      if (!hasCategory) return false;
-    }
-    
-    // Фильтр по автору
-    if (selectedAuthor && selectedAuthor !== '') {
-      const articleAuthorId = article.content_author?.documentId || article.content_author?.id;
-      if (String(articleAuthorId) !== String(selectedAuthor)) return false;
-    }
-    
-    // Фильтр по сайту
-    if (selectedSite && selectedSite !== '') {
-      // Если выбран сайт, показываем статьи, привязанные к этому сайту
-      const articleSiteId = article.pbn_site?.documentId || article.pbn_site?.id;
-      if (String(articleSiteId) !== String(selectedSite)) return false;
-    }
-    // Если сайт не выбран, показываем все статьи (и с привязкой, и без)
-    
-    return true;
-  });
+  // Мемоизированная фильтрация статей
+  const filteredArticles = useMemo(() => {
+    return articles.filter(article => {
+      if (selectedCategory && selectedCategory !== '') {
+        const hasCategory = Array.isArray(article.content_categories) &&
+          article.content_categories.some((cat: any) => String(cat.documentId) === String(selectedCategory));
+        if (!hasCategory) return false;
+      }
+      
+      if (selectedAuthor && selectedAuthor !== '') {
+        const articleAuthorId = article.content_author?.documentId || article.content_author?.id;
+        if (String(articleAuthorId) !== String(selectedAuthor)) return false;
+      }
+      
+      if (selectedSite && selectedSite !== '') {
+        const articleSiteId = article.pbn_site?.documentId || article.pbn_site?.id;
+        if (String(articleSiteId) !== String(selectedSite)) return false;
+      }
+      
+      return true;
+    });
+  }, [articles, selectedCategory, selectedAuthor, selectedSite]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     
     try {
-      // Определяем тип сайта на основе выбранного шаблона
       const determinedSiteType = getSiteTypeFromTemplate(formData.template)
       
-      // Map form data to API format
-      const siteData = {
-        type: determinedSiteType, // Используем только базовый тип (pbn/brand)
-        template: formData.template,
-        domain: formData.domain,
-        siteName: formData.name || formData.title,
-        description: formData.description,
-        keywords: formData.keywords.split(',').map(k => k.trim()).filter(k => k),
-        theme: 'light',
-        // Добавляем выбранные статьи
-        selectedArticles: selectedArticles,
+             const siteData = {
+         type: determinedSiteType,
+         template: mapTemplateToStrapi(formData.template),
+         domain: formData.domain,
+         siteName: formData.name || formData.title,
+         description: formData.description,
+         language: formData.language,
+         keywords: formData.keywords.split(',').map(k => k.trim()).filter(k => k),
+         theme: 'light',
+         selectedArticles: selectedArticles,
         content: {
           featured: [],
           recent: [],
@@ -228,15 +199,6 @@ export default function NewSitePage() {
         }
       }
 
-      console.log('🚀 Creating site with data:', {
-        originalSiteType: siteType,
-        determinedSiteType,
-        template: formData.template,
-        selectedTemplate,
-        type: siteData.type,
-        fullSiteData: siteData
-      })
-
       const response = await fetch('/api/sites', {
         method: 'POST',
         headers: {
@@ -249,15 +211,6 @@ export default function NewSitePage() {
 
       if (response.ok) {
         const siteId = result.site.id
-        
-        console.log('✅ Site created successfully:', {
-          siteId,
-          determinedSiteType,
-          template: formData.template,
-          type: siteData.type
-        })
-        
-        // Перенаправляем на промежуточную страницу для предварительного просмотра и сборки
         window.location.href = `/sites/generate?siteId=${siteId}`
       } else {
         throw new Error(result.error || 'Ошибка создания сайта')
@@ -270,13 +223,8 @@ export default function NewSitePage() {
     }
   }
 
-  const updateFormData = (field: string, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Navigation */}
       <nav className="bg-white/90 backdrop-blur-md shadow-sm border-b border-white/20 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
@@ -298,7 +246,6 @@ export default function NewSitePage() {
         </div>
       </nav>
 
-      {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <PageHeader
           title="Создание нового сайта"
@@ -315,10 +262,9 @@ export default function NewSitePage() {
           }
         />
 
-        <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Site Type Selection */}
-          <div className="card">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6">Тип сайта</h3>
+                 <form onSubmit={handleSubmit} className="space-y-8">
+           <div className="card">
+             <h3 className="text-lg font-semibold text-gray-900 mb-6">Тип сайта</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div 
                 className={`border-2 rounded-xl p-6 cursor-pointer transition-all duration-200 ${
@@ -388,78 +334,74 @@ export default function NewSitePage() {
                   • Платежные системы<br/>
                   • Ручная модерация контента
                 </div>
-              </div>
-            </div>
-          </div>
+                             </div>
+             </div>
+           </div>
 
-          {/* Basic Information */}
-          <div className="card">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6">Основная информация</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Название сайта
-                </label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Например: Casino Blog"
-                  value={formData.name}
-                  onChange={(e) => updateFormData('name', e.target.value)}
-                />
-              </div>
+           {/* Основная информация */}
+           <div className="card">
+             <h3 className="text-lg font-semibold text-gray-900 mb-6">Основная информация</h3>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 mb-2">
+                   Название сайта
+                 </label>
+                 <input
+                   type="text"
+                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                   placeholder="Например: Casino Blog"
+                   value={formData.name}
+                   onChange={(e) => updateFormData('name', e.target.value)}
+                 />
+               </div>
+               
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 mb-2">
+                   Домен
+                 </label>
+                 <input
+                   type="text"
+                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                   placeholder="Например: example.com"
+                   value={formData.domain}
+                   onChange={(e) => updateFormData('domain', e.target.value)}
+                 />
+                 <p className="text-xs text-gray-500 mt-1">Введите домен вручную (пока CRUD не готов)</p>
+               </div>
+               
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 mb-2">
+                   VPS Сервер
+                 </label>
+                 <input
+                   type="text"
+                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                   placeholder="Например: VPS-01 или IP адрес"
+                   value={formData.vps}
+                   onChange={(e) => updateFormData('vps', e.target.value)}
+                 />
+                 <p className="text-xs text-gray-500 mt-1">Введите VPS сервер вручную (пока CRUD не готов)</p>
+               </div>
+               
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 mb-2">
+                   Язык
+                 </label>
+                 <select
+                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                   value={formData.language}
+                   onChange={(e) => updateFormData('language', e.target.value)}
+                 >
+                   <option value="ru">Русский</option>
+                   <option value="en">English</option>
+                   <option value="es">Español</option>
+                   <option value="de">Deutsch</option>
+                 </select>
+               </div>
+             </div>
+           </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Домен
-                </label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Например: example.com"
-                  value={formData.domain}
-                  onChange={(e) => updateFormData('domain', e.target.value)}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Введите домен вручную (пока CRUD не готов)
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  VPS Сервер
-                </label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Например: VPS-01 или IP адрес"
-                  value={formData.vps}
-                  onChange={(e) => updateFormData('vps', e.target.value)}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Введите VPS сервер вручную (пока CRUD не готов)
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Язык
-                </label>
-                <select 
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  value={formData.language}
-                  onChange={(e) => updateFormData('language', e.target.value)}
-                >
-                  <option value="ru">Русский</option>
-                  <option value="en">English</option>
-                  <option value="de">Deutsch</option>
-                  <option value="es">Español</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Template & Theme */}
+           {/* Template & Theme */}
           <div className="card">
             <h3 className="text-lg font-semibold text-gray-900 mb-6">
               {siteType === 'pbn' ? 'Шаблон Astro' : 'Тема Next.js'}
@@ -634,21 +576,21 @@ export default function NewSitePage() {
                   </select>
                 </div>
                 
-                                 <div>
-                   <label className="block text-sm font-medium text-gray-700 mb-2">Фильтр по сайту</label>
-                   <select
-                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                     value={selectedSite}
-                     onChange={e => setSelectedSite(e.target.value)}
-                   >
-                     <option value="">Все сайты</option>
-                     {pbnSites.map((site: any) => (
-                       <option key={site.documentId || site.id} value={site.documentId || site.id}>
-                         {site.name}
-                       </option>
-                     ))}
-                   </select>
-                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Фильтр по сайту</label>
+                  <select
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={selectedSite}
+                    onChange={e => setSelectedSite(e.target.value)}
+                  >
+                    <option value="">Все сайты</option>
+                    {pbnSites.map((site: any) => (
+                      <option key={site.documentId || site.id} value={site.documentId || site.id}>
+                        {site.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
               
               {/* Счетчик выбранных статей */}
@@ -661,64 +603,64 @@ export default function NewSitePage() {
                 </span>
               </div>
               
-                             {/* Список статей */}
-               <div className="max-h-64 overflow-y-auto border rounded-lg p-2 bg-white">
-                 {filteredArticles.length === 0 ? (
-                   <div className="text-gray-500 text-sm text-center py-4">Нет доступных статей для выбора</div>
-                 ) : (
-                   <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                     {filteredArticles.map(article => (
-                       <li key={article.id} className="flex items-start py-3 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 rounded-lg px-2">
-                         <input
-                           type="checkbox"
-                           className="mt-1 mr-3"
-                           checked={selectedArticles.includes(article.id)}
-                           onChange={e => {
-                             if (e.target.checked) {
-                               setSelectedArticles(prev => [...prev, article.id])
-                             } else {
-                               setSelectedArticles(prev => prev.filter(id => id !== article.id))
-                             }
-                           }}
-                         />
-                         <div className="flex-1">
-                           <div className="font-medium text-gray-900 text-sm">{article.title}</div>
-                           <div className="text-xs text-gray-500 mt-1">
-                             {Array.isArray(article.content_categories) && article.content_categories.length > 0 && (
-                               <span className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded mr-2">
-                                 {article.content_categories.map((cat: any) => cat.name).join(', ')}
-                               </span>
-                             )}
-                             {article.content_author && (
-                               <span className="inline-block bg-green-100 text-green-800 px-2 py-1 rounded mr-2">
-                                 {article.content_author.name}
-                               </span>
-                             )}
-                                                           {article.statusarticles && (
-                                <span className={`inline-block px-2 py-1 rounded ${
-                                  article.statusarticles === 'published' ? 'bg-green-100 text-green-800' :
-                                  article.statusarticles === 'ai' ? 'bg-purple-100 text-purple-800' :
-                                  article.statusarticles === 'draft' ? 'bg-yellow-100 text-yellow-800' :
-                                  'bg-gray-100 text-gray-800'
-                                }`}>
-                                  {article.statusarticles === 'published' ? 'Опубликовано' :
-                                   article.statusarticles === 'ai' ? 'AI Генерация' :
-                                   article.statusarticles === 'draft' ? 'Черновик' :
-                                   article.statusarticles}
-                                </span>
-                              )}
-                              {article.pbn_site && (
-                                <span className="inline-block bg-orange-100 text-orange-800 px-2 py-1 rounded mr-2">
-                                  {article.pbn_site.name}
-                                </span>
-                              )}
-                           </div>
-                         </div>
-                       </li>
-                     ))}
-                   </ul>
-                 )}
-               </div>
+              {/* Список статей */}
+              <div className="max-h-64 overflow-y-auto border rounded-lg p-2 bg-white">
+                {filteredArticles.length === 0 ? (
+                  <div className="text-gray-500 text-sm text-center py-4">Нет доступных статей для выбора</div>
+                ) : (
+                  <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {filteredArticles.map(article => (
+                      <li key={article.id} className="flex items-start py-3 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 rounded-lg px-2">
+                        <input
+                          type="checkbox"
+                          className="mt-1 mr-3"
+                          checked={selectedArticles.includes(article.id)}
+                          onChange={e => {
+                            if (e.target.checked) {
+                              setSelectedArticles(prev => [...prev, article.id])
+                            } else {
+                              setSelectedArticles(prev => prev.filter(id => id !== article.id))
+                            }
+                          }}
+                        />
+                        <div className="flex-1">
+                          <div className="font-medium text-gray-900 text-sm">{article.title}</div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            {Array.isArray(article.content_categories) && article.content_categories.length > 0 && (
+                              <span className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded mr-2">
+                                {article.content_categories.map((cat: any) => cat.name).join(', ')}
+                              </span>
+                            )}
+                            {article.content_author && (
+                              <span className="inline-block bg-green-100 text-green-800 px-2 py-1 rounded mr-2">
+                                {article.content_author.name}
+                              </span>
+                            )}
+                            {article.statusarticles && (
+                              <span className={`inline-block px-2 py-1 rounded ${
+                                article.statusarticles === 'published' ? 'bg-green-100 text-green-800' :
+                                article.statusarticles === 'ai' ? 'bg-purple-100 text-purple-800' :
+                                article.statusarticles === 'draft' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {article.statusarticles === 'published' ? 'Опубликовано' :
+                                 article.statusarticles === 'ai' ? 'AI Генерация' :
+                                 article.statusarticles === 'draft' ? 'Черновик' :
+                                 article.statusarticles}
+                              </span>
+                            )}
+                            {article.pbn_site && (
+                              <span className="inline-block bg-orange-100 text-orange-800 px-2 py-1 rounded mr-2">
+                                {article.pbn_site.name}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
               
               {/* Кнопки управления выбором */}
               {filteredArticles.length > 0 && (
@@ -848,7 +790,6 @@ export default function NewSitePage() {
             </div>
           )}
 
-           {/* Submit Buttons */}
           <div className="flex space-x-4">
             <button
               type="submit"
@@ -876,11 +817,3 @@ export default function NewSitePage() {
     </div>
   )
 }
-
-/*
-TODO: После исправления сборки и превью на VPS:
-1. Раскомментировать загрузку доменов и VPS серверов в useEffect
-2. Заменить текстовые поля обратно на select с данными из API
-3. Убрать комментарии о ручном вводе
-4. Протестировать создание сайтов с реальными данными
-*/ 

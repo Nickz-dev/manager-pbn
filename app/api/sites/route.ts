@@ -24,9 +24,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     
     // Валидация входных данных
-    if (!body.domain || !body.siteName || !body.type) {
+    if (!body.domain || !body.siteName) {
       return NextResponse.json(
-        { error: 'Missing required fields: domain, siteName, type' },
+        { error: 'Missing required fields: domain, siteName' },
         { status: 400 }
       )
     }
@@ -37,22 +37,11 @@ export async function POST(request: NextRequest) {
       slug: body.domain.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase(),
       domain: body.domain,
       template: body.template,
-      type: 'blog', // Используем стандартное значение enum
       statuspbn: 'draft',
       description: body.description || '',
-      selectedArticles: Array.isArray(body.selectedArticles) ? body.selectedArticles : []
-      // config: {
-      //   keywords: Array.isArray(body.keywords) ? body.keywords : [],
-      //   theme: body.theme || 'light',
-      //   content: body.content || {},
-      //   settings: body.settings || {}
-      // }
+      selectedArticles: Array.isArray(body.selectedArticles) ? body.selectedArticles : [],
+      language: body.language || 'ru'
     }
-
-    console.log('Creating site with data:', JSON.stringify(siteData, null, 2))
-    console.log('Template from request:', body.template)
-    console.log('Type from request:', body.type)
-    console.log('Site type (pbn/brand):', body.type)
 
     const createdSite = await strapiAPI.createPbnSite(siteData)
 
@@ -65,14 +54,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('Error creating site:', error)
     
-    // Добавляем подробное логирование ошибки Strapi
-    if (error.response) {
-      console.error('Strapi response error:', {
-        status: error.response.status,
-        statusText: error.response.statusText,
-        data: error.response.data
-      })
-    }
+
     
     return NextResponse.json(
       { 

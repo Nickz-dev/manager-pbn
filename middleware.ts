@@ -8,6 +8,8 @@ export function middleware(request: NextRequest) {
     '/api/auth/login', 
     '/api/auth/check-token', 
     '/api/content', 
+    '/api/sites/preview', // Добавляем превью API
+    '/sites/preview', // Добавляем страницу превью
     '/_next', 
     '/favicon.ico'
   ]

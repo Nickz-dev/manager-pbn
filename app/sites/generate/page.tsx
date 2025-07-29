@@ -92,18 +92,15 @@ export default function GenerateSitePage() {
         startTimeUpdate()
       }
     } catch (error) {
-      console.error('Error checking preview status:', error)
+      // Silent error handling
     }
   }
 
   const loadSitePreview = async () => {
     try {
-      console.log('Loading site preview for ID:', siteId)
       const response = await fetch(`/api/sites/${siteId}`)
-      console.log('Response status:', response.status)
       if (response.ok) {
         const data = await response.json()
-        console.log('Site data received:', data)
         setSitePreview(data.site)
         
         // Извлекаем уникальные категории из выбранных статей
@@ -259,12 +256,6 @@ export default function GenerateSitePage() {
     if (!siteId || !sitePreview?.template) return
     
     try {
-      console.log('🎯 Starting preview for site:', {
-        siteId,
-        siteName: sitePreview.name,
-        template: sitePreview.template
-      })
-      
       setPreviewStatus(prev => ({ ...prev, loading: true }))
       
       const response = await fetch(`/api/sites/${siteId}/preview`, {
@@ -276,7 +267,6 @@ export default function GenerateSitePage() {
       })
 
       const data = await response.json()
-      console.log('🎯 Preview response:', data)
 
       if (data.success) {
         setPreviewStatus({
@@ -286,7 +276,6 @@ export default function GenerateSitePage() {
           loading: false
         })
         
-        console.log('🎯 Opening preview URL:', data.url)
         // Открываем сайт в новой вкладке
         window.open(data.url, '_blank')
         
@@ -297,7 +286,6 @@ export default function GenerateSitePage() {
         setPreviewStatus(prev => ({ ...prev, loading: false }))
       }
     } catch (error) {
-      console.error('Error starting preview:', error)
       alert('Ошибка запуска preview')
       setPreviewStatus(prev => ({ ...prev, loading: false }))
     }
@@ -351,10 +339,9 @@ export default function GenerateSitePage() {
           })
           clearInterval(interval)
         }
-      } catch (error) {
-        console.error('Error updating preview time:', error)
-        clearInterval(interval)
-      }
+          } catch (error) {
+      clearInterval(interval)
+    }
     }, 1000) // Обновляем каждую секунду
 
     // Очищаем интервал через 2 минуты (максимальное время работы)

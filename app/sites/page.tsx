@@ -33,13 +33,10 @@ export default function SitesPage() {
   })
   const [actionLoading, setActionLoading] = useState(false)
 
-  useEffect(() => {
-    fetchSites()
-  }, [])
-
   const fetchSites = async () => {
     try {
       setLoading(true)
+      setError(null)
       const response = await fetch('/api/sites')
       const data = await response.json()
       
@@ -50,22 +47,18 @@ export default function SitesPage() {
       }
     } catch (err) {
       setError('Error loading sites')
-      console.error('Error fetching sites:', err)
     } finally {
       setLoading(false)
     }
   }
 
+  useEffect(() => {
+    fetchSites()
+  }, [])
+
   const handleEdit = (site: Site) => {
-    console.log('🔧 Editing site:', site)
     setSelectedSite(site)
     setEditForm({
-      name: site.name,
-      domain: site.domain,
-      template: site.template,
-      statuspbn: site.statuspbn
-    })
-    console.log('🔧 Set edit form:', {
       name: site.name,
       domain: site.domain,
       template: site.template,
@@ -85,9 +78,6 @@ export default function SitesPage() {
     try {
       setActionLoading(true)
       
-      console.log('🔧 Updating site:', selectedSite.documentId)
-      console.log('🔧 Edit form data:', editForm)
-      
       const response = await fetch(`/api/sites/${selectedSite.documentId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -96,18 +86,15 @@ export default function SitesPage() {
       
       const data = await response.json()
       
-      console.log('🔧 Update response:', data)
-      
       if (data.success) {
         setShowEditModal(false)
         setSelectedSite(null)
-        await fetchSites() // Обновляем список
+        await fetchSites()
         alert('Сайт успешно обновлен!')
       } else {
         alert('Ошибка при обновлении сайта: ' + data.error)
       }
     } catch (err) {
-      console.error('Error updating site:', err)
       alert('Ошибка при обновлении сайта')
     } finally {
       setActionLoading(false)
@@ -128,13 +115,12 @@ export default function SitesPage() {
       if (data.success) {
         setShowDeleteModal(false)
         setSelectedSite(null)
-        fetchSites() // Обновляем список
+        fetchSites()
         alert('Сайт успешно удален!')
       } else {
         alert('Ошибка при удалении сайта: ' + data.error)
       }
     } catch (err) {
-      console.error('Error deleting site:', err)
       alert('Ошибка при удалении сайта')
     } finally {
       setActionLoading(false)
@@ -145,7 +131,6 @@ export default function SitesPage() {
     try {
       setActionLoading(true)
       
-      // Создаем временную ссылку для скачивания
       const link = document.createElement('a')
       link.href = `/api/sites/${site.documentId}/download`
       link.download = `${site.name}-${site.documentId}.zip`
@@ -155,7 +140,6 @@ export default function SitesPage() {
       
       alert('Начинается скачивание ZIP файла...')
     } catch (err) {
-      console.error('Error downloading dist:', err)
       alert('Ошибка при скачивании файла')
     } finally {
       setActionLoading(false)
@@ -165,11 +149,8 @@ export default function SitesPage() {
   const handleRebuild = async (site: Site) => {
     try {
       setActionLoading(true)
-      
-      // Перенаправляем на страницу генерации с предустановленным ID сайта
       window.location.href = `/sites/generate?siteId=${site.documentId}`
     } catch (err) {
-      console.error('Error redirecting to rebuild:', err)
       alert('Ошибка при переходе к пересборке')
     } finally {
       setActionLoading(false)
@@ -259,7 +240,7 @@ export default function SitesPage() {
           />
           <StatsCard
             title="PBN сайты"
-            value={sites.filter(s => s.template !== 'astro-casino-blog').length}
+            value={sites.filter(s => s.template !== 'casino-blog').length}
             icon={
               <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center">
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -346,12 +327,12 @@ export default function SitesPage() {
                         <div className="flex items-center">
                           <div className="flex-shrink-0 w-10 h-10">
                             <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                              site.template === 'astro-casino-blog'
+                              site.template === 'casino-blog'
                                 ? 'bg-gradient-to-r from-emerald-500 to-teal-600' 
                                 : 'bg-gradient-to-r from-purple-500 to-pink-600'
                             }`}>
                               <span className="text-white font-semibold text-sm">
-                                {site.template === 'astro-casino-blog' ? 'B' : 'P'}
+                                {site.template === 'casino-blog' ? 'B' : 'P'}
                               </span>
                             </div>
                           </div>
@@ -363,11 +344,11 @@ export default function SitesPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          site.template === 'astro-casino-blog'
+                          site.template === 'casino-blog'
                             ? 'bg-emerald-100 text-emerald-800' 
                             : 'bg-purple-100 text-purple-800'
                         }`}>
-                          {site.template === 'astro-casino-blog' ? 'Brand' : 'PBN'}
+                          {site.template === 'casino-blog' ? 'Brand' : 'PBN'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

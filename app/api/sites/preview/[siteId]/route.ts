@@ -1,22 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { promises as fs } from 'fs'
 import path from 'path'
+import { strapiAPI } from '@/lib/strapi-client'
 
 // Helper function to map template names to directory names
 function getTemplateDirectory(template: string): string {
   const templateMap: { [key: string]: string } = {
-    'casino-blog': 'astro-casino-blog',
-    'casino-standard': 'astro-casino-blog',
-    'casino-premium': 'casino/premium',
-    'slots-review': 'astro-slots-review',
-    'gaming-news': 'astro-gaming-news',
-    'premium-casino': 'casino/premium',
-    'sports-betting': 'astro-sports-betting',
-    'poker-platform': 'astro-poker-platform',
-    'pbn-blog': 'astro-pbn-blog'
+    'casino-blog': 'casino-blog',
+    'slots-review': 'slots-review',
+    'gaming-news': 'gaming-news',
+    'sports-betting': 'sports-betting',
+    'poker-platform': 'poker-platform',
+    'premium-casino': 'casino/premium'
   }
   
-  return templateMap[template] || 'astro-casino-blog'
+  return templateMap[template] || 'casino-blog'
 }
 
 export async function GET(
@@ -37,23 +35,55 @@ export async function GET(
 
     console.log(`🔍 Preview request for site ${siteId}, path: ${pathname}`)
 
-    // Пробуем найти собранные файлы в разных шаблонах
-    const possibleTemplates = ['astro-casino-blog', 'astro-slots-review', 'astro-gaming-news', 'astro-sports-betting', 'astro-poker-platform']
+    // Получаем данные сайта из Strapi для определения правильного template
+    let site = null
     let templateDir = null
     let distPath = null
 
-    for (const template of possibleTemplates) {
-      const testPath = path.join(process.cwd(), 'templates', template, 'dist')
-      try {
-        await fs.access(testPath)
-        const files = await fs.readdir(testPath)
-        if (files.length > 0) {
-          templateDir = template
-          distPath = testPath
-          break
+    try {
+      site = await strapiAPI.getPbnSiteById(siteId)
+      console.log(`📋 Site data: ${site?.name}, template: ${site?.template}`)
+      
+      if (site?.template) {
+        const mappedTemplate = getTemplateDirectory(site.template)
+        const testPath = path.join(process.cwd(), 'templates', mappedTemplate, 'dist')
+        console.log(`🔍 Checking mapped template: ${mappedTemplate} at ${testPath}`)
+        
+        try {
+          await fs.access(testPath)
+          const files = await fs.readdir(testPath)
+          if (files.length > 0) {
+            templateDir = mappedTemplate
+            distPath = testPath
+            console.log(`✅ Using site template: ${site.template} -> ${mappedTemplate}`)
+          }
+        } catch (error) {
+          console.warn(`⚠️ Template ${mappedTemplate} not found, trying fallback`)
         }
-      } catch {
-        continue
+      }
+    } catch (error) {
+      console.warn(`⚠️ Could not get site data for ${siteId}:`, error)
+    }
+
+    // Если не нашли по данным сайта, пробуем найти любой доступный template
+    if (!templateDir || !distPath) {
+      console.log(`🔍 Searching for available templates...`)
+      const possibleTemplates = ['casino-blog', 'slots-review', 'gaming-news', 'sports-betting', 'poker-platform', 'premium-casino']
+      
+      for (const template of possibleTemplates) {
+        const testPath = path.join(process.cwd(), 'templates', template, 'dist')
+        try {
+          await fs.access(testPath)
+          const files = await fs.readdir(testPath)
+          if (files.length > 0) {
+            templateDir = template
+            distPath = testPath
+            console.log(`✅ Found available template: ${template}`)
+            break
+          }
+        } catch {
+          continue
+        }
       }
     }
 
@@ -137,6 +167,8 @@ export async function GET(
           contentType = 'application/vnd.ms-fontobject'
           break
       }
+      
+      console.log(`✅ Serving file: ${filePath} with content-type: ${contentType}`)
       
       return new NextResponse(fileContent, {
         status: 200,

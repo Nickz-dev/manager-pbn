@@ -260,7 +260,9 @@ export const strapiAPI = {
   },
 
   async createPbnSite(data: any) {
+    console.log('🔧 Creating PBN site with data:', JSON.stringify(data, null, 2))
     const res = await strapi.post('/pbn-sites', { data })
+    console.log('✅ Created site:', res.data.data.id)
     return { id: res.data.data.id, ...res.data.data.attributes }
   },
 
