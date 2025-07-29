@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Gaming News</title>
+    <description>Latest gaming industry news and updates</description>
+    <link>https://gaming-news.com</link>
+    <atom:link href="https://gaming-news.com/rss.xml" rel="self" type="application/rss+xml" />
+    <language>en</language>
+    <lastBuildDate>Tue, 29 Jul 2025 13:31:44 GMT</lastBuildDate>
+    
+    <item>
+      <title><![CDATA[New Gaming Console Announced]]></title>
+      <description><![CDATA[Major gaming company reveals next-generation console with revolutionary features]]></description>
+      <link>https://gaming-news.com/articles/new-gaming-console-announced</link>
+      <guid>https://gaming-news.com/articles/new-gaming-console-announced</guid>
+      <pubDate>Mon, 15 Jan 2024 10:00:00 GMT</pubDate>
+      <author>Gaming Reporter</author>
+      <enclosure url="/images/gaming-console.jpg" type="image/jpeg" />
+    </item>
+    <item>
+      <title><![CDATA[Esports Tournament Results]]></title>
+      <description><![CDATA[Championship finals bring unexpected victories and record-breaking viewership]]></description>
+      <link>https://gaming-news.com/articles/esports-tournament-results</link>
+      <guid>https://gaming-news.com/articles/esports-tournament-results</guid>
+      <pubDate>Sun, 14 Jan 2024 10:00:00 GMT</pubDate>
+      <author>Esports Analyst</author>
+      <enclosure url="/images/esports.jpg" type="image/jpeg" />
+    </item>
+    <item>
+      <title><![CDATA[Mobile Gaming Revolution]]></title>
+      <description><![CDATA[Mobile games continue to dominate the market with innovative gameplay]]></description>
+      <link>https://gaming-news.com/articles/mobile-gaming-revolution</link>
+      <guid>https://gaming-news.com/articles/mobile-gaming-revolution</guid>
+      <pubDate>Sat, 13 Jan 2024 10:00:00 GMT</pubDate>
+      <author>Mobile Gaming Expert</author>
+      <enclosure url="/images/mobile-gaming.jpg" type="image/jpeg" />
+    </item>
+  </channel>
+</rss>

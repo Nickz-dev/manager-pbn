@@ -606,10 +606,12 @@ const ogData = {
           <h2 class="section-title">Popular Categories</h2>
           <div class="categories-grid">
             {popularCategories.map(category => (
-              <div class="category-card">
-                <h3>{category.name}</h3>
-                <p>Latest news in {category.name.toLowerCase()}</p>
-              </div>
+              <a href={`/categories/${category.slug}`} style="text-decoration: none; color: inherit;">
+                <div class="category-card">
+                  <h3>{category.name}</h3>
+                  <p>Latest news in {category.name.toLowerCase()}</p>
+                </div>
+              </a>
             ))}
           </div>
         </div>

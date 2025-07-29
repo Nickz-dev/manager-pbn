@@ -454,13 +454,12 @@ export default function SitesPage() {
               onChange={(e) => setEditForm({ ...editForm, template: e.target.value })}
               className="input-field w-full"
             >
-              <option value="blog">Blog</option>
-              <option value="casino-standard">Casino Standard</option>
-              <option value="casino-premium">Casino Premium</option>
-              <option value="gaming-news">Gaming News</option>
-              <option value="poker-platform">Poker Platform</option>
+              <option value="casino-blog">Casino Blog</option>
               <option value="slots-review">Slots Review</option>
+              <option value="gaming-news">Gaming News</option>
               <option value="sports-betting">Sports Betting</option>
+              <option value="poker-platform">Poker Platform</option>
+              <option value="premium-casino">Premium Casino</option>
             </select>
           </div>
           

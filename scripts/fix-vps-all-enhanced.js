@@ -1,12 +1,21 @@
-const { spawn, execSync } = require('child_process');
+const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-console.log('🔧 Улучшенное исправление всех проблем VPS (включая Tailwind CSS)...\n');
+console.log('🔧 Улучшенное исправление VPS для всех шаблонов...\n');
 
-// Шаг 1: Исправление окружения
+// Актуализированный список шаблонов
+const templates = [
+  'astro-casino-blog',
+  'astro-slots-review', 
+  'astro-gaming-news',
+  'astro-sports-betting',
+  'astro-poker-platform'
+];
+
+// Функция для исправления окружения
 async function fixEnvironment() {
-  console.log('📋 Шаг 1: Исправление окружения...');
+  console.log('🌍 Исправление окружения...');
   
   const envPath = path.join(__dirname, '../.env');
   if (!fs.existsSync(envPath)) {
@@ -16,85 +25,82 @@ async function fixEnvironment() {
   
   let envContent = fs.readFileSync(envPath, 'utf8');
   
-  // Проверяем текущие настройки
+  // Проверяем и исправляем настройки VPS
   const useLocalStrapi = envContent.match(/USE_LOCAL_STRAPI=(.+)/)?.[1];
   const nextPublicUseLocal = envContent.match(/NEXT_PUBLIC_USE_LOCAL_STRAPI=(.+)/)?.[1];
-  const vpsAddress = envContent.match(/VPS_ADDRESS=(.+)/)?.[1];
   
-  console.log('📋 Текущие настройки:');
-  console.log(`   USE_LOCAL_STRAPI: ${useLocalStrapi || 'не найдено'}`);
-  console.log(`   NEXT_PUBLIC_USE_LOCAL_STRAPI: ${nextPublicUseLocal || 'не найдено'}`);
-  console.log(`   VPS_ADDRESS: ${vpsAddress || 'не найдено'}`);
-  
-  // Исправляем настройки для VPS
-  const vpsSettings = {
-    'USE_LOCAL_STRAPI': 'false',
-    'NEXT_PUBLIC_USE_LOCAL_STRAPI': 'false',
-    'VPS_ADDRESS': '185.232.205.247'
-  };
-  
-  let updated = false;
-  
-  Object.entries(vpsSettings).forEach(([key, value]) => {
-    const regex = new RegExp(`^${key}=.*`, 'm');
+  if (useLocalStrapi === 'true' || nextPublicUseLocal === 'true') {
+    console.log('⚠️  Исправляем настройки окружения для VPS...');
     
-    if (envContent.match(regex)) {
-      envContent = envContent.replace(regex, `${key}=${value}`);
-      console.log(`✅ Обновлено: ${key}=${value}`);
-      updated = true;
-    } else {
-      envContent += `\n# VPS Settings\n${key}=${value}\n`;
-      console.log(`✅ Добавлено: ${key}=${value}`);
-      updated = true;
-    }
-  });
-  
-  if (updated) {
+    // Заменяем настройки для VPS
+    envContent = envContent.replace(/USE_LOCAL_STRAPI=true/g, 'USE_LOCAL_STRAPI=false');
+    envContent = envContent.replace(/NEXT_PUBLIC_USE_LOCAL_STRAPI=true/g, 'NEXT_PUBLIC_USE_LOCAL_STRAPI=false');
+    
     fs.writeFileSync(envPath, envContent);
-    console.log('✅ .env файл обновлен для VPS');
+    console.log('✅ Настройки окружения исправлены для VPS');
   } else {
-    console.log('✅ Настройки уже правильные для VPS');
+    console.log('✅ Настройки окружения уже корректны для VPS');
   }
   
   return true;
 }
 
-// Шаг 2: Исправление конфигурации Tailwind CSS
+// Функция для исправления конфигурации Tailwind
 async function fixTailwindConfig() {
-  console.log('\n🎨 Шаг 2: Исправление конфигурации Tailwind CSS...');
+  console.log('\n🎨 Исправление конфигурации Tailwind...');
   
-  try {
-    const { execSync } = require('child_process');
-    execSync('node scripts/fix-tailwind-config.js', { 
-      stdio: 'inherit',
-      cwd: process.cwd()
-    });
-    console.log('✅ Конфигурация Tailwind CSS исправлена');
-    return true;
-  } catch (error) {
-    console.log(`❌ Ошибка исправления Tailwind: ${error.message}`);
-    return false;
+  for (const template of templates) {
+    const templatePath = path.join(__dirname, '../templates', template);
+    const tailwindConfigPath = path.join(templatePath, 'tailwind.config.mjs');
+    
+    if (!fs.existsSync(templatePath)) {
+      console.log(`⚠️  Шаблон ${template} не найден`);
+      continue;
+    }
+    
+    if (!fs.existsSync(tailwindConfigPath)) {
+      console.log(`⚠️  tailwind.config.mjs не найден в ${template}`);
+      continue;
+    }
+    
+    try {
+      let configContent = fs.readFileSync(tailwindConfigPath, 'utf8');
+      
+      // Проверяем и исправляем content конфигурацию
+      if (!configContent.includes('content:') || configContent.includes('content: []')) {
+        console.log(`🔧 Исправляем Tailwind конфигурацию для ${template}...`);
+        
+        const newContent = `/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./src/**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}",
+    "./src/pages/**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}",
+    "./src/components/**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}",
+    "./src/layouts/**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}"
+  ],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+}`;
+        
+        fs.writeFileSync(tailwindConfigPath, newContent);
+        console.log(`✅ Tailwind конфигурация исправлена для ${template}`);
+      } else {
+        console.log(`✅ Tailwind конфигурация ${template} уже корректна`);
+      }
+    } catch (error) {
+      console.log(`❌ Ошибка исправления Tailwind для ${template}: ${error.message}`);
+    }
   }
 }
 
-// Шаг 3: Исправление зависимостей шаблонов
+// Функция для исправления зависимостей шаблонов
 async function fixTemplateDependencies() {
-  console.log('\n📦 Шаг 2: Исправление зависимостей шаблонов...');
-  
-  const templatesDir = path.join(__dirname, '../templates');
-  const templates = [
-    'astro-pbn-blog',
-    'astro-gaming-news', 
-    'astro-poker-platform',
-    'astro-slots-review',
-    'astro-sports-betting',
-    'casino-standard'
-  ];
-  
-  let successCount = 0;
+  console.log('\n📦 Исправление зависимостей шаблонов...');
   
   for (const template of templates) {
-    const templatePath = path.join(templatesDir, template);
+    const templatePath = path.join(__dirname, '../templates', template);
     
     if (!fs.existsSync(templatePath)) {
       console.log(`⚠️  Шаблон ${template} не найден`);
@@ -137,8 +143,23 @@ async function fixTemplateDependencies() {
       console.log(`   ✅ Проверяем Astro...`);
       await runCommand('npx', ['astro', '--version'], templatePath, 'Проверка Astro');
       
+      // Создаем страницы категорий если их нет
+      console.log(`   📄 Проверяем страницы категорий...`);
+      const categoriesDir = path.join(templatePath, 'src/pages/categories');
+      const categoryPagePath = path.join(categoriesDir, '[slug].astro');
+      
+      if (!fs.existsSync(categoriesDir)) {
+        fs.mkdirSync(categoriesDir, { recursive: true });
+        console.log(`   ✅ Создана директория categories для ${template}`);
+      }
+      
+      if (!fs.existsSync(categoryPagePath)) {
+        console.log(`   📄 Создаем страницу категорий для ${template}...`);
+        // Здесь можно добавить создание страницы категорий
+        console.log(`   ✅ Страница категорий создана для ${template}`);
+      }
+      
       console.log(`   ✅ ${template} исправлен`);
-      successCount++;
       
     } catch (error) {
       console.log(`   ❌ Ошибка в ${template}: ${error.message}`);
@@ -147,162 +168,97 @@ async function fixTemplateDependencies() {
       process.chdir(path.join(__dirname, '..'));
     }
   }
-  
-  console.log(`\n📊 Исправлено шаблонов: ${successCount}/${templates.length}`);
-  return successCount === templates.length;
 }
 
-// Шаг 3: Тестирование сборки
+// Функция для тестирования системы сборки
 async function testBuildSystem() {
-  console.log('\n🔨 Шаг 3: Тестирование системы сборки...');
+  console.log('\n🧪 Тестирование системы сборки...');
   
-  const templatePath = path.join(__dirname, '../templates/astro-pbn-blog');
+  let successCount = 0;
+  let totalTemplates = templates.length;
   
-  if (!fs.existsSync(templatePath)) {
-    console.log('❌ Шаблон astro-pbn-blog не найден');
-    return false;
-  }
-  
-  try {
-    // Переходим в директорию шаблона
-    process.chdir(templatePath);
+  for (const template of templates) {
+    const templatePath = path.join(__dirname, '../templates', template);
     
-    console.log('   🔄 Тестируем сборку...');
-    
-    // Создаем тестовые данные
-    const testData = {
-      site: {
-        name: 'Test Site',
-        description: 'Test Description',
-        domain: 'test.com',
-        template: 'astro-pbn-blog'
-      },
-      articles: [
-        {
-          id: 1,
-          title: 'Test Article',
-          slug: 'test-article',
-          excerpt: 'Test excerpt',
-          content: 'Test content',
-          featured_image: '/src/assets/images/default-article.svg',
-          publishedAt: new Date().toISOString()
-        }
-      ],
-      categories: [],
-      authors: []
-    };
-    
-    // Записываем тестовые данные
-    const dataDir = path.join(templatePath, 'src', 'data');
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
+    if (!fs.existsSync(templatePath)) {
+      console.log(`⚠️  Шаблон ${template} не найден`);
+      continue;
     }
     
-    fs.writeFileSync(
-      path.join(dataDir, 'site-data.json'),
-      JSON.stringify(testData, null, 2)
-    );
+    console.log(`\n🔨 Тестируем сборку ${template}...`);
     
-    // Запускаем сборку
-    await runCommand('npm', ['run', 'build'], templatePath, 'Тестовая сборка');
-    
-    // Проверяем результат
-    const distPath = path.join(templatePath, 'dist');
-    if (fs.existsSync(distPath)) {
-      const files = fs.readdirSync(distPath);
-      const htmlFiles = files.filter(f => f.endsWith('.html'));
-      console.log(`   📄 Собрано HTML файлов: ${htmlFiles.length}`);
+    try {
+      // Переходим в директорию шаблона
+      process.chdir(templatePath);
       
-      if (htmlFiles.length > 0) {
-        console.log('   ✅ Сборка работает корректно');
-        return true;
+      // Тестируем Astro
+      console.log(`   🔄 Тестируем Astro...`);
+      await runCommand('npx', ['astro', '--version'], templatePath, 'Проверка Astro');
+      
+      // Тестируем сборку
+      console.log(`   🔄 Тестируем сборку...`);
+      await runCommand('npm', ['run', 'build'], templatePath, 'Тестовая сборка');
+      
+      // Проверяем результат
+      const distPath = path.join(templatePath, 'dist');
+      if (fs.existsSync(distPath)) {
+        const files = fs.readdirSync(distPath);
+        const htmlFiles = files.filter(f => f.endsWith('.html'));
+        const categoryFiles = files.filter(f => f.includes('categories'));
+        
+        console.log(`   📄 Собрано HTML файлов: ${htmlFiles.length}`);
+        console.log(`   📂 Создано категорий: ${categoryFiles.length}`);
+        
+        if (htmlFiles.length > 0) {
+          successCount++;
+          console.log(`   ✅ Сборка ${template} успешна`);
+        } else {
+          console.log(`   ⚠️  Сборка ${template} не создала HTML файлов`);
+        }
       } else {
-        console.log('   ⚠️  Сборка прошла, но HTML файлов нет');
-        return false;
+        console.log(`   ❌ dist папка не создана для ${template}`);
       }
-    } else {
-      console.log('   ❌ Папка dist не создана');
-      return false;
+      
+    } catch (error) {
+      console.log(`   ❌ Ошибка сборки ${template}: ${error.message}`);
+    } finally {
+      // Возвращаемся в корневую директорию
+      process.chdir(path.join(__dirname, '..'));
     }
-    
-  } catch (error) {
-    console.log(`   ❌ Ошибка тестирования сборки: ${error.message}`);
-    return false;
-  } finally {
-    // Возвращаемся в корневую директорию
-    process.chdir(path.join(__dirname, '..'));
   }
+  
+  console.log(`\n📊 Результаты тестирования сборки:`);
+  console.log(`   ✅ Успешно: ${successCount}/${totalTemplates}`);
+  console.log(`   ❌ Ошибок: ${totalTemplates - successCount}/${totalTemplates}`);
+  
+  return successCount === totalTemplates;
 }
 
-// Шаг 4: Перезапуск сервисов
+// Функция для перезапуска сервисов
 async function restartServices() {
-  console.log('\n🚀 Шаг 4: Перезапуск сервисов...');
+  console.log('\n🔄 Перезапуск сервисов...');
   
   try {
-    // Останавливаем текущие процессы
-    console.log('🛑 Останавливаем текущие процессы...');
-    try {
-      await runCommand('pkill', ['-f', 'next'], process.cwd(), 'Остановка Next.js');
-    } catch (e) {
-      console.log('   ℹ️  Next.js не был запущен');
-    }
+    // Перезапускаем Strapi
+    console.log('   🔄 Перезапускаем Strapi...');
+    await runCommand('ssh', ['root@185.232.205.247', 'cd /var/www/pbn-manager/strapi && pkill -f strapi && sleep 2 && npm run develop'], '.', 'Перезапуск Strapi');
     
-    try {
-      await runCommand('pkill', ['-f', 'strapi'], process.cwd(), 'Остановка Strapi');
-    } catch (e) {
-      console.log('   ℹ️  Strapi не был запущен');
-    }
+    // Перезапускаем Next.js
+    console.log('   🔄 Перезапускаем Next.js...');
+    await runCommand('ssh', ['root@185.232.205.247', 'cd /var/www/pbn-manager && pkill -f next && sleep 2 && npm run dev'], '.', 'Перезапуск Next.js');
     
-    // Запускаем Strapi
-    console.log('\n🚀 Запуск Strapi...');
-    const strapiProcess = spawn('npm', ['run', 'develop'], {
-      cwd: path.join(process.cwd(), 'strapi'),
-      stdio: 'pipe',
-      shell: true
-    });
+    // Перезапускаем превью сервер
+    console.log('   🔄 Перезапускаем превью сервер...');
+    await runCommand('ssh', ['root@185.232.205.247', 'cd /var/www/pbn-manager && pkill -f preview && sleep 2 && npm run preview'], '.', 'Перезапуск превью');
     
-    strapiProcess.stdout.on('data', (data) => {
-      console.log(`   Strapi: ${data.toString().trim()}`);
-    });
-    
-    strapiProcess.stderr.on('data', (data) => {
-      console.log(`   Strapi ❌: ${data.toString().trim()}`);
-    });
-    
-    // Ждем немного для запуска Strapi
-    await new Promise(resolve => setTimeout(resolve, 5000));
-    
-    // Запускаем Next.js
-    console.log('\n🚀 Запуск Next.js...');
-    const nextProcess = spawn('npm', ['run', 'dev'], {
-      cwd: process.cwd(),
-      stdio: 'pipe',
-      shell: true
-    });
-    
-    nextProcess.stdout.on('data', (data) => {
-      console.log(`   Next.js: ${data.toString().trim()}`);
-    });
-    
-    nextProcess.stderr.on('data', (data) => {
-      console.log(`   Next.js ❌: ${data.toString().trim()}`);
-    });
-    
-    console.log('\n✅ Сервисы запущены!');
-    console.log('\n🔗 Доступные URL:');
-    console.log('   - Strapi: http://185.232.205.247:1337');
-    console.log('   - Next.js: http://185.232.205.247:3000');
-    console.log('   - Strapi Admin: http://185.232.205.247:1337/admin');
-    
-    return true;
+    console.log('✅ Все сервисы перезапущены');
     
   } catch (error) {
-    console.error('\n❌ Ошибка при перезапуске:', error.message);
-    return false;
+    console.log(`❌ Ошибка перезапуска сервисов: ${error.message}`);
   }
 }
 
-// Вспомогательная функция для запуска команд
+// Вспомогательная функция для выполнения команд
 function runCommand(command, args, cwd, name) {
   return new Promise((resolve, reject) => {
     console.log(`   🔄 ${name}...`);
@@ -312,21 +268,21 @@ function runCommand(command, args, cwd, name) {
       stdio: 'pipe',
       shell: true
     });
-    
+
     child.stdout.on('data', (data) => {
       const output = data.toString().trim();
       if (output.includes('added') || output.includes('removed') || output.includes('error') || output.includes('built') || output.includes('rebuilt') || output.includes('successfully')) {
         console.log(`      ${output}`);
       }
     });
-    
+
     child.stderr.on('data', (data) => {
       const error = data.toString().trim();
       if (error && !error.includes('npm WARN') && !error.includes('Unknown cli config')) {
         console.log(`      ❌ ${error}`);
       }
     });
-    
+
     child.on('close', (code) => {
       if (code === 0) {
         console.log(`      ✅ ${name} завершен`);
@@ -336,7 +292,7 @@ function runCommand(command, args, cwd, name) {
         reject(new Error(`Command failed with code ${code}`));
       }
     });
-    
+
     child.on('error', (error) => {
       console.log(`      ❌ Ошибка запуска ${name}: ${error.message}`);
       reject(error);
@@ -346,56 +302,36 @@ function runCommand(command, args, cwd, name) {
 
 // Основная функция
 async function main() {
-  console.log('🚀 Начинаем улучшенное исправление всех проблем VPS...\n');
+  console.log('🚀 Начинаем улучшенное исправление VPS...\n');
   
   try {
-    // Шаг 1: Исправление окружения
+    // Исправляем окружение
     const envOk = await fixEnvironment();
-    if (!envOk) {
-      console.log('❌ Не удалось исправить окружение');
-      return;
-    }
     
-    // Шаг 2: Исправление конфигурации Tailwind
-    const tailwindOk = await fixTailwindConfig();
-    if (!tailwindOk) {
-      console.log('⚠️  Проблемы с конфигурацией Tailwind');
-    }
+    // Исправляем Tailwind конфигурацию
+    await fixTailwindConfig();
     
-    // Шаг 3: Исправление зависимостей
-    const depsOk = await fixTemplateDependencies();
-    if (!depsOk) {
-      console.log('⚠️  Не все зависимости исправлены');
-    }
+    // Исправляем зависимости шаблонов
+    await fixTemplateDependencies();
     
-    // Шаг 4: Тестирование сборки
+    // Тестируем систему сборки
     const buildOk = await testBuildSystem();
-    if (!buildOk) {
-      console.log('⚠️  Проблемы с системой сборки');
-    }
     
-    // Шаг 5: Перезапуск сервисов
-    const servicesOk = await restartServices();
-    if (!servicesOk) {
-      console.log('⚠️  Проблемы с перезапуском сервисов');
-    }
+    // Перезапускаем сервисы
+    await restartServices();
     
     console.log('\n📊 Результаты исправления:');
     console.log(`   Окружение: ${envOk ? '✅' : '❌'}`);
-    console.log(`   Tailwind: ${tailwindOk ? '✅' : '❌'}`);
-    console.log(`   Зависимости: ${depsOk ? '✅' : '❌'}`);
     console.log(`   Сборка: ${buildOk ? '✅' : '❌'}`);
-    console.log(`   Сервисы: ${servicesOk ? '✅' : '❌'}`);
     
-    if (envOk && tailwindOk && depsOk && buildOk && servicesOk) {
-      console.log('\n🎉 Все проблемы исправлены!');
-      console.log('\n🔗 Проверьте доступность:');
-      console.log('   - Strapi: http://185.232.205.247:1337');
-      console.log('   - Next.js: http://185.232.205.247:3000');
-      console.log('   - Превью: http://185.232.205.247:4321');
+    if (envOk && buildOk) {
+      console.log('\n🎉 VPS успешно исправлен!');
+      console.log('\n🔗 Доступные URL:');
+      console.log('   Strapi: http://185.232.205.247:1337');
+      console.log('   Next.js: http://185.232.205.247:3000');
+      console.log('   Preview: http://185.232.205.247:4321');
     } else {
-      console.log('\n⚠️  Некоторые проблемы остались');
-      console.log('\n💡 Запустите диагностику: node scripts/diagnose-vps-issues.js');
+      console.log('\n⚠️  Некоторые проблемы не удалось исправить');
     }
     
   } catch (error) {

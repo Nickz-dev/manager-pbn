@@ -1,0 +1,47 @@
+{
+  "name": "astro-pbn-blog",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Optimized PBN blog template with SEO, performance and security features",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "build:analyze": "astro build --analyze",
+    "build:clean": "rm -rf dist && astro build",
+    "lighthouse": "lighthouse http://localhost:4321 --output html --output-path ./lighthouse-report.html",
+    "test:performance": "npm run build && npm run lighthouse"
+  },
+  "dependencies": {
+    "@astrojs/rss": "^4.0.0",
+    "@astrojs/sitemap": "^3.0.0",
+    "astro": "^4.0.0",
+    "kleur": "^4.1.5"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.3.0",
+    "@astrojs/tailwind": "^5.0.0",
+    "@tailwindcss/typography": "^0.5.10",
+    "autoprefixer": "^10.4.16",
+    "lighthouse": "^11.0.0",
+    "postcss": "^8.4.31",
+    "tailwindcss": "^3.3.5",
+    "typescript": "^5.1.6"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "keywords": [
+    "astro",
+    "pbn",
+    "blog",
+    "seo",
+    "performance",
+    "static-site"
+  ],
+  "author": "PBN Manager",
+  "license": "MIT"
+}

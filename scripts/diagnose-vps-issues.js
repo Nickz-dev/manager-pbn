@@ -4,6 +4,15 @@ const path = require('path');
 
 console.log('🔍 Диагностика проблем VPS...\n');
 
+// Актуализированный список шаблонов
+const templates = [
+  'astro-casino-blog',
+  'astro-slots-review', 
+  'astro-gaming-news',
+  'astro-sports-betting',
+  'astro-poker-platform'
+];
+
 // Проверяем .env файл
 function checkEnvironment() {
   console.log('📋 Проверка окружения...');
@@ -37,15 +46,6 @@ function checkTemplates() {
   console.log('\n📦 Проверка шаблонов...');
   
   const templatesDir = path.join(__dirname, '../templates');
-  const templates = [
-    'astro-pbn-blog',
-    'astro-gaming-news', 
-    'astro-poker-platform',
-    'astro-slots-review',
-    'astro-sports-betting',
-    'casino-standard'
-  ];
-  
   let allGood = true;
   
   for (const template of templates) {
@@ -60,6 +60,8 @@ function checkTemplates() {
     const packageJsonPath = path.join(templatePath, 'package.json');
     const nodeModulesPath = path.join(templatePath, 'node_modules');
     const distPath = path.join(templatePath, 'dist');
+    const categoriesPath = path.join(templatePath, 'src/pages/categories');
+    const categoryPagePath = path.join(categoriesPath, '[slug].astro');
     
     console.log(`\n🔍 ${template}:`);
     
@@ -107,6 +109,21 @@ function checkTemplates() {
       }
     }
     
+    // Проверяем страницы категорий
+    if (!fs.existsSync(categoriesPath)) {
+      console.log(`   ❌ Директория categories не найдена`);
+      allGood = false;
+    } else {
+      console.log(`   ✅ Директория categories найдена`);
+      
+      if (!fs.existsSync(categoryPagePath)) {
+        console.log(`   ❌ Страница категорий [slug].astro не найдена`);
+        allGood = false;
+      } else {
+        console.log(`   ✅ Страница категорий найдена`);
+      }
+    }
+    
     // Проверяем dist
     if (!fs.existsSync(distPath)) {
       console.log(`   ❌ dist папка не найдена (сайт не собран)`);
@@ -117,7 +134,18 @@ function checkTemplates() {
       try {
         const distFiles = fs.readdirSync(distPath);
         const htmlFiles = distFiles.filter(f => f.endsWith('.html'));
+        const categoryDirs = distFiles.filter(f => {
+          const categoryPath = path.join(distPath, f);
+          return fs.statSync(categoryPath).isDirectory() && f === 'categories';
+        });
+        
         console.log(`   📄 HTML файлов: ${htmlFiles.length}`);
+        
+        if (categoryDirs.length > 0) {
+          const categoriesDistPath = path.join(distPath, 'categories');
+          const categoryFiles = fs.readdirSync(categoriesDistPath);
+          console.log(`   📂 Категорий в dist: ${categoryFiles.length}`);
+        }
         
         if (htmlFiles.length === 0) {
           console.log(`   ⚠️  Нет HTML файлов в dist`);
@@ -135,10 +163,10 @@ function checkTemplates() {
 async function testBuild() {
   console.log('\n🔨 Тестирование сборки...');
   
-  const templatePath = path.join(__dirname, '../templates/astro-pbn-blog');
+  const templatePath = path.join(__dirname, '../templates/astro-gaming-news');
   
   if (!fs.existsSync(templatePath)) {
-    console.log('❌ Шаблон astro-pbn-blog не найден');
+    console.log('❌ Шаблон astro-gaming-news не найден');
     return false;
   }
   
@@ -171,7 +199,18 @@ async function testBuild() {
       if (fs.existsSync(distPath)) {
         const files = fs.readdirSync(distPath);
         const htmlFiles = files.filter(f => f.endsWith('.html'));
+        const categoryDirs = files.filter(f => {
+          const categoryPath = path.join(distPath, f);
+          return fs.statSync(categoryPath).isDirectory() && f === 'categories';
+        });
+        
         console.log(`   📄 Собрано HTML файлов: ${htmlFiles.length}`);
+        
+        if (categoryDirs.length > 0) {
+          const categoriesDistPath = path.join(distPath, 'categories');
+          const categoryFiles = fs.readdirSync(categoriesDistPath);
+          console.log(`   📂 Создано категорий: ${categoryFiles.length}`);
+        }
       }
       
       return true;
@@ -193,10 +232,10 @@ async function testBuild() {
 async function testPreview() {
   console.log('\n👁️  Тестирование превью...');
   
-  const templatePath = path.join(__dirname, '../templates/astro-pbn-blog');
+  const templatePath = path.join(__dirname, '../templates/astro-gaming-news');
   
   if (!fs.existsSync(templatePath)) {
-    console.log('❌ Шаблон astro-pbn-blog не найден');
+    console.log('❌ Шаблон astro-gaming-news не найден');
     return false;
   }
   

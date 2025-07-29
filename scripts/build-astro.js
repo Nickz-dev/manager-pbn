@@ -6,15 +6,15 @@ const { generateAstroData } = require('./generate-astro-data');
 // Пути к файлам - теперь динамические
 function getAstroDir(template) {
   const templateMap = {
-    'casino-blog': 'astro-pbn-blog',
+    'casino-blog': 'astro-casino-blog',
     'slots-review': 'astro-slots-review', 
     'gaming-news': 'astro-gaming-news',
     'sports-betting': 'astro-sports-betting',
     'poker-platform': 'astro-poker-platform',
-    'premium-casino': 'casino-premium'
+    'premium-casino': 'casino/premium'
   };
   
-  const templateDir = templateMap[template] || 'astro-pbn-blog';
+  const templateDir = templateMap[template] || 'astro-casino-blog';
   return path.join(__dirname, '../templates', templateDir);
 }
 
@@ -89,7 +89,9 @@ function checkBuildResults(distDir) {
   const results = {
     hasIndex: false,
     hasArticles: false,
+    hasCategories: false,
     articleCount: 0,
+    categoryCount: 0,
     files: []
   };
   
@@ -110,6 +112,13 @@ function checkBuildResults(distDir) {
   );
   results.hasArticles = articleFiles.length > 0;
   results.articleCount = articleFiles.length;
+  
+  // Проверяем наличие страниц категорий
+  const categoryFiles = files.filter(file => 
+    file.includes('categories') && file.includes('index.html')
+  );
+  results.hasCategories = categoryFiles.length > 0;
+  results.categoryCount = categoryFiles.length;
   
   return results;
 }

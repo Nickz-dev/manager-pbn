@@ -1,0 +1,18 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://gaming-news.com/sitemap.xml
+
+# Disallow admin areas
+Disallow: /admin/
+Disallow: /private/
+
+# Allow important files
+Allow: /sitemap.xml
+Allow: /rss.xml
+Allow: /favicon.ico
+Allow: /robots.txt
+
+# Crawl delay (optional)
+Crawl-delay: 1
